@@ -1,0 +1,257 @@
+# Initial list of 50 tech companies for JobDetector MVP
+# Format: name, domain, initial ATS type guess
+
+companies:
+  # FAANG + Big Tech (10)
+  - name: Google
+    domain: google.com
+    ats_type: custom
+    tags: [FAANG, AI, Cloud]
+    
+  - name: Meta
+    domain: meta.com
+    ats_type: greenhouse
+    tags: [FAANG, Social Media, AI]
+    
+  - name: Amazon
+    domain: amazon.com
+    ats_type: custom
+    tags: [FAANG, E-commerce, Cloud]
+    
+  - name: Netflix
+    domain: netflix.com
+    ats_type: greenhouse
+    tags: [FAANG, Streaming, Entertainment]
+    
+  - name: Apple
+    domain: apple.com
+    ats_type: custom
+    tags: [FAANG, Hardware, Software]
+    
+  - name: Microsoft
+    domain: microsoft.com
+    ats_type: custom
+    tags: [Big Tech, Cloud, Enterprise]
+    
+  - name: Tesla
+    domain: tesla.com
+    ats_type: greenhouse
+    tags: [Automotive, Clean Energy, AI]
+    
+  - name: NVIDIA
+    domain: nvidia.com
+    ats_type: workday
+    tags: [Hardware, AI, Gaming]
+    
+  - name: Intel
+    domain: intel.com
+    ats_type: workday
+    tags: [Hardware, Semiconductors]
+    
+  - name: Salesforce
+    domain: salesforce.com
+    ats_type: workday
+    tags: [SaaS, CRM, Enterprise]
+  
+  # Unicorns & High Growth (20)
+  - name: Stripe
+    domain: stripe.com
+    ats_type: greenhouse
+    tags: [Fintech, Payments, API]
+    
+  - name: Airbnb
+    domain: airbnb.com
+    ats_type: greenhouse
+    tags: [Travel, Sharing Economy]
+    
+  - name: Uber
+    domain: uber.com
+    ats_type: greenhouse
+    tags: [Transportation, Gig Economy]
+    
+  - name: Lyft
+    domain: lyft.com
+    ats_type: greenhouse
+    tags: [Transportation, Mobility]
+    
+  - name: DoorDash
+    domain: doordash.com
+    ats_type: greenhouse
+    tags: [Food Delivery, Logistics]
+    
+  - name: Instacart
+    domain: instacart.com
+    ats_type: greenhouse
+    tags: [Grocery, Delivery]
+    
+  - name: Snowflake
+    domain: snowflake.com
+    ats_type: greenhouse
+    tags: [Data, Cloud, Analytics]
+    
+  - name: Databricks
+    domain: databricks.com
+    ats_type: greenhouse
+    tags: [Data, AI, Analytics]
+    
+  - name: Coinbase
+    domain: coinbase.com
+    ats_type: greenhouse
+    tags: [Crypto, Fintech, Exchange]
+    
+  - name: Square
+    domain: squareup.com
+    ats_type: greenhouse
+    tags: [Fintech, Payments, Commerce]
+    
+  - name: Robinhood
+    domain: robinhood.com
+    ats_type: greenhouse
+    tags: [Fintech, Trading, Investment]
+    
+  - name: Plaid
+    domain: plaid.com
+    ats_type: greenhouse
+    tags: [Fintech, Banking API]
+    
+  - name: Chime
+    domain: chime.com
+    ats_type: lever
+    tags: [Fintech, Banking, Mobile]
+    
+  - name: Affirm
+    domain: affirm.com
+    ats_type: greenhouse
+    tags: [Fintech, BNPL, Lending]
+    
+  - name: Figma
+    domain: figma.com
+    ats_type: greenhouse
+    tags: [Design, Collaboration, SaaS]
+    
+  - name: Notion
+    domain: notion.so
+    ats_type: lever
+    tags: [Productivity, Collaboration, SaaS]
+    
+  - name: Slack
+    domain: slack.com
+    ats_type: greenhouse
+    tags: [Communication, Collaboration, SaaS]
+    
+  - name: Zoom
+    domain: zoom.us
+    ats_type: workday
+    tags: [Communication, Video, Remote Work]
+    
+  - name: DocuSign
+    domain: docusign.com
+    ats_type: workday
+    tags: [Document Management, eSignature, SaaS]
+    
+  - name: Twilio
+    domain: twilio.com
+    ats_type: greenhouse
+    tags: [Communications API, CPaaS]
+  
+  # AI & ML Companies (10)
+  - name: OpenAI
+    domain: openai.com
+    ats_type: greenhouse
+    tags: [AI, Research, Foundation Models]
+    
+  - name: Anthropic
+    domain: anthropic.com
+    ats_type: lever
+    tags: [AI, Research, Safety]
+    
+  - name: Scale AI
+    domain: scale.com
+    ats_type: lever
+    tags: [AI, Data Labeling, ML]
+    
+  - name: Hugging Face
+    domain: huggingface.co
+    ats_type: lever
+    tags: [AI, ML, Open Source]
+    
+  - name: Stability AI
+    domain: stability.ai
+    ats_type: custom
+    tags: [AI, Generative AI, Open Source]
+    
+  - name: Cohere
+    domain: cohere.ai
+    ats_type: lever
+    tags: [AI, NLP, Enterprise]
+    
+  - name: Midjourney
+    domain: midjourney.com
+    ats_type: custom
+    tags: [AI, Generative Art]
+    
+  - name: Weights & Biases
+    domain: wandb.ai
+    ats_type: lever
+    tags: [MLOps, Experiment Tracking]
+    
+  - name: Anduril
+    domain: anduril.com
+    ats_type: greenhouse
+    tags: [Defense Tech, AI, Robotics]
+    
+  - name: Palantir
+    domain: palantir.com
+    ats_type: workday
+    tags: [Data Analytics, Government, Enterprise]
+  
+  # DevTools & Infrastructure (10)
+  - name: GitHub
+    domain: github.com
+    ats_type: greenhouse
+    tags: [DevTools, Git, Collaboration]
+    
+  - name: GitLab
+    domain: gitlab.com
+    ats_type: greenhouse
+    tags: [DevOps, Git, CI/CD]
+    
+  - name: Vercel
+    domain: vercel.com
+    ats_type: lever
+    tags: [Frontend, Deployment, Web]
+    
+  - name: Netlify
+    domain: netlify.com
+    ats_type: greenhouse
+    tags: [Frontend, JAMstack, Hosting]
+    
+  - name: Cloudflare
+    domain: cloudflare.com
+    ats_type: greenhouse
+    tags: [CDN, Security, Infrastructure]
+    
+  - name: MongoDB
+    domain: mongodb.com
+    ats_type: greenhouse
+    tags: [Database, NoSQL, Cloud]
+    
+  - name: Redis
+    domain: redis.com
+    ats_type: greenhouse
+    tags: [Database, Cache, In-Memory]
+    
+  - name: Confluent
+    domain: confluent.io
+    ats_type: greenhouse
+    tags: [Streaming, Kafka, Data]
+    
+  - name: HashiCorp
+    domain: hashicorp.com
+    ats_type: greenhouse
+    tags: [Infrastructure, Cloud, DevOps]
+    
+  - name: Datadog
+    domain: datadoghq.com
+    ats_type: greenhouse
+    tags: [Monitoring, Observability, SaaS]
