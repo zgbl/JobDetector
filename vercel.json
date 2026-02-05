@@ -3,15 +3,15 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "/web/main.py"
+            "destination": "/api/index.py"
         },
         {
             "source": "/(.*)",
-            "destination": "/web/static/$1"
+            "destination": "/public/$1"
         }
     ],
     "functions": {
-        "web/main.py": {
+        "api/index.py": {
             "runtime": "vercel-python@0.1.0"
         }
     }

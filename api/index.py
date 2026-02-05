@@ -2,13 +2,13 @@ import os
 import sys
 from typing import List, Optional
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from dotenv import load_dotenv
+import re
 
 # Add project root to path for database connection and models
+# Path is now parent of parent because we are in api/index.py
 project_root = str(Path(__file__).parent.parent)
 sys.path.insert(0, project_root)
 
@@ -18,9 +18,6 @@ load_dotenv()
 
 app = FastAPI(title="JobDetector Dashboard")
 
-# For Vercel, the app instance must be accessible at the module level
-# Alias it as 'handler' if needed, but 'app' is standard.
-
 # Enable CORS for local development
 app.add_middleware(
     CORSMiddleware,
@@ -28,12 +25,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Static files mapping
-static_path = Path(__file__).parent / "static"
-static_path.mkdir(exist_ok=True)
-(static_path / "css").mkdir(exist_ok=True)
-(static_path / "js").mkdir(exist_ok=True)
 
 @app.get("/api/jobs")
 async def get_jobs(
@@ -107,13 +98,8 @@ async def get_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Mount static files AFTER API routes
-app.mount("/", StaticFiles(directory=str(static_path), html=True), name="static")
-
 if __name__ == "__main__":
     import uvicorn
-    import re # Needed for regex in search
-    
     port = 8123
     print(f"🚀 Starting Dashboard on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)
