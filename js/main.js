@@ -2,6 +2,7 @@
 let jobs = [];
 let filteredJobs = [];
 let currentFilter = 'all';
+let currentSearchQuery = '';
 
 // DOM Elements
 const jobsGrid = document.getElementById('jobsGrid');
@@ -11,6 +12,7 @@ const companyCount = document.getElementById('companyCount');
 const remoteCount = document.getElementById('remoteCount');
 const resultsCount = document.getElementById('resultsCount');
 const filterBtns = document.querySelectorAll('.filter-btn');
+const quickTags = document.querySelectorAll('.tag-btn');
 const jobModal = document.getElementById('jobModal');
 const modalBody = document.getElementById('modalBody');
 const closeModal = document.querySelector('.close-modal');
@@ -27,7 +29,7 @@ async function fetchStats() {
     try {
         const response = await fetch('/api/stats');
         const stats = await response.json();
-        
+
         totalJobsCount.textContent = stats.total_jobs || 0;
         companyCount.textContent = stats.company_stats?.length || 0;
         remoteCount.textContent = stats.remote_count || 0;
@@ -38,6 +40,7 @@ async function fetchStats() {
 
 async function fetchJobs(query = '') {
     showLoading();
+    currentSearchQuery = query;
     try {
         const url = query ? `/api/jobs?q=${encodeURIComponent(query)}` : '/api/jobs';
         const response = await fetch(url);
@@ -52,7 +55,7 @@ async function fetchJobs(query = '') {
 // Render Functions
 function applyFilterAndRender() {
     filteredJobs = jobs;
-    
+
     if (currentFilter !== 'all') {
         if (currentFilter === 'Remote') {
             filteredJobs = jobs.filter(j => j.remote_type === 'Remote');
@@ -60,7 +63,7 @@ function applyFilterAndRender() {
             filteredJobs = jobs.filter(j => j.job_type === currentFilter);
         }
     }
-    
+
     resultsCount.textContent = filteredJobs.length;
     renderJobs();
 }
@@ -77,9 +80,9 @@ function renderJobs() {
                 <div class="company-logo-type">${job.company[0]}</div>
                 <div class="job-posted">${formatDate(job.posted_date)}</div>
             </div>
-            <h3 class="job-title">${job.title}</h3>
+            <h3 class="job-title">${highlightText(job.title, currentSearchQuery)}</h3>
             <div class="job-company">
-                <i class="fas fa-building"></i> ${job.company}
+                <i class="fas fa-building"></i> ${highlightText(job.company, currentSearchQuery)}
             </div>
             <div class="job-location">
                 <i class="fas fa-map-marker-alt"></i> ${job.location}
@@ -87,7 +90,7 @@ function renderJobs() {
             <div class="job-meta">
                 <span class="tag blue">${job.job_type}</span>
                 <span class="tag purple">${job.remote_type}</span>
-                ${job.skills.slice(0, 3).map(skill => `<span class="tag">${skill}</span>`).join('')}
+                ${job.skills.slice(0, 3).map(skill => `<span class="tag">${highlightText(skill, currentSearchQuery)}</span>`).join('')}
             </div>
         </div>
     `).join('');
@@ -109,7 +112,7 @@ function showJobDetails(jobId) {
             </div>
         </div>
         <div class="jd-content">
-            ${job.description || "No description provided."}
+            ${highlightText(job.description || "No description provided.", currentSearchQuery)}
         </div>
         <div class="skills-section">
             <h4>Extracted Skills</h4>
@@ -143,6 +146,15 @@ function setupEventListeners() {
         });
     });
 
+    // Quick Tags
+    quickTags.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tag = btn.dataset.tag;
+            jobSearch.value = tag;
+            fetchJobs(tag);
+        });
+    });
+
     // Modal
     closeModal.onclick = () => {
         jobModal.style.display = "none";
@@ -163,10 +175,16 @@ function formatDate(dateStr) {
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays <= 1) return 'New';
     if (diffDays > 30) return date.toLocaleDateString();
     return `${diffDays}d ago`;
+}
+
+function highlightText(text, query) {
+    if (!query || !text) return text;
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.toString().replace(regex, '<mark>$1</mark>');
 }
 
 function showLoading() {
