@@ -1,0 +1,508 @@
+companies:
+# AI & ML (30)
+  - name: OpenAI
+    domain: openai.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Research]
+  - name: Anthropic
+    domain: anthropic.com
+    ats_type: lever
+    size: Startup
+    tags: [AI, Safety]
+  - name: Scale AI
+    domain: scale.com
+    ats_type: lever
+    size: Startup
+    tags: [AI, Data]
+  - name: Hugging Face
+    domain: huggingface.co
+    ats_type: lever
+    size: Startup
+    tags: [AI, Open Source]
+  - name: Cohere
+    domain: cohere.ai
+    ats_type: lever
+    size: Startup
+    tags: [AI, NLP]
+  - name: Midjourney
+    domain: midjourney.com
+    ats_type: custom
+    size: Startup
+    tags: [AI, Art]
+  - name: Cursor AI
+    domain: cursor.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, DevTools]
+  - name: Lovable
+    domain: lovable.dev
+    ats_type: custom
+    size: Startup
+    tags: [AI, Low-code]
+  - name: Perplexity AI
+    domain: perplexity.ai
+    ats_type: lever
+    size: Startup
+    tags: [AI, Search]
+  - name: Mistral AI
+    domain: mistral.ai
+    ats_type: custom
+    size: Startup
+    tags: [AI, Foundation Models]
+  - name: Glean
+    domain: glean.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Enterprise Search]
+  - name: Harvey
+    domain: harvey.ai
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Legal]
+  - name: Together AI
+    domain: together.ai
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Infrastructure]
+  - name: Groq
+    domain: groq.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Hardware]
+  - name: Pinecone
+    domain: pinecone.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Vector Database]
+  - name: LangChain
+    domain: langchain.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Framework]
+  - name: Weights & Biases
+    domain: wandb.ai
+    ats_type: lever
+    size: Startup
+    tags: [AI, MLOps]
+  - name: CoreWeave
+    domain: coreweave.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Cloud]
+  - name: AssemblyAI
+    domain: assemblyai.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Audio]
+  - name: ElevenLabs
+    domain: elevenlabs.io
+    ats_type: custom
+    size: Startup
+    tags: [AI, Voice]
+  - name: Synthesia
+    domain: synthesia.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Video]
+  - name: Replicate
+    domain: replicate.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, API]
+  - name: Modal
+    domain: modal.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Infrastructure]
+  - name: DeepL
+    domain: deepl.com
+    ats_type: custom
+    size: Startup
+    tags: [AI, Translation]
+  - name: Jasper
+    domain: jasper.ai
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Content]
+  - name: Runway
+    domain: runwayml.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Video]
+  - name: Character.ai
+    domain: character.ai
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Chat]
+  - name: Inflection AI
+    domain: inflection.ai
+    ats_type: custom
+    size: Startup
+    tags: [AI, Personal]
+  - name: Adept AI
+    domain: adept.ai
+    ats_type: lever
+    size: Startup
+    tags: [AI, Automation]
+  - name: Pika
+    domain: pika.art
+    ats_type: custom
+    size: Startup
+    tags: [AI, Video]
+
+# Fintech (20)
+  - name: Plaid
+    domain: plaid.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, API]
+  - name: Brex
+    domain: brex.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Corporate Cards]
+  - name: Ramp
+    domain: ramp.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Spend Management]
+  - name: Mercury
+    domain: mercury.com
+    ats_type: custom
+    size: Startup
+    tags: [Fintech, Banking]
+  - name: Deel
+    domain: deel.com
+    ats_type: custom
+    size: Startup
+    tags: [HR Tech, Fintech, Payroll]
+  - name: Rippling
+    domain: rippling.com
+    ats_type: custom
+    size: Startup
+    tags: [HR Tech, Fintech]
+  - name: Gusto
+    domain: gusto.com
+    ats_type: custom
+    size: Startup
+    tags: [HR Tech, Payroll]
+  - name: Checkout.com
+    domain: checkout.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Payments]
+  - name: Revolut
+    domain: revolut.com
+    ats_type: custom
+    size: Startup
+    tags: [Fintech, Banking]
+  - name: Monzo
+    domain: monzo.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Banking]
+  - name: Starling Bank
+    domain: starlingbank.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Banking]
+  - name: Nubank
+    domain: nubank.com.br
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Banking]
+  - name: Chime
+    domain: chime.com
+    ats_type: lever
+    size: Startup
+    tags: [Fintech, Banking]
+  - name: Robinhood
+    domain: robinhood.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Investing]
+  - name: Coinbase
+    domain: coinbase.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Fintech]
+  - name: Kraken
+    domain: kraken.com
+    ats_type: custom
+    size: Startup
+    tags: [Crypto, Fintech]
+  - name: Ledger
+    domain: ledger.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Security]
+  - name: Fireblocks
+    domain: fireblocks.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Security]
+  - name: Chainalysis
+    domain: chainalysis.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Compliance]
+  - name: Circle
+    domain: circle.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Payments]
+
+# SaaS & Enterprise (20)
+  - name: Notion
+    domain: notion.so
+    ats_type: lever
+    size: Startup
+    tags: [SaaS, Productivity]
+  - name: Figma
+    domain: figma.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Design]
+  - name: Canva
+    domain: canva.com
+    ats_type: lever
+    size: Startup
+    tags: [SaaS, Design]
+  - name: Miro
+    domain: miro.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Collaboration]
+  - name: Loom
+    domain: loom.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Video]
+  - name: Slack
+    domain: slack.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Communication]
+  - name: ZoomInfo
+    domain: zoominfo.com
+    ats_type: workday
+    size: Startup
+    tags: [SaaS, Sales]
+  - name: Outreach
+    domain: outreach.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Sales]
+  - name: Salesloft
+    domain: salesloft.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Sales]
+  - name: Gong
+    domain: gong.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Sales]
+  - name: 6sense
+    domain: 6sense.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Marketing]
+  - name: Klaviyo
+    domain: klaviyo.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Marketing]
+  - name: Attentive
+    domain: attentive.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Marketing]
+  - name: Yotpo
+    domain: yotpo.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Marketing]
+  - name: Contentful
+    domain: contentful.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, CMS]
+  - name: Strapi
+    domain: strapi.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, CMS]
+  - name: Sanity
+    domain: sanity.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, CMS]
+  - name: Webflow
+    domain: webflow.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Web]
+  - name: Framer
+    domain: framer.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Web]
+  - name: Vercel
+    domain: vercel.com
+    ats_type: lever
+    size: Startup
+    tags: [SaaS, Web]
+
+# DevTools & Infrastructure (30)
+  - name: Databricks
+    domain: databricks.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, AI]
+  - name: Snowflake
+    domain: snowflake.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Cloud]
+  - name: Confluent
+    domain: confluent.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Streaming]
+  - name: HashiCorp
+    domain: hashicorp.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevOps, Infrastructure]
+  - name: Datadog
+    domain: datadoghq.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevOps, Observability]
+  - name: New Relic
+    domain: newrelic.com
+    ats_type: custom
+    size: Startup
+    tags: [DevOps, Observability]
+  - name: Grafana Labs
+    domain: grafana.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevOps, Observability]
+  - name: Apollo GraphQL
+    domain: apollographql.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, GraphQL]
+  - name: Hasura
+    domain: hasura.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, GraphQL]
+  - name: Supabase
+    domain: supabase.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Database]
+  - name: PlanetScale
+    domain: planetscale.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Database]
+  - name: Cockroach Labs
+    domain: cockroachlabs.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Database]
+  - name: Snyk
+    domain: snyk.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Security]
+  - name: Wiz
+    domain: wiz.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Cloud]
+  - name: Lacework
+    domain: lacework.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Cloud]
+  - name: Docker
+    domain: docker.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevOps, Containers]
+  - name: Sentry
+    domain: sentry.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Monitoring]
+  - name: Postman
+    domain: postman.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, API]
+  - name: Retool
+    domain: retool.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Low-code]
+  - name: Zapier
+    domain: zapier.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Automation]
+  - name: Airbyte
+    domain: airbyte.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, ETL]
+  - name: Fivetran
+    domain: fivetran.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, ETL]
+  - name: dbt Labs
+    domain: getdbt.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Analytics Engineering]
+  - name: Starburst
+    domain: starburst.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Query]
+  - name: ClickHouse
+    domain: clickhouse.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Database]
+  - name: temporal.io
+    domain: temporal.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Workflow]
+  - name: Fly.io
+    domain: fly.io
+    ats_type: custom
+    size: Startup
+    tags: [Infrastructure, Cloud]
+  - name: Railway
+    domain: railway.app
+    ats_type: custom
+    size: Startup
+    tags: [Infrastructure, Cloud]
+  - name: Render
+    domain: render.com
+    ats_type: custom
+    size: Startup
+    tags: [Infrastructure, Cloud]
+  - name: DigitalOcean
+    domain: digitalocean.com
+    ats_type: custom
+    size: Startup
+    tags: [Infrastructure, Cloud]

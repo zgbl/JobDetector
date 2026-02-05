@@ -167,6 +167,8 @@ class Job:
     benefits: Optional[str] = None
     posted_date: Optional[datetime] = None
     scraped_at: datetime = field(default_factory=datetime.utcnow)
+    last_seen_at: datetime = field(default_factory=datetime.utcnow)
+    content_hash: Optional[str] = None
     is_active: bool = True
     raw_data: Dict = field(default_factory=dict)
     

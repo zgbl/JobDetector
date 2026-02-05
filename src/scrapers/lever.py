@@ -139,9 +139,10 @@ class LeverScraper(BaseScraper):
                 except:
                     posted_date = None
 
-            # 提取技能和薪资 (使用基类方法)
+            # 提取技能和哈希
             skills = self.extract_skills(description)
             salary = self.extract_salary(description)
+            content_hash = self.generate_content_hash(title, description, location)
             
             # 职位类型判断
             job_type = self._determine_job_type(title, commitment, description)
@@ -162,6 +163,8 @@ class LeverScraper(BaseScraper):
                 'source_url': source_url,
                 'posted_date': posted_date,
                 'scraped_at': datetime.utcnow(),
+                'last_seen_at': datetime.utcnow(),
+                'content_hash': content_hash,
                 'is_active': True,
                 'raw_data': {
                     'categories': categories,

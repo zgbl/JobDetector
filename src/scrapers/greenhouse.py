@@ -253,8 +253,9 @@ class GreenhouseScraper(BaseScraper):
                 except:
                     posted_date = None
             
-            # 提取技能
+            # 提取技能和哈希
             skills = self.extract_skills(description)
+            content_hash = self.generate_content_hash(title, description, location)
             
             # 提取薪资（如果描述中有）
             salary = self.extract_salary(description)
@@ -271,13 +272,15 @@ class GreenhouseScraper(BaseScraper):
                 'salary': salary,
                 'job_type': job_type,
                 'remote_type': remote_type,
-                'description': description,  # Remove short character limit
-                'requirements': [],  # Can be extracted from description
+                'description': description,
+                'requirements': [],
                 'skills': skills,
                 'source': 'greenhouse',
                 'source_url': source_url,
                 'posted_date': posted_date,
                 'scraped_at': datetime.utcnow(),
+                'last_seen_at': datetime.utcnow(),
+                'content_hash': content_hash,
                 'is_active': True,
                 'raw_data': {
                     'id': job_data.get('id'),

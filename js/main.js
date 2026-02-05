@@ -114,6 +114,7 @@ function showJobDetails(jobId) {
                 <span class="tag blue"><i class="fas fa-briefcase"></i> ${job.job_type}</span>
                 <span class="tag purple"><i class="fas fa-globe"></i> ${job.remote_type}</span>
                 <span class="tag"><i class="fas fa-map-marker-alt"></i> ${job.location}</span>
+                <span class="tag gray"><i class="fas fa-calendar-alt"></i> ${formatDate(job.posted_date)}</span>
                 <a href="${job.source_url}" target="_blank" class="tag blue">Apply Directly <i class="fas fa-external-link-alt"></i></a>
             </div>
         </div>

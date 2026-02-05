@@ -1,0 +1,175 @@
+companies:
+  - name: SailPoint
+    domain: sailpoint.com
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Cybersecurity
+    tags: [AI, Identity Security]
+    
+  - name: MathWorks
+    domain: mathworks.com
+    ats_type: custom
+    size: Large Enterprise
+    industry: Software
+    tags: [MATLAB, Simulink, Engineering]
+    
+  - name: Autodesk
+    domain: autodesk.com
+    ats_type: workday
+    size: Large Enterprise
+    industry: Software
+    tags: [Design, Architecture, Manufacturing]
+    
+  - name: Box
+    domain: box.com
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Cloud Content Management
+    tags: [SaaS, Collaboration]
+    
+  - name: Greenhouse Software
+    domain: greenhouse.io
+    ats_type: greenhouse
+    size: Mid-size
+    industry: HR Tech
+    tags: [ATS, SaaS]
+    
+  - name: Jellyfish
+    domain: jellyfish.co
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Engineering Intelligence
+    tags: [Data, Analytics]
+    
+  - name: Addyen
+    domain: adyen.com
+    ats_type: greenhouse
+    size: Large Enterprise
+    industry: Fintech
+    tags: [Payments, API]
+    
+  - name: Check Point
+    domain: checkpoint.com
+    ats_type: custom
+    size: Large Enterprise
+    industry: Cybersecurity
+    tags: [Network Security]
+    
+  - name: Credit Karma
+    domain: creditkarma.com
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Fintech
+    tags: [Finance, Credit]
+    
+  - name: Atlassian
+    domain: atlassian.com
+    ats_type: custom
+    size: Large Enterprise
+    industry: Software
+    tags: [Collaboration, Jira, Confluence]
+    
+  - name: Okta
+    domain: okta.com
+    ats_type: greenhouse
+    size: Large Enterprise
+    industry: Identity Management
+    tags: [Security, SaaS]
+    
+  - name: Splunk
+    domain: splunk.com
+    ats_type: custom
+    size: Large Enterprise
+    industry: Data Analytics
+    tags: [Security, Observability]
+    
+  - name: Elastic
+    domain: elastic.co
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Search & Analytics
+    tags: [Open Source, ELK Stack]
+    
+  - name: MongoDB
+    domain: mongodb.com
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Database
+    tags: [NoSQL, Cloud]
+    
+  - name: PagerDuty
+    domain: pagerduty.com
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Incident Response
+    tags: [DevOps, SaaS]
+    
+  - name: Fastly
+    domain: fastly.com
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Edge Computing
+    tags: [CDN, Infrastructure]
+    
+  - name: Cloudflare
+    domain: cloudflare.com
+    ats_type: greenhouse
+    size: Large Enterprise
+    industry: Infrastructure
+    tags: [Security, Web Performance]
+    
+  - name: Twilio
+    domain: twilio.com
+    ats_type: greenhouse
+    size: Large Enterprise
+    industry: Communications API
+    tags: [SaaS, API]
+    
+  - name: Hubspot
+    domain: hubspot.com
+    ats_type: custom
+    size: Large Enterprise
+    industry: CRM
+    tags: [Marketing, Sales, SaaS]
+    
+  - name: Zendesk
+    domain: zendesk.com
+    ats_type: greenhouse
+    size: Large Enterprise
+    industry: Customer Service
+    tags: [SaaS, Support]
+    
+  - name: Asana
+    domain: asana.com
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Project Management
+    tags: [SaaS, Collaboration]
+    
+  - name: Monday.com
+    domain: monday.com
+    ats_type: greenhouse
+    size: Mid-size
+    industry: Work OS
+    tags: [SaaS, Project Management]
+    
+  - name: Unity Technologies
+    domain: unity.com
+    ats_type: greenhouse
+    size: Large Enterprise
+    industry: Game Development
+    tags: [3D, Real-time]
+    
+  - name: Roblox
+    domain: roblox.com
+    ats_type: greenhouse
+    size: Large Enterprise
+    industry: Gaming
+    tags: [Platform, Metaverse]
+    
+  - name: Snap Inc.
+    domain: snap.com
+    ats_type: custom
+    size: Large Enterprise
+    industry: Social Media
+    tags: [AR, Messaging]

@@ -114,6 +114,39 @@ async def get_jobs(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/companies")
+async def get_companies(q: Optional[str] = None):
+    """Fetch all companies with search"""
+    db = get_db()
+    query = {}
+    if q:
+        query["name"] = {"$regex": q, "$options": "i"}
+    
+    try:
+        companies = list(db.companies.find(query).sort("name", 1))
+        for comp in companies:
+            comp["_id"] = str(comp["_id"])
+            # Ensure metadata exists
+            if not comp.get("metadata"):
+                comp["metadata"] = {}
+        return companies
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/companies/{company_name}/jobs")
+async def get_company_jobs(company_name: str):
+    """Fetch jobs for a specific company"""
+    db = get_db()
+    try:
+        jobs = list(db.jobs.find({"company": company_name, "is_active": True}).sort("posted_date", -1))
+        for job in jobs:
+            job["_id"] = str(job["_id"])
+            if job.get("posted_date"):
+                job["posted_date"] = job["posted_date"].isoformat()
+        return jobs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- Authentication Endpoints ---
 
 @app.post("/api/auth/register")

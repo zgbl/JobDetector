@@ -41,6 +41,13 @@ class BaseScraper(ABC):
         Returns:
             标准化的职位数据
         """
+        # Generate content hash
+        content_hash = self.generate_content_hash(
+            raw_data.get('title', ''),
+            raw_data.get('description', ''),
+            raw_data.get('location', '')
+        )
+        
         return {
             'job_id': raw_data.get('id', ''),
             'title': raw_data.get('title', '').strip(),
@@ -51,9 +58,19 @@ class BaseScraper(ABC):
             'source_url': raw_data.get('url', ''),
             'posted_date': raw_data.get('posted_date'),
             'scraped_at': datetime.utcnow(),
+            'last_seen_at': datetime.utcnow(),
+            'content_hash': content_hash,
             'is_active': True,
             'raw_data': raw_data
         }
+    
+    def generate_content_hash(self, title: str, description: str, location: str) -> str:
+        """
+        生成职位内容的唯一哈希值
+        """
+        import hashlib
+        content = f"{title}|{description}|{location}".encode('utf-8')
+        return hashlib.md5(content).hexdigest()
     
     def extract_salary(self, text: str) -> Optional[Dict]:
         """

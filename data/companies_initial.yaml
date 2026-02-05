@@ -6,67 +6,80 @@ companies:
   - name: Google
     domain: google.com
     ats_type: custom
+    size: Large Enterprise
     tags: [FAANG, AI, Cloud]
     
   - name: Meta
     domain: meta.com
     ats_type: greenhouse
+    size: Large Enterprise
     tags: [FAANG, Social Media, AI]
     
   - name: Amazon
     domain: amazon.com
     ats_type: custom
+    size: Large Enterprise
     tags: [FAANG, E-commerce, Cloud]
     
   - name: Netflix
     domain: netflix.com
     ats_type: greenhouse
+    size: Large Enterprise
     tags: [FAANG, Streaming, Entertainment]
     
   - name: Apple
     domain: apple.com
     ats_type: custom
+    size: Large Enterprise
     tags: [FAANG, Hardware, Software]
     
   - name: Microsoft
     domain: microsoft.com
     ats_type: custom
+    size: Large Enterprise
     tags: [Big Tech, Cloud, Enterprise]
     
   - name: Tesla
     domain: tesla.com
     ats_type: greenhouse
+    size: Large Enterprise
     tags: [Automotive, Clean Energy, AI]
     
   - name: NVIDIA
     domain: nvidia.com
     ats_type: workday
+    size: Large Enterprise
     tags: [Hardware, AI, Gaming]
     
   - name: Intel
     domain: intel.com
     ats_type: workday
+    size: Large Enterprise
     tags: [Hardware, Semiconductors]
     
   - name: Salesforce
     domain: salesforce.com
     ats_type: workday
+    size: Large Enterprise
     tags: [SaaS, CRM, Enterprise]
   
   # Unicorns & High Growth (20)
   - name: Stripe
     domain: stripe.com
     ats_type: greenhouse
+    size: Large Enterprise
     tags: [Fintech, Payments, API]
     
   - name: Airbnb
     domain: airbnb.com
     ats_type: greenhouse
+    size: Large Enterprise
     tags: [Travel, Sharing Economy]
     
   - name: Uber
     domain: uber.com
     ats_type: greenhouse
+    size: Large Enterprise
     tags: [Transportation, Gig Economy]
     
   - name: Lyft
@@ -87,11 +100,13 @@ companies:
   - name: Snowflake
     domain: snowflake.com
     ats_type: greenhouse
+    size: Large Enterprise
     tags: [Data, Cloud, Analytics]
     
   - name: Databricks
     domain: databricks.com
     ats_type: greenhouse
+    size: Large Enterprise
     tags: [Data, AI, Analytics]
     
   - name: Coinbase
@@ -158,11 +173,13 @@ companies:
   - name: OpenAI
     domain: openai.com
     ats_type: greenhouse
+    size: Mid-size
     tags: [AI, Research, Foundation Models]
     
   - name: Anthropic
     domain: anthropic.com
     ats_type: lever
+    size: Mid-size
     tags: [AI, Research, Safety]
     
   - name: Scale AI

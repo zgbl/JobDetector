@@ -34,6 +34,10 @@
                     <button class="tag-btn" data-tag="Frontend">Frontend</button>
                 </div>
             </div>
+            <div class="nav-links">
+                <a href="#" class="nav-item active" id="navJobs">Jobs</a>
+                <a href="#" class="nav-item" id="navCompanies">Companies</a>
+            </div>
             <div class="user-profile" id="userProfile">
                 <button class="btn-signin" id="showLogin">Sign In</button>
             </div>
@@ -90,13 +94,37 @@
                 <span>Scanning opportunities...</span>
             </div>
         </section>
+
+        <!-- Company Explorer Section [NEW] -->
+        <section id="companySection" style="display: none;">
+            <div class="section-header">
+                <h2>Explore <span class="gradient-text">Companies</span></h2>
+                <div class="search-wrapper company-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="companySearch" placeholder="Search 150+ companies...">
+                </div>
+            </div>
+            <div class="companies-grid" id="companiesGrid">
+                <!-- Data injected via JS -->
+            </div>
+        </section>
     </main>
 
-    <!-- Job Details Modal -->
+    <!-- Dynamic Modals -->
     <div id="jobModal" class="modal">
-        <div class="modal-content glass-card">
+        <div class="modal-content glass-card job-modal-content">
             <span class="close-modal">&times;</span>
             <div id="modalBody">
+                <!-- Content injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Details Modal [NEW] -->
+    <div id="companyModal" class="modal">
+        <div class="modal-content glass-card company-modal-content">
+            <span class="close-modal company-close">&times;</span>
+            <div id="companyModalBody">
                 <!-- Content injected via JS -->
             </div>
         </div>

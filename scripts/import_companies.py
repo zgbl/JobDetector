@@ -63,6 +63,9 @@ def create_company_object(company_data: dict) -> Company:
     
     # Create metadata
     metadata = CompanyMetadata(
+        industry=company_data.get('industry'),
+        size=company_data.get('size'),
+        headquarters=company_data.get('headquarters'),
         tags=company_data.get('tags', []),
         added_by='import_script',
         added_at=datetime.utcnow()
