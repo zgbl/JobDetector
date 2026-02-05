@@ -179,11 +179,14 @@ function setupEventListeners() {
     };
 
     // Auth Listeners
-    document.getElementById('showLogin').onclick = () => {
-        authModal.style.display = "block";
-        loginForm.style.display = "block";
-        registerForm.style.display = "none";
-    };
+    const showLoginBtn = document.getElementById('showLogin');
+    if (showLoginBtn) {
+        showLoginBtn.onclick = () => {
+            authModal.style.display = "block";
+            loginForm.style.display = "block";
+            registerForm.style.display = "none";
+        };
+    }
 
     authClose.onclick = () => {
         authModal.style.display = "none";
