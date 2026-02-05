@@ -3,6 +3,7 @@ let jobs = [];
 let filteredJobs = [];
 let currentFilter = 'all';
 let currentSearchQuery = '';
+let currentUser = null;
 
 // DOM Elements
 const jobsGrid = document.getElementById('jobsGrid');
@@ -10,15 +11,20 @@ const jobSearch = document.getElementById('jobSearch');
 const totalJobsCount = document.getElementById('totalJobsCount');
 const companyCount = document.getElementById('companyCount');
 const remoteCount = document.getElementById('remoteCount');
-const resultsCount = document.getElementById('resultsCount');
 const filterBtns = document.querySelectorAll('.filter-btn');
 const quickTags = document.querySelectorAll('.tag-btn');
 const jobModal = document.getElementById('jobModal');
+const authModal = document.getElementById('authModal');
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const userProfile = document.getElementById('userProfile');
 const modalBody = document.getElementById('modalBody');
 const closeModal = document.querySelector('.close-modal');
+const authClose = document.querySelector('.auth-close');
 
 // Init
 async function init() {
+    await checkAuth();
     await fetchStats();
     await fetchJobs();
     setupEventListeners();
@@ -166,7 +172,137 @@ function setupEventListeners() {
             jobModal.style.display = "none";
             document.body.style.overflow = "auto";
         }
+        if (event.target == authModal) {
+            authModal.style.display = "none";
+            document.body.style.overflow = "auto";
+        }
     };
+
+    // Auth Listeners
+    document.getElementById('showLogin').onclick = () => {
+        authModal.style.display = "block";
+        loginForm.style.display = "block";
+        registerForm.style.display = "none";
+    };
+
+    authClose.onclick = () => {
+        authModal.style.display = "none";
+        document.body.style.overflow = "auto";
+    };
+
+    document.getElementById('showRegister').onclick = (e) => {
+        e.preventDefault();
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+    };
+
+    document.getElementById('showLoginLink').onclick = (e) => {
+        e.preventDefault();
+        registerForm.style.display = "none";
+        loginForm.style.display = "block";
+    };
+
+    document.getElementById('loginBtn').onclick = handleLogin;
+    document.getElementById('registerBtn').onclick = handleRegister;
+}
+
+// Auth Functions
+async function checkAuth() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            currentUser = await response.json();
+            updateAuthUI();
+        } else {
+            localStorage.removeItem('token');
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+    }
+}
+
+async function handleLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('token', data.access_token);
+            currentUser = data.user;
+            authModal.style.display = "none";
+            updateAuthUI();
+            alert(`Welcome back, ${currentUser.full_name || currentUser.email}!`);
+        } else {
+            const err = await response.json();
+            alert(err.detail || 'Login failed');
+        }
+    } catch (error) {
+        alert('Internal error during login');
+    }
+}
+
+async function handleRegister() {
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const full_name = document.getElementById('regName').value;
+
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, full_name })
+        });
+
+        if (response.ok) {
+            alert('Registration successful! Please login.');
+            registerForm.style.display = "none";
+            loginForm.style.display = "block";
+        } else {
+            const err = await response.json();
+            alert(err.detail || 'Registration failed');
+        }
+    } catch (error) {
+        alert('Internal error during registration');
+    }
+}
+
+function updateAuthUI() {
+    if (currentUser) {
+        userProfile.innerHTML = `
+            <div class="user-display">
+                <div class="avatar">${(currentUser.full_name || currentUser.email)[0].toUpperCase()}</div>
+                <div class="user-info">
+                    <div class="user-name">${currentUser.full_name || currentUser.email}</div>
+                    <div class="logout-link" onclick="logout()">Logout</div>
+                </div>
+            </div>
+        `;
+    } else {
+        userProfile.innerHTML = `<button class="btn-signin" id="showLogin">Sign In</button>`;
+        // Re-attach listener if switched back
+        document.getElementById('showLogin').onclick = () => {
+            authModal.style.display = "block";
+        };
+    }
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    currentUser = null;
+    updateAuthUI();
+    location.reload(); // Refresh to clear any auth state in memory
 }
 
 function formatDate(dateStr) {

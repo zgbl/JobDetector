@@ -16,6 +16,13 @@ project_root = str(project_root_path)
 sys.path.insert(0, project_root)
 
 from src.database.connection import get_db
+from api.auth_utils import (
+    get_password_hash, 
+    verify_password, 
+    create_access_token, 
+    decode_access_token
+)
+from datetime import datetime
 
 load_dotenv()
 
@@ -88,6 +95,79 @@ async def get_jobs(
         return jobs
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- Authentication Endpoints ---
+
+@app.post("/api/auth/register")
+async def register(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    password = data.get("password")
+    full_name = data.get("full_name")
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password required")
+
+    db = get_db()
+    # Check if user exists
+    if db.users.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    user_doc = {
+        "email": email,
+        "hashed_password": get_password_hash(password),
+        "full_name": full_name or email.split("@")[0],
+        "created_at": datetime.utcnow(),
+        "is_active": True
+    }
+    
+    db.users.insert_one(user_doc)
+    return {"message": "User registered successfully"}
+
+@app.post("/api/auth/login")
+async def login(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    password = data.get("password")
+
+    db = get_db()
+    user = db.users.find_one({"email": email})
+    
+    if not user or not verify_password(password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    access_token = create_access_token(data={"sub": user["email"]})
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user": {
+            "email": user["email"],
+            "full_name": user.get("full_name")
+        }
+    }
+
+@app.get("/api/auth/me")
+async def get_me(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    db = get_db()
+    user = db.users.find_one({"email": payload["sub"]})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    return {
+        "email": user["email"],
+        "full_name": user.get("full_name"),
+        "created_at": user["created_at"].isoformat() if "created_at" in user else None
+    }
 
 @app.get("/api/stats")
 async def get_stats():
