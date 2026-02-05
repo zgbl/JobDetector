@@ -110,34 +110,39 @@
             <div id="loginForm">
                 <h2 class="auth-title">Welcome Back</h2>
                 <p class="auth-subtitle">Login to track your applications</p>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="loginEmail" placeholder="name@company.com">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••">
-                </div>
-                <button class="btn-primary full-width" id="loginBtn">Login</button>
+                <form id="loginFormElement" onsubmit="return false;">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="loginEmail" placeholder="name@company.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••"
+                            autocomplete="current-password">
+                    </div>
+                    <button type="button" class="btn-primary full-width" id="loginBtn">Login</button>
+                </form>
                 <p class="auth-footer">Don't have an account? <a href="#" id="showRegister">Register</a></p>
             </div>
 
             <div id="registerForm" style="display: none;">
                 <h2 class="auth-title">Create Account</h2>
                 <p class="auth-subtitle">Join the elite job detection network</p>
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="regName" placeholder="Your Name">
-                </div>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="regEmail" placeholder="name@company.com">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="regPassword" placeholder="••••••••">
-                </div>
-                <button class="btn-primary full-width" id="registerBtn">Create Account</button>
+                <form id="registerFormElement" onsubmit="return false;">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="regName" placeholder="Your Name" autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="regEmail" placeholder="name@company.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="regPassword" placeholder="••••••••" autocomplete="new-password">
+                    </div>
+                    <button type="button" class="btn-primary full-width" id="registerBtn">Create Account</button>
+                </form>
                 <p class="auth-footer">Already have an account? <a href="#" id="showLoginLink">Login</a></p>
             </div>
         </div>
