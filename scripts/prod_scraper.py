@@ -18,6 +18,9 @@ from src.database.connection import get_db, close_db
 from src.scrapers.greenhouse import GreenhouseScraper
 from src.scrapers.lever import LeverScraper
 
+# Ensure logs directory exists BEFORE logging configuration
+Path("logs").mkdir(exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -28,9 +31,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("ProdScraper")
-
-# Ensure logs directory exists
-Path("logs").mkdir(exist_ok=True)
 
 async def run_production_scrape():
     db = get_db()
