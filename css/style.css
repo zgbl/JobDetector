@@ -299,6 +299,16 @@ mark {
     color: white;
 }
 
+.job-posted {
+    font-size: 0.75rem;
+    color: var(--accent-green);
+    background: rgba(52, 211, 153, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    font-weight: 600;
+}
+
 .job-title {
     font-size: 1.2rem;
     font-weight: 600;
