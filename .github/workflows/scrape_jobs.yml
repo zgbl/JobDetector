@@ -29,6 +29,7 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
         run: |
-          # Use the limited test script for now to avoid long runs, 
-          # or a specialized production scraper script.
-          python scripts/test_limited.py
+          # 1. Ensure companies are in DB (handles new DB setup)
+          python scripts/import_companies.py
+          # 2. Run the production master scraper
+          python scripts/prod_scraper.py
