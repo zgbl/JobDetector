@@ -73,7 +73,10 @@ async def get_jobs(
     q: Optional[str] = None,
     company: Optional[str] = None,
     job_type: Optional[str] = None,
-    remote_type: Optional[str] = None
+    remote_type: Optional[str] = None,
+    location: Optional[str] = None,
+    category: Optional[str] = None,
+    days: Optional[int] = None
 ):
     """Fetch jobs with search and filtering"""
     db = get_db()
@@ -97,6 +100,39 @@ async def get_jobs(
         
     if remote_type:
         query["remote_type"] = remote_type
+
+    if location:
+        if location.lower() == "remote":
+            query["$or"] = query.get("$or", []) + [{"location": {"$regex": "remote", "$options": "i"}}, {"remote_type": "Remote"}]
+        else:
+            query["location"] = {"$regex": location, "$options": "i"}
+
+    if category:
+        # Map common categories to keywords
+        category_map = {
+            "Engineering": ["engineer", "developer", "software", "tech", "backend", "frontend", "fullstack", "infrastructure"],
+            "Product": ["product manager", "pm", "product owner"],
+            "Design": ["design", "ux", "ui", "product designer"],
+            "Marketing": ["marketing", "growth", "seo", "brand"],
+            "Sales": ["sales", "account executive", "ae", "business development"],
+            "Finance": ["finance", "accounting", "tax", "treasury"],
+            "Legal": ["legal", "law", "counsel", "compliance"],
+            "People": ["people", "hr", "recruiting", "talent"]
+        }
+        
+        keywords = category_map.get(category)
+        if keywords:
+            category_regex = "|".join(keywords)
+            query["$or"] = query.get("$or", []) + [
+                {"title": {"$regex": category_regex, "$options": "i"}},
+                {"skills": {"$in": [re.compile(category_regex, re.I)]}}
+            ]
+
+    if days:
+        cutoff = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        from datetime import timedelta
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        query["posted_date"] = {"$gte": cutoff}
 
     try:
         # Get jobs sorted by date (newest first)

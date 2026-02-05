@@ -76,11 +76,56 @@
         </header>
 
         <section class="filters-section">
-            <div class="filter-group">
-                <button class="filter-btn active" data-filter="all">All Jobs</button>
-                <button class="filter-btn" data-filter="Full-time">Full-time</button>
-                <button class="filter-btn" data-filter="Internship">Internship</button>
-                <button class="filter-btn" data-filter="Remote">Remote Only</button>
+            <div class="filters-bar">
+                <div class="filter-pill-group">
+                    <button class="filter-pill active" data-filter="all">All Jobs</button>
+                    <button class="filter-pill" data-toggle="job_type" data-value="Full-time">Full-time</button>
+                    <button class="filter-pill" data-toggle="job_type" data-value="Internship">Internship</button>
+                    <button class="filter-pill" data-toggle="remote_only">Remote Only</button>
+                </div>
+
+                <div class="filter-dropdowns">
+                    <div class="dropdown-wrapper">
+                        <i class="fas fa-layer-group"></i>
+                        <select id="categoryFilter">
+                            <option value="">Category</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Product">Product</option>
+                            <option value="Design">Design</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Legal">Legal</option>
+                            <option value="People">People</option>
+                        </select>
+                    </div>
+
+                    <div class="dropdown-wrapper">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <select id="locationFilter">
+                            <option value="">Location</option>
+                            <option value="San Francisco">San Francisco</option>
+                            <option value="New York">New York</option>
+                            <option value="London">London</option>
+                            <option value="Remote">Remote</option>
+                        </select>
+                    </div>
+
+                    <div class="dropdown-wrapper">
+                        <i class="fas fa-calendar-alt"></i>
+                        <select id="dateFilter">
+                            <option value="">Any Time</option>
+                            <option value="1">Last 24 Hours</option>
+                            <option value="3">Last 3 Days</option>
+                            <option value="7">Last 7 Days</option>
+                            <option value="30">Last 30 Days</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-clear" id="clearFilters">
+                        <i class="fas fa-redo-alt"></i> Reset
+                    </button>
+                </div>
             </div>
             <div class="results-info">
                 Found <span id="resultsCount">0</span> opportunities

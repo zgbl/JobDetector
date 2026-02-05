@@ -1,8 +1,17 @@
 // App State
 let jobs = [];
 let companies = [];
+let currentCompanyJobs = [];
 let filteredJobs = [];
 let filteredCompanies = [];
+let currentFilters = {
+    q: '',
+    job_type: '',
+    remote_only: false,
+    category: '',
+    location: '',
+    days: ''
+};
 let currentFilter = 'all';
 let currentSearchQuery = '';
 let currentCompanySearch = '';
@@ -66,17 +75,23 @@ async function fetchStats() {
     }
 }
 
-async function fetchJobs(query = '') {
+async function fetchJobs() {
     showLoading();
-    currentSearchQuery = query;
     try {
-        const url = query ? `/api/jobs?q=${encodeURIComponent(query)}` : '/api/jobs';
-        const response = await fetch(url);
+        const params = new URLSearchParams();
+        if (currentFilters.q) params.append('q', currentFilters.q);
+        if (currentFilters.job_type) params.append('job_type', currentFilters.job_type);
+        if (currentFilters.remote_only) params.append('remote_type', 'Remote');
+        if (currentFilters.category) params.append('category', currentFilters.category);
+        if (currentFilters.location) params.append('location', currentFilters.location);
+        if (currentFilters.days) params.append('days', currentFilters.days);
+
+        const response = await fetch(`/api/jobs?${params.toString()}`);
         jobs = await response.json();
         applyFilterAndRender();
     } catch (error) {
         console.error('Error fetching jobs:', error);
-        jobsGrid.innerHTML = '<div class="error-msg">Failed to load jobs. Is the server running?</div>';
+        jobsGrid.innerHTML = '<div class="error">Failed to load opportunities. Please try again later.</div>';
     }
 }
 
@@ -95,16 +110,8 @@ async function fetchCompanies(query = '') {
 
 // Render Functions
 function applyFilterAndRender() {
-    filteredJobs = jobs;
-
-    if (currentFilter !== 'all') {
-        if (currentFilter === 'Remote') {
-            filteredJobs = jobs.filter(j => j.remote_type === 'Remote');
-        } else {
-            filteredJobs = jobs.filter(j => j.job_type === currentFilter);
-        }
-    }
-
+    filteredJobs = [...jobs];
+    // Backend already does most filtering, but we keep this for local refinements if needed
     resultsCount.textContent = filteredJobs.length;
     renderJobs();
 }
@@ -159,12 +166,12 @@ function renderCompanies() {
                     </div>
                 </div>
             </div>
-        `;
+    `;
     }).join('');
 }
 
-function showJobDetails(jobId) {
-    const job = jobs.find(j => j._id === jobId);
+function showJobDetails(jobId, jobData = null) {
+    const job = jobData || jobs.find(j => j._id === jobId);
     if (!job) return;
 
     modalBody.innerHTML = `
@@ -188,7 +195,7 @@ function showJobDetails(jobId) {
                 ${job.skills.map(skill => `<span class="tag">${skill}</span>`).join('')}
             </div>
         </div>
-    `;
+`;
     jobModal.style.display = "block";
     document.body.style.overflow = "hidden"; // Prevent scroll
 }
@@ -213,7 +220,8 @@ async function showCompanyDetailsByName(companyName) {
         }
 
         const jobsResp = await fetch(`/api/companies/${encodeURIComponent(companyName)}/jobs`);
-        const companyJobs = await jobsResp.json();
+        currentCompanyJobs = await jobsResp.json();
+        const companyJobs = currentCompanyJobs;
 
         const sizeClass = (company.metadata?.size || '').toLowerCase().replace(' ', '-');
 
@@ -272,20 +280,17 @@ async function showCompanyDetailsByName(companyName) {
 async function showJobDetailsFromExternal(jobId, companyName) {
     companyModal.style.display = "none";
 
-    // Check if we already have this job in our global 'jobs' array
-    let job = jobs.find(j => j._id === jobId);
+    // Check local states
+    let job = jobs.find(j => j._id === jobId) || currentCompanyJobs.find(j => j._id === jobId);
 
     if (!job) {
-        // We need to fetch it or we can pass it, but let's fetch to be safe
-        const response = await fetch(`/api/jobs?q=${encodeURIComponent(jobId)}`); // This search might be too broad
-        // Better: we know it's in the company jobs we just fetched, but let's just use a simple fetch
-        // Or simpler: the 'showCompanyDetailsByName' could store the 'companyJobs' somewhere
-        const jobResults = await response.json();
-        job = jobResults.find(j => j._id === jobId);
+        console.error("Job not found in local state:", jobId);
+        // Fallback: try to fetch by ID specifically if we had an endpoint, 
+        // but for now we rely on the cached currentCompanyJobs.
     }
 
     if (job) {
-        showJobDetails(job._id);
+        showJobDetails(job._id, job);
     }
 }
 
@@ -399,6 +404,67 @@ function setupEventListeners() {
 
     document.getElementById('loginBtn').onclick = handleLogin;
     document.getElementById('registerBtn').onclick = handleRegister;
+
+    // Advanced Filters
+    const categoryFilter = document.getElementById('categoryFilter');
+    const locationFilter = document.getElementById('locationFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const filterPills = document.querySelectorAll('.filter-pill');
+
+    categoryFilter.onchange = (e) => {
+        currentFilters.category = e.target.value;
+        fetchJobs();
+    };
+
+    locationFilter.onchange = (e) => {
+        currentFilters.location = e.target.value;
+        fetchJobs();
+    };
+
+    dateFilter.onchange = (e) => {
+        currentFilters.days = e.target.value;
+        fetchJobs();
+    };
+
+    clearFiltersBtn.onclick = () => {
+        currentFilters = {
+            q: '', job_type: '', remote_only: false, category: '', location: '', days: ''
+        };
+        categoryFilter.value = '';
+        locationFilter.value = '';
+        dateFilter.value = '';
+        jobSearch.value = '';
+        filterPills.forEach(p => p.classList.remove('active'));
+        document.querySelector('.filter-pill[data-filter="all"]').classList.add('active');
+        fetchJobs();
+    };
+
+    filterPills.forEach(pill => {
+        pill.onclick = () => {
+            filterPills.forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+
+            if (pill.dataset.filter === 'all') {
+                currentFilters.job_type = '';
+                currentFilters.remote_only = false;
+            } else if (pill.dataset.toggle === 'job_type') {
+                currentFilters.job_type = pill.dataset.value;
+            } else if (pill.dataset.toggle === 'remote_only') {
+                currentFilters.remote_only = true;
+            }
+            fetchJobs();
+        };
+    });
+
+    // Update main search to use global filters
+    jobSearch.oninput = (e) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            currentFilters.q = e.target.value;
+            fetchJobs();
+        }, 500);
+    };
 }
 
 // Auth Functions
