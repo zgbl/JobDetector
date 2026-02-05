@@ -235,6 +235,8 @@ mark {
     gap: 20px;
     margin-bottom: 20px;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 10;
 }
 
 .filter-pill-group {
@@ -281,11 +283,10 @@ mark {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 0 12px;
     display: flex;
     align-items: center;
-    gap: 8px;
     transition: all 0.3s ease;
+    min-width: 160px;
 }
 
 .dropdown-wrapper:hover,
@@ -297,19 +298,27 @@ mark {
 .dropdown-wrapper i {
     color: var(--text-dim);
     font-size: 0.85rem;
+    position: absolute;
+    left: 12px;
+    pointer-events: none;
+    z-index: 5;
 }
 
 .dropdown-wrapper select {
     background: transparent;
     border: none;
     color: var(--text-main);
-    padding: 10px 4px;
+    padding: 10px 30px 10px 36px;
+    /* Left for icon, Right for arrow */
     font-family: inherit;
     font-size: 0.85rem;
     cursor: pointer;
     outline: none;
-    min-width: 100px;
+    width: 100%;
+    height: 100%;
     appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
 }
 
 /* Custom Arrow for Select */
@@ -320,6 +329,8 @@ mark {
     font-size: 0.7rem;
     color: var(--text-dim);
     pointer-events: none;
+    position: absolute;
+    right: 12px;
 }
 
 .btn-clear {

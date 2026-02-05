@@ -1,14 +1,11 @@
 import os
 from datetime import datetime, timedelta
 from typing import Optional
-from passlib.context import CryptContext
+import bcrypt
 import jwt
 from dotenv import load_dotenv
 
 load_dotenv()
-
-# Password hashing configuration
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT configuration
 SECRET_KEY = os.getenv("JWT_SECRET", "super-secret-dev-key-change-in-prod")
@@ -16,12 +13,21 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 
 def get_password_hash(password: str) -> str:
-    """Hash a plain text password."""
-    return pwd_context.hash(password)
+    """Hash a plain text password using bcrypt."""
+    # bcrypt requires bytes, so encode password
+    pwd_bytes = password.encode('utf-8')
+    # gensalt() generates a salt and hashpw returns the hashed bytes
+    return bcrypt.hashpw(pwd_bytes, bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain text password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        pwd_bytes = plain_password.encode('utf-8')
+        # hashed_password might be string from DB, encode back to bytes
+        hash_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(pwd_bytes, hash_bytes)
+    except Exception:
+        return False
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a new JWT access token."""

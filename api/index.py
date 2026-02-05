@@ -18,15 +18,13 @@ sys.path.insert(0, project_root)
 from src.database.connection import get_db
 try:
     from api.auth_utils import (
-        get_password_hash, 
-        verify_password, 
-        create_access_token, 
+        get_password_hash,
+        verify_password,
+        create_access_token,
         decode_access_token
     )
 except ImportError:
     from auth_utils import (
-        get_password_hash, 
-        verify_password, 
         create_access_token, 
         decode_access_token
     )
@@ -82,15 +80,18 @@ async def get_jobs(
     db = get_db()
     
     query = {"is_active": True}
+    and_conditions = []
     
     if q:
         # Search in title, company, and description
-        query["$or"] = [
-            {"title": {"$regex": q, "$options": "i"}},
-            {"company": {"$regex": q, "$options": "i"}},
-            {"description": {"$regex": q, "$options": "i"}},
-            {"skills": {"$in": [re.compile(q, re.I)]}}
-        ]
+        and_conditions.append({
+            "$or": [
+                {"title": {"$regex": q, "$options": "i"}},
+                {"company": {"$regex": q, "$options": "i"}},
+                {"description": {"$regex": q, "$options": "i"}},
+                {"skills": {"$in": [re.compile(q, re.I)]}}
+            ]
+        })
     
     if company:
         query["company"] = company
@@ -103,7 +104,12 @@ async def get_jobs(
 
     if location:
         if location.lower() == "remote":
-            query["$or"] = query.get("$or", []) + [{"location": {"$regex": "remote", "$options": "i"}}, {"remote_type": "Remote"}]
+            and_conditions.append({
+                "$or": [
+                    {"location": {"$regex": "remote", "$options": "i"}},
+                    {"remote_type": "Remote"}
+                ]
+            })
         else:
             query["location"] = {"$regex": location, "$options": "i"}
 
@@ -123,28 +129,34 @@ async def get_jobs(
         keywords = category_map.get(category)
         if keywords:
             category_regex = "|".join(keywords)
-            query["$or"] = query.get("$or", []) + [
-                {"title": {"$regex": category_regex, "$options": "i"}},
-                {"skills": {"$in": [re.compile(category_regex, re.I)]}}
-            ]
+            and_conditions.append({
+                "$or": [
+                    {"title": {"$regex": category_regex, "$options": "i"}},
+                    {"skills": {"$in": [re.compile(category_regex, re.I)]}}
+                ]
+            })
 
     if days:
-        cutoff = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         from datetime import timedelta
         cutoff = datetime.utcnow() - timedelta(days=days)
         query["posted_date"] = {"$gte": cutoff}
+
+    if and_conditions:
+        query["$and"] = and_conditions
+
+    print(f"DEBUG QUERY: {query}")
 
     try:
         # Get jobs sorted by date (newest first)
         jobs = list(db.jobs.find(query).sort("posted_date", -1).limit(100))
         
-        # Format for API (handle ObjectId)
+        # Format for API (handle ObjectId and datetime)
         for job in jobs:
             job["_id"] = str(job["_id"])
             if job.get("posted_date"):
-                job["posted_date"] = job["posted_date"].isoformat()
+                job["posted_date"] = job["posted_date"].isoformat() if hasattr(job["posted_date"], "isoformat") else str(job["posted_date"])
             if job.get("scraped_at"):
-                job["scraped_at"] = job["scraped_at"].isoformat()
+                job["scraped_at"] = job["scraped_at"].isoformat() if hasattr(job["scraped_at"], "isoformat") else str(job["scraped_at"])
                 
         return jobs
     except Exception as e:
@@ -178,7 +190,7 @@ async def get_company_jobs(company_name: str):
         for job in jobs:
             job["_id"] = str(job["_id"])
             if job.get("posted_date"):
-                job["posted_date"] = job["posted_date"].isoformat()
+                job["posted_date"] = job["posted_date"].isoformat() if hasattr(job["posted_date"], "isoformat") else str(job["posted_date"])
         return jobs
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -245,6 +257,127 @@ async def get_me(request: Request):
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     
+    return payload
+
+# --- Saved Search Endpoints ---
+
+@app.get("/api/user/searches")
+async def get_saved_searches(request: Request):
+    """Get all saved searches for the current user"""
+    # specific auth check to get user email
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    email = payload.get("sub")
+    db = get_db()
+    
+    searches = list(db.saved_searches.find({"user_email": email}))
+    for s in searches:
+        s["id"] = str(s["_id"])
+        del s["_id"]
+        # Ensure dates are strings
+        if s.get("created_at"):
+            s["created_at"] = s["created_at"].isoformat()
+        if s.get("last_emailed_at"):
+            s["last_emailed_at"] = s["last_emailed_at"].isoformat()
+            
+    return searches
+
+@app.post("/api/user/searches")
+async def save_search(request: Request):
+    """Save a new search"""
+    # Auth
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    email = payload.get("sub")
+    
+    data = await request.json()
+    name = data.get("name")
+    criteria = data.get("criteria", {})
+    email_alert = data.get("email_alert", False)
+    
+    if not name:
+        raise HTTPException(status_code=400, detail="Search name is required")
+        
+    db = get_db()
+    
+    # Limit to 5
+    count = db.saved_searches.count_documents({"user_email": email})
+    if count >= 5:
+        raise HTTPException(status_code=400, detail="Maximum 5 saved searches allowed")
+        
+    search_doc = {
+        "user_email": email,
+        "name": name,
+        "criteria": criteria,
+        "email_alert": email_alert,
+        "created_at": datetime.utcnow(),
+        "last_emailed_at": None
+    }
+    
+    res = db.saved_searches.insert_one(search_doc)
+    return {"message": "Search saved", "id": str(res.inserted_id)}
+
+@app.delete("/api/user/searches/{search_id}")
+async def delete_search(search_id: str, request: Request):
+    """Delete a saved search"""
+    # Auth
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    email = payload.get("sub")
+    
+    db = get_db()
+    res = db.saved_searches.delete_one({"_id": ObjectId(search_id), "user_email": email})
+    
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Search not found")
+        
+    return {"message": "Search deleted"}
+
+@app.patch("/api/user/searches/{search_id}")
+async def update_search(search_id: str, request: Request):
+    """Toggle alert status"""
+    # Auth
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    email = payload.get("sub")
+    
+    data = await request.json()
+    email_alert = data.get("email_alert")
+    
+    db = get_db()
+    update_data = {}
+    if email_alert is not None:
+        update_data["email_alert"] = email_alert
+        
+    res = db.saved_searches.update_one(
+        {"_id": ObjectId(search_id), "user_email": email},
+        {"$set": update_data}
+    )
+    
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Search not found")
+        
+    return {"message": "Search updated"}
+    
     db = get_db()
     user = db.users.find_one({"email": payload["sub"]})
     if not user:
@@ -253,7 +386,7 @@ async def get_me(request: Request):
     return {
         "email": user["email"],
         "full_name": user.get("full_name"),
-        "created_at": user["created_at"].isoformat() if "created_at" in user else None
+        "created_at": user["created_at"].isoformat() if hasattr(user.get("created_at"), "isoformat") else str(user.get("created_at", ""))
     }
 
 @app.get("/api/stats")

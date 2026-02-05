@@ -37,6 +37,7 @@
             <div class="nav-links">
                 <a href="#" class="nav-item active" id="navJobs">Jobs</a>
                 <a href="#" class="nav-item" id="navCompanies">Companies</a>
+                <a href="#" class="nav-item" onclick="openSavedSearches()">My Searches</a>
             </div>
             <div class="user-profile" id="userProfile">
                 <button class="btn-signin" id="showLogin">Sign In</button>
@@ -125,6 +126,9 @@
                     <button class="btn-clear" id="clearFilters">
                         <i class="fas fa-redo-alt"></i> Reset
                     </button>
+                    <button class="btn-icon" onclick="openSaveSearchModal()" title="Save this search">
+                        <i class="far fa-bookmark"></i>
+                    </button>
                 </div>
             </div>
             <div class="results-info">
@@ -171,6 +175,45 @@
             <span class="close-modal company-close">&times;</span>
             <div id="companyModalBody">
                 <!-- Content injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Searches Modal -->
+    <div id="savedSearchesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>My Saved Searches</h2>
+                <button class="modal-close" onclick="closeModal('savedSearchesModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="savedSearchesList" class="saved-searches-list">
+                    <!-- Populated by JS -->
+                    <div class="empty-state">No saved searches yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Search Dialog -->
+    <div id="saveSearchModal" class="modal">
+        <div class="modal-content small-modal">
+            <div class="modal-header">
+                <h2>Save Search</h2>
+                <button class="modal-close" onclick="closeModal('saveSearchModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="saveSearchForm" onsubmit="handleSaveSearch(event)">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="searchName" placeholder="e.g. Remote Python Jobs" required>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="emailAlert">
+                        <label for="emailAlert">Send daily email alerts for new matches</label>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">Save</button>
+                </form>
             </div>
         </div>
     </div>

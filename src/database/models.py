@@ -178,3 +178,20 @@ class Job:
         if self.salary:
             data['salary'] = self.salary.to_dict()
         return data
+@dataclass
+class SavedSearch:
+    """用户保存的搜索及提醒配置"""
+    user_email: str
+    name: str
+    criteria: Dict[str, any]  # filters (q, location, etc.)
+    email_alert: bool = False
+    last_emailed_at: Optional[datetime] = None
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    search_id: Optional[str] = None  # populated from _id after fetch
+
+    def to_dict(self) -> dict:
+        data = asdict(self)
+        if self.search_id:
+            data['id'] = self.search_id
+            del data['search_id']
+        return data

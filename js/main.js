@@ -32,8 +32,8 @@ const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const userProfile = document.getElementById('userProfile');
 const modalBody = document.getElementById('modalBody');
-const closeModal = document.querySelector('.close-modal');
-const authClose = document.querySelector('.auth-close');
+// const closeModal = document.querySelector('.close-modal'); // Removed to avoid conflict
+// const authClose = document.querySelector('.auth-close'); // Consolidation
 
 // New Elements
 const navJobs = document.getElementById('navJobs');
@@ -55,10 +55,22 @@ const jobsDashboardParts = [
 
 // Init
 async function init() {
-    await checkAuth();
-    await fetchStats();
-    await fetchJobs();
+    // Setup listeners first so UI remains responsive even if data loads slow/fails
     setupEventListeners();
+
+    // Then fetch data in parallel or sequence, wrapped in try/catch
+    try {
+        checkAuth();
+    } catch (e) {
+        console.error('Auth check failed:', e);
+    }
+
+    try {
+        await fetchStats();
+        await fetchJobs();
+    } catch (e) {
+        console.error('Data loading failed:', e);
+    }
 }
 
 // Fetch Functions
@@ -324,28 +336,20 @@ function setupEventListeners() {
         });
     });
 
-    // Modal
-    closeModal.onclick = () => {
-        jobModal.style.display = "none";
-        document.body.style.overflow = "auto";
-    };
-
-    companyClose.onclick = () => {
-        companyModal.style.display = "none";
-        document.body.style.overflow = "auto";
-    };
+    // Modal Closers (Universal)
+    document.querySelectorAll('.close-modal, .auth-close, .company-close, .modal-close').forEach(btn => {
+        btn.onclick = function () {
+            const modal = this.closest('.modal');
+            if (modal) {
+                modal.style.display = "none";
+                document.body.style.overflow = "auto";
+            }
+        };
+    });
 
     window.onclick = (event) => {
-        if (event.target == jobModal) {
-            jobModal.style.display = "none";
-            document.body.style.overflow = "auto";
-        }
-        if (event.target == companyModal) {
-            companyModal.style.display = "none";
-            document.body.style.overflow = "auto";
-        }
-        if (event.target == authModal) {
-            authModal.style.display = "none";
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = "none";
             document.body.style.overflow = "auto";
         }
     };
@@ -385,10 +389,7 @@ function setupEventListeners() {
         };
     }
 
-    authClose.onclick = () => {
-        authModal.style.display = "none";
-        document.body.style.overflow = "auto";
-    };
+    /* authClose.onclick handled by universal closer */
 
     document.getElementById('showRegister').onclick = (e) => {
         e.preventDefault();
@@ -487,7 +488,8 @@ async function checkAuth() {
     }
 }
 
-async function handleLogin() {
+async function handleLogin(e) {
+    if (e) e.preventDefault();
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
@@ -514,7 +516,8 @@ async function handleLogin() {
     }
 }
 
-async function handleRegister() {
+async function handleRegister(e) {
+    if (e) e.preventDefault();
     const email = document.getElementById('regEmail').value;
     const password = document.getElementById('regPassword').value;
     const full_name = document.getElementById('regName').value;
@@ -543,9 +546,9 @@ function updateAuthUI() {
     if (currentUser) {
         userProfile.innerHTML = `
             <div class="user-display">
-                <div class="avatar">${(currentUser.full_name || currentUser.email)[0].toUpperCase()}</div>
+                <div class="avatar">${(currentUser.full_name || currentUser.email || '?')[0].toUpperCase()}</div>
                 <div class="user-info">
-                    <div class="user-name">${currentUser.full_name || currentUser.email}</div>
+                    <div class="user-name">${currentUser.full_name || currentUser.email || 'User'}</div>
                     <div class="logout-link" onclick="logout()">Logout</div>
                 </div>
             </div>
@@ -611,6 +614,199 @@ function showLoading() {
             <span>Scanning opportunities...</span>
         </div>
     `;
+}
+
+// --- Saved Searches & Alerts ---
+
+function openSaveSearchModal() {
+    if (!localStorage.getItem('token')) {
+        openAuthModal();
+        return;
+    }
+    document.getElementById('saveSearchModal').style.display = 'flex';
+}
+
+async function handleSaveSearch(e) {
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    const name = document.getElementById('searchName').value;
+    const emailAlert = document.getElementById('emailAlert').checked;
+
+    // Capture current filters
+    const searchInput = document.getElementById('jobSearch');
+    const criteria = {
+        ...currentFilters,
+        q: searchInput ? searchInput.value : ''
+    };
+
+    try {
+        const response = await fetch('/api/user/searches', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, criteria, email_alert: emailAlert })
+        });
+
+        if (response.ok) {
+            closeModal('saveSearchModal');
+            alert('Search saved successfully');
+        } else {
+            const err = await response.json();
+            alert(err.detail || 'Failed to save search');
+        }
+    } catch (error) {
+        console.error('Save search error:', error);
+        alert('Network error saving search');
+    }
+}
+
+async function openSavedSearches() {
+    if (!localStorage.getItem('token')) {
+        openAuthModal();
+        return;
+    }
+
+    document.getElementById('savedSearchesModal').style.display = 'flex';
+    const listEl = document.getElementById('savedSearchesList');
+    listEl.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch('/api/user/searches', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const searches = await response.json();
+            renderSavedSearches(searches);
+        } else {
+            listEl.innerHTML = '<div class="error-state">Failed to load searches</div>';
+        }
+    } catch (error) {
+        console.error('Load searches error:', error);
+        listEl.innerHTML = '<div class="error-state">Network error</div>';
+    }
+}
+
+function renderSavedSearches(searches) {
+    const listEl = document.getElementById('savedSearchesList');
+    if (searches.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">No saved searches yet.</div>';
+        return;
+    }
+
+    listEl.innerHTML = searches.map(s => `
+        <div class="saved-search-item glass-card" style="margin-bottom: 1rem; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <div class="search-info">
+                <h3 style="margin: 0 0 0.5rem 0; color: white;">${s.name}</h3>
+                <div class="search-tags" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                    ${s.criteria.q ? `<span class="tag small">${s.criteria.q}</span>` : ''}
+                    ${s.criteria.location ? `<span class="tag small">${s.criteria.location}</span>` : ''}
+                    ${s.criteria.category ? `<span class="tag small">${s.criteria.category}</span>` : ''}
+                </div>
+                <div class="search-meta" style="font-size: 0.8rem; color: #888;">
+                    <label class="toggle-switch" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" ${s.email_alert ? 'checked' : ''} 
+                               onchange="toggleSearchAlert('${s.id}', this.checked)">
+                        <span>Email Alerts</span>
+                    </label>
+                </div>
+            </div>
+            <div class="search-actions" style="display: flex; gap: 0.5rem;">
+                <button class="btn-sm btn-primary" onclick='loadSavedSearch(${JSON.stringify(s.criteria).replace(/'/g, "&#39;")})'>Load</button>
+                <button class="btn-sm btn-danger" onclick="deleteSavedSearch('${s.id}')" style="background: rgba(255,50,50,0.2); color: #ff5555; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadSavedSearch(criteria) {
+    // Update global filters
+    currentFilters = {
+        q: criteria.q || '',
+        job_type: criteria.job_type || '',
+        remote_only: criteria.remote_only || false,
+        location: criteria.location || '',
+        category: criteria.category || '',
+        days: criteria.days || ''
+    };
+
+    // Update search input
+    const searchInput = document.getElementById('jobSearch');
+    if (searchInput) searchInput.value = currentFilters.q;
+
+    // Reset pills
+    document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+    if (!currentFilters.job_type && !currentFilters.remote_only) {
+        document.querySelector('[data-filter="all"]')?.classList.add('active');
+    }
+    if (currentFilters.job_type) {
+        document.querySelector(`[data-toggle="job_type"][data-value="${currentFilters.job_type}"]`)?.classList.add('active');
+    }
+    if (currentFilters.remote_only) {
+        document.querySelector('[data-toggle="remote_only"]')?.classList.add('active');
+    }
+
+    // Update Dropdowns
+    const locSelect = document.getElementById('locationFilter');
+    if (locSelect) locSelect.value = currentFilters.location;
+
+    const catSelect = document.getElementById('categoryFilter');
+    if (catSelect) catSelect.value = currentFilters.category;
+
+    const dateSelect = document.getElementById('dateFilter');
+    if (dateSelect) dateSelect.value = currentFilters.days;
+
+    document.getElementById('savedSearchesModal').style.display = 'none';
+    document.body.style.overflow = "auto";
+
+    await fetchJobs();
+}
+
+async function deleteSavedSearch(id) {
+    if (!confirm('Delete this saved search?')) return;
+
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`/api/user/searches/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            openSavedSearches(); // Reload list
+        }
+    } catch (e) {
+        console.error('Delete error', e);
+    }
+}
+
+async function toggleSearchAlert(id, enabled) {
+    const token = localStorage.getItem('token');
+    try {
+        await fetch(`/api/user/searches/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ email_alert: enabled })
+        });
+    } catch (e) {
+        console.error('Toggle alert error', e);
+        alert('Failed to update alert setting');
+    }
+}
+
+// Helper for HTML onclicks
+function closeModal(modalId) {
+    const m = document.getElementById(modalId);
+    if (m) {
+        m.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
 }
 
 // Run
