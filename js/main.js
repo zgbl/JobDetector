@@ -356,6 +356,11 @@ function setupEventListeners() {
         switchToView('companies');
     };
 
+    const companyStatCard = document.getElementById('companyStatCard');
+    if (companyStatCard) {
+        companyStatCard.onclick = () => switchToView('companies');
+    }
+
     // Company Search
     let companyTimeout = null;
     companySearch.addEventListener('input', (e) => {
