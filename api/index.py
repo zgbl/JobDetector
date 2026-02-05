@@ -16,12 +16,20 @@ project_root = str(project_root_path)
 sys.path.insert(0, project_root)
 
 from src.database.connection import get_db
-from api.auth_utils import (
-    get_password_hash, 
-    verify_password, 
-    create_access_token, 
-    decode_access_token
-)
+try:
+    from api.auth_utils import (
+        get_password_hash, 
+        verify_password, 
+        create_access_token, 
+        decode_access_token
+    )
+except ImportError:
+    from auth_utils import (
+        get_password_hash, 
+        verify_password, 
+        create_access_token, 
+        decode_access_token
+    )
 from datetime import datetime
 
 load_dotenv()
@@ -43,6 +51,16 @@ async def read_index():
     if index_file.exists():
         return index_file.read_text()
     return "<h1>Index.html not found at root</h1>"
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Return 204 No Content for favicon to prevent 404 errors"""
+    from fastapi.responses import Response
+    return Response(status_code=204)
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "message": "JobDetector API is running"}
 
 # Mount static folders if they exist
 if (project_root_path / "css").exists():
