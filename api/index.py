@@ -7,9 +7,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 import re
 
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
 # Add project root to path for database connection and models
-# Path is now parent of parent because we are in api/index.py
-project_root = str(Path(__file__).parent.parent)
+project_root_path = Path(__file__).parent.parent
+project_root = str(project_root_path)
 sys.path.insert(0, project_root)
 
 from src.database.connection import get_db
@@ -25,6 +28,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve index.html at root
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    index_file = project_root_path / "index.html"
+    if index_file.exists():
+        return index_file.read_text()
+    return "<h1>Index.html not found at root</h1>"
+
+# Mount static folders if they exist
+if (project_root_path / "css").exists():
+    app.mount("/css", StaticFiles(directory=str(project_root_path / "css")), name="css")
+if (project_root_path / "js").exists():
+    app.mount("/js", StaticFiles(directory=str(project_root_path / "js")), name="js")
 
 @app.get("/api/jobs")
 async def get_jobs(
