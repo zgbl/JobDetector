@@ -4,6 +4,29 @@ This guide documents the **Zero-Cost, Cloud-Native** deployment strategy for Job
 
 ## 1. Architecture Overview
 
+### Visual Workflow
+```mermaid
+graph TD
+    subgraph "Cloud Automation (GitHub)"
+        GA[GitHub Actions] -- "runs every 6h" --> PS[prod_scraper.py]
+        PS -- "scrapes" --> ATS["ATS APIs (Greenhouse/Lever)"]
+    end
+
+    subgraph "Data Layer (MongoDB Atlas)"
+        DB[(MongoDB Free Tier)]
+    end
+
+    subgraph "Web Hosting (Vercel)"
+        V_UI[Frontend: Vanilla JS/CSS]
+        V_API[Backend: FastAPI /api]
+    end
+
+    PS -- "saves data" --> DB
+    V_API -- "queries" --> DB
+    User([End User]) -- "visits URL" --> V_UI
+    V_UI -- "calls" --> V_API
+```
+
 - **Storage**: MongoDB Atlas (Free M0 Cluster)
 - **Automated Scraper**: GitHub Actions (Daily/Scheduled Cron)
 - **Web Dashboard**: Vercel (FastAPI + Vanilla JS)
