@@ -313,11 +313,14 @@ function formatDate(dateStr) {
     const date = new Date(dateStr);
     const now = new Date();
     const diffTime = Math.abs(now - date);
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays <= 1) return 'New';
-    if (diffDays > 30) return date.toLocaleDateString();
-    return `${diffDays}d ago`;
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays <= 7) return `${diffDays}d ago`;
+    if (diffDays <= 30) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
 }
 
 function highlightText(text, query) {
