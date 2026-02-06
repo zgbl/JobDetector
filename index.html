@@ -101,15 +101,32 @@
                         </select>
                     </div>
 
-                    <div class="dropdown-wrapper">
+                    <div class="dropdown-wrapper input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="keywordFilter" placeholder="Keywords (e.g. React)">
+                    </div>
+
+                    <div class="dropdown-wrapper input-wrapper">
                         <i class="fas fa-map-marker-alt"></i>
-                        <select id="locationFilter">
-                            <option value="">Location</option>
-                            <option value="San Francisco">San Francisco</option>
-                            <option value="New York">New York</option>
-                            <option value="London">London</option>
-                            <option value="Remote">Remote</option>
-                        </select>
+                        <input list="locationOptions" id="locationFilter" placeholder="Location (e.g. USA)">
+                        <datalist id="locationOptions">
+                            <!-- Countries -->
+                            <option value="USA">
+                            <option value="China">
+                            <option value="Japan">
+                            <option value="Europe">
+                            <option value="United Kingdom">
+                            <option value="Canada">
+                            <option value="Remote">
+                                <!-- US Tech Hubs -->
+                            <option value="San Francisco Bay Area">
+                            <option value="New York">
+                            <option value="Seattle">
+                            <option value="Austin">
+                            <option value="Boston">
+                            <option value="Los Angeles">
+                            <option value="Chicago">
+                        </datalist>
                     </div>
 
                     <div class="dropdown-wrapper">
@@ -267,8 +284,8 @@
     <footer>
         <div class="footer-content">
             <p>&copy; 2026 JobDetector. Directly from source.</p>
-            <div class="visit-counter" style="margin-top: 5px; font-size: 0.8em; opacity: 0.6;">
-                <i class="fas fa-eye"></i> <span id="siteVisits">...</span> visits
+            <div class="visit-counter-badge">
+                <i class="fas fa-users"></i> <span id="siteVisits">...</span> <span class="label">Job Seekers</span>
             </div>
         </div>
     </footer>

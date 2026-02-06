@@ -56,7 +56,11 @@ const jobsDashboardParts = [
 // Init
 async function init() {
     // Setup listeners first so UI remains responsive even if data loads slow/fails
+    // Setup listeners first so UI remains responsive even if data loads slow/fails
     setupEventListeners();
+
+    // Load filters from URL
+    loadFiltersFromURL();
 
     // Then fetch data in parallel or sequence, wrapped in try/catch
     try {
@@ -101,6 +105,10 @@ async function fetchJobs() {
 
         const response = await fetch(`/api/jobs?${params.toString()}`);
         jobs = await response.json();
+
+        // Update URL
+        updateURL();
+
         applyFilterAndRender();
     } catch (error) {
         console.error('Error fetching jobs:', error);
@@ -408,6 +416,7 @@ function setupEventListeners() {
     document.getElementById('registerBtn').onclick = handleRegister;
 
     // Advanced Filters
+    const keywordFilter = document.getElementById('keywordFilter');
     const categoryFilter = document.getElementById('categoryFilter');
     const locationFilter = document.getElementById('locationFilter');
     const dateFilter = document.getElementById('dateFilter');
@@ -419,10 +428,27 @@ function setupEventListeners() {
         fetchJobs();
     };
 
-    locationFilter.onchange = (e) => {
-        currentFilters.location = e.target.value;
-        fetchJobs();
+    // Keyword Filter Sync
+    keywordFilter.oninput = (e) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            currentFilters.q = e.target.value;
+            // Sync with nav search
+            if (jobSearch) jobSearch.value = e.target.value;
+            fetchJobs();
+        }, 500);
     };
+
+    // Location Filter (Input + Datalist)
+    locationFilter.oninput = (e) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            currentFilters.location = e.target.value;
+            fetchJobs();
+        }, 500);
+    };
+
+    /* locationFilter.onchange replaced by oninput above */
 
     dateFilter.onchange = (e) => {
         currentFilters.days = e.target.value;
@@ -435,6 +461,7 @@ function setupEventListeners() {
         };
         categoryFilter.value = '';
         locationFilter.value = '';
+        keywordFilter.value = ''; // Clear keyword input
         dateFilter.value = '';
         jobSearch.value = '';
         filterPills.forEach(p => p.classList.remove('active'));
@@ -464,6 +491,8 @@ function setupEventListeners() {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
             currentFilters.q = e.target.value;
+            // Sync with filter input
+            if (keywordFilter) keywordFilter.value = e.target.value;
             fetchJobs();
         }, 500);
     };
@@ -731,8 +760,17 @@ async function loadSavedSearch(criteria) {
         remote_only: criteria.remote_only || false,
         location: criteria.location || '',
         category: criteria.category || '',
+        location: criteria.location || '',
+        category: criteria.category || '',
         days: criteria.days || ''
     };
+
+    // Update new inputs
+    const keywordInput = document.getElementById('keywordFilter');
+    if (keywordInput) keywordInput.value = currentFilters.q;
+
+    const locInput = document.getElementById('locationFilter');
+    if (locInput) locInput.value = currentFilters.location;
 
     // Update search input
     const searchInput = document.getElementById('jobSearch');
@@ -751,8 +789,7 @@ async function loadSavedSearch(criteria) {
     }
 
     // Update Dropdowns
-    const locSelect = document.getElementById('locationFilter');
-    if (locSelect) locSelect.value = currentFilters.location;
+    /* locSelect handled above */
 
     const catSelect = document.getElementById('categoryFilter');
     if (catSelect) catSelect.value = currentFilters.category;
@@ -798,6 +835,58 @@ async function toggleSearchAlert(id, enabled) {
     } catch (e) {
         console.error('Toggle alert error', e);
         alert('Failed to update alert setting');
+    }
+}
+
+// URL Persistence
+function updateURL() {
+    const params = new URLSearchParams();
+    if (currentFilters.q) params.set('q', currentFilters.q);
+    if (currentFilters.category) params.set('category', currentFilters.category);
+    if (currentFilters.location) params.set('location', currentFilters.location);
+    if (currentFilters.days) params.set('days', currentFilters.days);
+    if (currentFilters.job_type) params.set('job_type', currentFilters.job_type);
+    if (currentFilters.remote_only) params.set('remote_only', 'true');
+
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+}
+
+function loadFiltersFromURL() {
+    const params = new URLSearchParams(window.location.search);
+
+    currentFilters.q = params.get('q') || '';
+    currentFilters.category = params.get('category') || '';
+    currentFilters.location = params.get('location') || '';
+    currentFilters.days = params.get('days') || '';
+    currentFilters.job_type = params.get('job_type') || '';
+    currentFilters.remote_only = params.get('remote_only') === 'true';
+
+    // Populate UI
+    const keywordInput = document.getElementById('keywordFilter');
+    if (keywordInput) keywordInput.value = currentFilters.q;
+
+    // Sync nav search
+    const navSearch = document.getElementById('jobSearch');
+    if (navSearch) navSearch.value = currentFilters.q;
+
+    const catSelect = document.getElementById('categoryFilter');
+    if (catSelect) catSelect.value = currentFilters.category;
+
+    const locInput = document.getElementById('locationFilter');
+    if (locInput) locInput.value = currentFilters.location;
+
+    const dateSelect = document.getElementById('dateFilter');
+    if (dateSelect) dateSelect.value = currentFilters.days;
+
+    // Pills
+    if (currentFilters.job_type) {
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        document.querySelector(`.filter-pill[data-value="${currentFilters.job_type}"]`)?.classList.add('active');
+    }
+    if (currentFilters.remote_only) {
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        document.querySelector(`.filter-pill[data-toggle="remote_only"]`)?.classList.add('active');
     }
 }
 
