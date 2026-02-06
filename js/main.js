@@ -61,8 +61,9 @@ async function init() {
     // Then fetch data in parallel or sequence, wrapped in try/catch
     try {
         checkAuth();
+        updateVisitCount(); // Fire and forget
     } catch (e) {
-        console.error('Auth check failed:', e);
+        console.error('Auth check or visit count failed:', e);
     }
 
     try {
@@ -806,6 +807,19 @@ function closeModal(modalId) {
     if (m) {
         m.style.display = 'none';
         document.body.style.overflow = 'auto';
+    }
+}
+
+async function updateVisitCount() {
+    try {
+        const response = await fetch('/api/stats/visit', { method: 'POST' });
+        const data = await response.json();
+        const visitEl = document.getElementById('siteVisits');
+        if (visitEl) {
+            visitEl.textContent = data.visits.toLocaleString();
+        }
+    } catch (error) {
+        console.error('Failed to update visit count:', error);
     }
 }
 

@@ -415,6 +415,23 @@ async def get_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/stats/visit")
+async def record_visit():
+    """Increment and return site visit count"""
+    db = get_db()
+    try:
+        # Atomic increment
+        result = db.site_stats.find_one_and_update(
+            {"_id": "global"},
+            {"$inc": {"visits": 1}},
+            upsert=True,
+            return_document=True
+        )
+        return {"visits": result["visits"]}
+    except Exception as e:
+        print(f"Visit count error: {e}")
+        return {"visits": 0}
+
 if __name__ == "__main__":
     import uvicorn
     port = 8123
