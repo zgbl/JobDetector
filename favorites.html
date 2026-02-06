@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Favorite Companies - JobDetector</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-8">
+                    <a href="/" class="flex-shrink-0 flex items-center gap-2">
+                        <div
+                            class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
+                            JD</div>
+                        <span class="font-bold text-xl text-slate-900">JobDetector</span>
+                    </a>
+                    <div class="hidden sm:flex sm:space-x-8">
+                        <a href="/" class="text-slate-500 hover:text-slate-900 px-1 pt-1 text-sm font-medium">Jobs</a>
+                        <a href="/favorites.html"
+                            class="text-indigo-600 border-b-2 border-indigo-600 px-1 pt-1 text-sm font-medium">Favorites</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4" id="auth-section">
+                    <!-- Auth content injected by JS -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="min-w-0 flex-1">
+                <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">My
+                    Favorite Companies</h2>
+                <p class="mt-1 text-sm text-slate-500">Track jobs from specific companies. If a company isn't in our
+                    list, adding it will queue it for discovery.</p>
+            </div>
+        </div>
+
+        <!-- Add Company Form -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <form id="add-favorite-form" class="flex gap-4">
+                <div class="flex-1 relative">
+                    <input type="text" id="company-input"
+                        class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm h-11 px-4 border"
+                        placeholder="Enter company name (e.g. OpenAI, Stripe...)" required>
+                    <!-- Simple autocomplete results could go here -->
+                </div>
+                <button type="submit"
+                    class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                            d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                    </svg>
+                    Add Company
+                </button>
+            </form>
+            <div id="add-message" class="mt-2 text-sm hidden"></div>
+        </div>
+
+        <!-- Favorites Grid -->
+        <div id="favorites-grid" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <!-- Cards injected by JS -->
+            <div class="col-span-full text-center py-12 text-slate-500">
+                Loading favorites...
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        const API_BASE = '/api';
+
+        // Load favorites on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            checkAuth(); // Redirect if not logged in
+            loadFavorites();
+
+            document.getElementById('add-favorite-form').addEventListener('submit', handleAddFavorite);
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/?login=true';
+            }
+            // Update nav
+            const authSection = document.getElementById('auth-section');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            authSection.innerHTML = `
+                <span class="text-sm text-slate-700">Hi, ${user.full_name || 'User'}</span>
+                <button onclick="logout()" class="text-sm font-medium text-slate-500 hover:text-slate-900">Sign out</button>
+            `;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        async function loadFavorites() {
+            const grid = document.getElementById('favorites-grid');
+            const token = localStorage.getItem('token');
+
+            try {
+                const res = await fetch(`${API_BASE}/user/favorites`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Failed to load');
+
+                const companies = await res.json();
+
+                if (companies.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
+                            <p class="text-slate-500">No favorite companies yet. Add one above!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                grid.innerHTML = companies.map(comp => `
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col hover:border-indigo-300 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-lg">
+                                ${comp.name.charAt(0)}
+                            </div>
+                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
+                                ${comp.ats_system?.type || 'unknown'}
+                            </span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-slate-900 mb-1">${comp.name}</h3>
+                        <p class="text-sm text-slate-500 mb-4 truncate">${comp.domain || 'Domain not set'}</p>
+                        <div class="mt-auto flex gap-2">
+                            <a href="/?company=${encodeURIComponent(comp.name)}" class="flex-1 text-center rounded-md bg-white border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">View Jobs</a>
+                            <button onclick="removeFavorite('${comp.name}')" class="rounded-md bg-red-50 border border-transparent px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100">Remove</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = '<div class="col-span-full text-center text-red-500">Error loading favorites.</div>';
+            }
+        }
+
+        async function handleAddFavorite(e) {
+            e.preventDefault();
+            const input = document.getElementById('company-input');
+            const msgEl = document.getElementById('add-message');
+            const token = localStorage.getItem('token');
+            const name = input.value;
+
+            try {
+                msgEl.className = 'mt-2 text-sm text-slate-500';
+                msgEl.textContent = 'Adding...';
+                msgEl.classList.remove('hidden');
+
+                const res = await fetch(`${API_BASE}/user/favorites`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ company_name: name })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    msgEl.className = 'mt-2 text-sm text-green-600';
+                    msgEl.textContent = `Added ${data.company_name} to favorites!`;
+                    input.value = '';
+                    loadFavorites(); // Refresh list
+                } else {
+                    throw new Error(data.detail || 'Failed to add');
+                }
+            } catch (err) {
+                msgEl.className = 'mt-2 text-sm text-red-600';
+                msgEl.textContent = err.message;
+            }
+        }
+
+        async function removeFavorite(name) {
+            if (!confirm(`Remove ${name} from favorites?`)) return;
+
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_BASE}/user/favorites/${encodeURIComponent(name)}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    loadFavorites();
+                } else {
+                    alert('Failed to remove');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+
+</html>

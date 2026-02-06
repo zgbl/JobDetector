@@ -447,6 +447,136 @@ async def record_visit():
         print(f"Visit count error: {e}")
         return {"visits": 0}
 
+# --- Favorites Endpoints ---
+
+@app.get("/api/user/favorites")
+async def get_favorites(request: Request):
+    """Get user's favorite companies"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    email = payload.get("sub")
+    
+    db = get_db()
+    
+    # Get favorite records
+    favorites = list(db.user_favorites.find({"user_email": email}))
+    
+    if not favorites:
+        return []
+        
+    company_names = [f["company_name"] for f in favorites]
+    
+    # Fetch full company details
+    companies = list(db.companies.find({"name": {"$in": company_names}}))
+    
+    for comp in companies:
+        comp["_id"] = str(comp["_id"])
+        if not comp.get("metadata"):
+            comp["metadata"] = {}
+            
+    return companies
+
+@app.post("/api/user/favorites")
+async def add_favorite(request: Request):
+    """Add a company to favorites"""
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.split(" ")[1] if auth_header and auth_header.startswith("Bearer ") else None
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+    
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    email = payload.get("sub")
+    
+    data = await request.json()
+    raw_name = data.get("company_name")
+    
+    if not raw_name:
+        raise HTTPException(status_code=400, detail="Company name required")
+        
+    from src.services.normalization import normalize_company_name
+    normalized_name = normalize_company_name(raw_name)
+    
+    if not normalized_name:
+         raise HTTPException(status_code=400, detail="Invalid company name")
+         
+    db = get_db()
+    
+    # 1. Check if company exists (case-insensitive)
+    existing_company = db.companies.find_one({
+        "name": {"$regex":f"^{re.escape(normalized_name)}$", "$options": "i"}
+    })
+    
+    final_company_name = normalized_name
+    final_company_id = None
+    
+    if existing_company:
+        final_company_name = existing_company["name"]
+        final_company_id = str(existing_company["_id"])
+    else:
+        # 2. Create new company if not exists
+        # We assume minimal info for now. 
+        # Ideally, a background worker would pick this up to find domain/ATS
+        from src.database.models import Company, ATSSystem, CompanyMetadata
+        
+        metadata = CompanyMetadata(
+            added_by="user_request", 
+            tags=["User Favorite"],
+            added_at=datetime.utcnow()
+        )
+        
+        new_company = Company(
+            name=normalized_name,
+            domain="", # Unknown initially
+            ats_system=ATSSystem(type="unknown"),
+            metadata=metadata,
+            is_active=True
+        )
+        
+        res = db.companies.insert_one(new_company.to_dict())
+        final_company_id = str(res.inserted_id)
+        print(f"Created new company from user request: {normalized_name}")
+        
+    # 3. Add to User Favorites
+    # Upsert to avoid duplicates
+    db.user_favorites.update_one(
+        {"user_email": email, "company_name": final_company_name},
+        {
+            "$set": {
+                "created_at": datetime.utcnow(),
+                "company_id": final_company_id
+            }
+        },
+        upsert=True
+    )
+    
+    return {"message": "Added to favorites", "company_name": final_company_name}
+
+@app.delete("/api/user/favorites/{company_name}")
+async def remove_favorite(company_name: str, request: Request):
+    """Remove a favorite"""
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.split(" ")[1] if auth_header and auth_header.startswith("Bearer ") else None
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+        
+    payload = decode_access_token(token)
+    email = payload.get("sub")
+    
+    db = get_db()
+    db.user_favorites.delete_one({
+        "user_email": email, 
+        "company_name": company_name
+    })
+    
+    return {"message": "Removed from favorites"}
+
 if __name__ == "__main__":
     import uvicorn
     port = 8123
