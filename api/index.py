@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from dotenv import load_dotenv
 import re
+from bson import ObjectId
+from src.database.models import Company, ATSSystem, CompanyMetadata
 
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -68,10 +70,19 @@ async def health_check():
     return {"status": "ok", "message": "JobDetector API is running"}
 
 # Mount static folders if they exist
-if (project_root_path / "css").exists():
-    app.mount("/css", StaticFiles(directory=str(project_root_path / "css")), name="css")
-if (project_root_path / "js").exists():
-    app.mount("/js", StaticFiles(directory=str(project_root_path / "js")), name="js")
+# Mount static folders if they exist
+css_path = project_root_path / "css"
+js_path = project_root_path / "js"
+
+if css_path.exists():
+    app.mount("/css", StaticFiles(directory=str(css_path)), name="css")
+else:
+    print(f"WARNING: CSS path not found at {css_path}")
+
+if js_path.exists():
+    app.mount("/js", StaticFiles(directory=str(js_path)), name="js")
+else:
+    print(f"WARNING: JS path not found at {js_path}")
 
 @app.get("/api/jobs")
 async def get_jobs(
