@@ -1,0 +1,1015 @@
+companies:
+# Big Tech & Public (Expansion)
+  - name: Stripe
+    domain: stripe.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Fintech, Payments]
+  - name: Airbnb
+    domain: airbnb.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Consumer, Travel]
+  - name: Uber
+    domain: uber.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Consumer, Transport]
+  - name: Lyft
+    domain: lyft.com
+    ats_type: lever
+    size: Enterprise
+    tags: [Consumer, Transport]
+  - name: DoorDash
+    domain: doordash.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Consumer, Logistics]
+  - name: Dropbox
+    domain: dropbox.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Storage]
+  - name: Box
+    domain: box.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Storage]
+  - name: Twilio
+    domain: twilio.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [API, Communication]
+  - name: Okta
+    domain: okta.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Security, Identity]
+  - name: Atlassian
+    domain: atlassian.com
+    ats_type: lever
+    size: Enterprise
+    tags: [SaaS, Productivity]
+  - name: Cloudflare
+    domain: cloudflare.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Infrastructure, Security]
+  - name: Fastly
+    domain: fastly.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Infrastructure, CDM]
+  - name: CrowdStrike
+    domain: crowdstrike.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Security, Cyber]
+  - name: Palo Alto Networks
+    domain: paloaltonetworks.com
+    ats_type: lever
+    size: Enterprise
+    tags: [Security, Network]
+  - name: Zscaler
+    domain: zscaler.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Security, Cloud]
+  - name: Palantir
+    domain: palantir.com
+    ats_type: lever
+    size: Enterprise
+    tags: [Data, GovTech]
+  - name: Splunk
+    domain: splunk.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Data, Analytics]
+  - name: Elastic
+    domain: elastic.co
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Data, Search]
+  - name: MongoDB
+    domain: mongodb.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Data, Database]
+  - name: Reddit
+    domain: reddit.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Consumer, Social]
+  - name: Pinterest
+    domain: pinterest.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Consumer, Social]
+  - name: Snap
+    domain: snap.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Consumer, Social]
+  - name: Discord
+    domain: discord.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Consumer, Chat]
+  - name: Roblox
+    domain: roblox.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Gaming, Social]
+  - name: Unity
+    domain: unity.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Gaming, 3D]
+  - name: Instacart
+    domain: instacart.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Consumer, Grocery]
+  - name: Block
+    domain: block.xyz
+    ats_type: custom
+    size: Enterprise
+    tags: [Fintech, Payments]
+  - name: Affirm
+    domain: affirm.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Fintech, Lending]
+  - name: SoFi
+    domain: sofi.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Fintech, Banking]
+  - name: Marqeta
+    domain: marqeta.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Fintech, Payments]
+  - name: Toast
+    domain: toasttab.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Fintech, Restaurant]
+  - name: Bill.com
+    domain: bill.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Fintech, B2B]
+  - name: Expensify
+    domain: expensify.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Fintech, Expense]
+  - name: Samsara
+    domain: samsara.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [IoT, Industrial]
+  - name: Braze
+    domain: braze.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Marketing]
+  - name: Hubspot
+    domain: hubspot.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, CRM]
+  - name: Zendesk
+    domain: zendesk.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Support]
+  - name: Asana
+    domain: asana.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Productivity]
+  - name: Monday.com
+    domain: monday.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Productivity]
+  - name: Smartsheet
+    domain: smartsheet.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Productivity]
+  - name: DocuSign
+    domain: docusign.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Legal]
+  - name: Gitlab
+    domain: gitlab.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [DevOps, Git]
+  - name: GitHub
+    domain: github.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [DevOps, Git]
+
+# High Growth Startups & Unicorns
+  - name: Anduril
+    domain: anduril.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Defense, AI]
+  - name: Neuralink
+    domain: neuralink.com
+    ats_type: lever
+    size: Startup
+    tags: [BioTech, AI]
+  - name: SpaceX
+    domain: spacex.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Space, Hardware]
+  - name: Cruz
+    domain: getcruise.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Auto, AI]
+  - name: Waymo
+    domain: waymo.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Auto, AI]
+  - name: Zoox
+    domain: zoox.com
+    ats_type: lever
+    size: Enterprise
+    tags: [Auto, AI]
+  - name: Nuro
+    domain: nuro.ai
+    ats_type: greenhouse
+    size: Startup
+    tags: [Auto, Robotics]
+  - name: Aurora
+    domain: aurora.tech
+    ats_type: greenhouse
+    size: Startup
+    tags: [Auto, AI]
+  - name: Astranis
+    domain: astranis.com
+    ats_type: lever
+    size: Startup
+    tags: [Space, Satellite]
+  - name: Relativity Space
+    domain: relativityspace.com
+    ats_type: lever
+    size: Startup
+    tags: [Space, 3D Print]
+  - name: Varda
+    domain: varda.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Space, Mfg]
+  - name: Joby Aviation
+    domain: jobyaviation.com
+    ats_type: lever
+    size: Startup
+    tags: [Transport, eVTOL]
+  - name: Archer
+    domain: archer.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Transport, eVTOL]
+  - name: Flexport
+    domain: flexport.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Logistics, Tech]
+  - name: Flock Safety
+    domain: flocksafety.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Safety, Hardware]
+  - name: Verkada
+    domain: verkada.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Hardware]
+  - name: Skydio
+    domain: skydio.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Robotics, Drone]
+  - name: Shield AI
+    domain: shield.ai
+    ats_type: greenhouse
+    size: Startup
+    tags: [Defense, AI]
+  - name: Saronic
+    domain: saronic.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Defense, Maritime]
+  - name: Epirus
+    domain: epirusinc.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Defense, Hardware]
+  - name: Hadrian
+    domain: hadrian.co
+    ats_type: greenhouse
+    size: Startup
+    tags: [Mfg, Tech]
+  - name: Navan
+    domain: navan.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Travel, Fintech]
+  - name: TripActions
+    domain: tripactions.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Travel, Fintech]
+  - name: Carta
+    domain: carta.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Equity]
+  - name: Pulley
+    domain: pulley.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Equity]
+  - name: Rho
+    domain: rho.co
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Banking]
+  - name: Meow
+    domain: meow.co
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, Treasury]
+  - name: Vanta
+    domain: vanta.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Compliance]
+  - name: Drata
+    domain: drata.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Compliance]
+  - name: Secureframe
+    domain: secureframe.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Compliance]
+  - name: Checkr
+    domain: checkr.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HR, Background]
+  - name: Gem
+    domain: gem.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HR, Recruiting]
+  - name: Ashby
+    domain: ashbyhq.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HR, Recruiting]
+  - name: Dover
+    domain: dover.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HR, Recruiting]
+  - name: Paraform
+    domain: paraform.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HR, Marketplace]
+  - name: Hinge Health
+    domain: hingehealth.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Lyra Health
+    domain: lyrahealth.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Maven Clinic
+    domain: mavenclinic.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Ro
+    domain: ro.co
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Hims & Hers
+    domain: forhims.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Color
+    domain: color.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Tebra
+    domain: tebra.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Commure
+    domain: commure.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Benchling
+    domain: benchling.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [BioTech, SaaS]
+  - name: Spring Health
+    domain: springhealth.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech]
+  - name: Headspace
+    domain: headspace.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech, Consumer]
+  - name: Calm
+    domain: calm.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [HealthTech, Consumer]
+  - name: Duolingo
+    domain: duolingo.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [EdTech, Consumer]
+  - name: Course Hero
+    domain: coursehero.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [EdTech]
+  - name: Quizlet
+    domain: quizlet.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [EdTech]
+  - name: Guild Education
+    domain: guildeducation.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [EdTech]
+  - name: Handshake
+    domain: joinhandshake.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [EdTech, Recruiting]
+  - name: ClassDojo
+    domain: classdojo.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [EdTech]
+  - name: Outschool
+    domain: outschool.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [EdTech]
+  - name: MasterClass
+    domain: masterclass.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [EdTech, Content]
+  - name: Udemy
+    domain: udemy.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [EdTech]
+  - name: Coursera
+    domain: coursera.org
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [EdTech]
+
+# Crypto / Web3
+  - name: OpenSea
+    domain: opensea.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, NFT]
+  - name: Uniswap
+    domain: uniswap.org
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, DeFi]
+  - name: ConsenSys
+    domain: consensys.net
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Infra]
+  - name: Alchemy
+    domain: alchemy.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Infra]
+  - name: Anchorage Digital
+    domain: anchorage.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Bank]
+  - name: BitGo
+    domain: bitgo.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Security]
+  - name: Gemini
+    domain: gemini.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Exchange]
+  - name: Blockchain.com
+    domain: blockchain.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Exchange]
+  - name: Paxos
+    domain: paxos.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Infra]
+  - name: FalconX
+    domain: falconx.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Crypto, Trading]
+
+# Additional SaaS / B2B
+  - name: ServiceTitan
+    domain: servicetitan.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Vertical]
+  - name: Procore
+    domain: procore.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Construction]
+  - name: Flex
+    domain: flex.one
+    ats_type: greenhouse
+    size: Startup
+    tags: [Fintech, B2B]
+  - name: GlossGenius
+    domain: glossgenius.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Vertical]
+  - name: Squire
+    domain: getsquire.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Vertical]
+  - name: ShopMonkey
+    domain: shopmonkey.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Vertical]
+  - name: Boulevard
+    domain: joinblvd.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Vertical]
+  - name: AuditBoard
+    domain: auditboard.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, GRC]
+  - name: Highspot
+    domain: highspot.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Sales]
+  - name: Seismic
+    domain: seismic.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Sales]
+  - name: Drift
+    domain: drift.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Marketing]
+  - name: Intercom
+    domain: intercom.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Support]
+  - name: Front
+    domain: front.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Support]
+  - name: Dialpad
+    domain: dialpad.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Comm]
+  - name: RingCentral
+    domain: ringcentral.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Comm]
+  - name: Zoom
+    domain: zoom.us
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, Video]
+  - name: Asurion
+    domain: asurion.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Tech, Service]
+  - name: C3.ai
+    domain: c3.ai
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [AI, Enterprise]
+  - name: UIPath
+    domain: uipath.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [SaaS, RPA]
+  - name: Automation Anywhere
+    domain: automationanywhere.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, RPA]
+  - name: Dataminr
+    domain: dataminr.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [AI, Data]
+  - name: Tanium
+    domain: tanium.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Endpoint]
+  - name: Cohesity
+    domain: cohesity.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Infrastructure, Data]
+  - name: Rubrik
+    domain: rubrik.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Infrastructure, Security]
+  - name: Netskope
+    domain: netskope.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, SASE]
+  - name: Illumio
+    domain: illumio.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Segmentation]
+  - name: SentinelOne
+    domain: sentinelone.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Security, Endpoint]
+  - name: Arctic Wolf
+    domain: arcticwolf.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, SOC]
+  - name: Expel
+    domain: expel.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, MDR]
+  - name: Red Canary
+    domain: redcanary.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, MDR]
+  - name: Abnormal Security
+    domain: abnormalsecurity.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Email]
+  - name: Material Security
+    domain: material.security
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Email]
+  - name: Tessian
+    domain: tessian.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Email]
+  - name: 1Password
+    domain: 1password.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Password]
+  - name: Dashlane
+    domain: dashlane.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Password]
+  - name: Bitwarden
+    domain: bitwarden.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Security, Password]
+  - name: DuckDuckGo
+    domain: duckduckgo.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Consumer, Privacy]
+  - name: Brave
+    domain: brave.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Consumer, Browser]
+  - name: Mozilla
+    domain: mozilla.org
+    ats_type: greenhouse
+    size: NonProfit
+    tags: [Consumer, Browser]
+  - name: Signal
+    domain: signal.org
+    ats_type: greenhouse
+    size: NonProfit
+    tags: [Consumer, Chat]
+  - name: Telegram
+    domain: telegram.org
+    ats_type: custom
+    size: Startup
+    tags: [Consumer, Chat]
+  - name: WhatsApp
+    domain: whatsapp.com
+    ats_type: custom
+    size: Enterprise
+    tags: [Consumer, Chat]
+  - name: Meta
+    domain: meta.com
+    ats_type: custom
+    size: Enterprise
+    tags: [BigTech, Social]
+  - name: Google
+    domain: google.com
+    ats_type: custom
+    size: Enterprise
+    tags: [BigTech, Search]
+  - name: Microsoft
+    domain: microsoft.com
+    ats_type: custom
+    size: Enterprise
+    tags: [BigTech, Cloud]
+  - name: Apple
+    domain: apple.com
+    ats_type: custom
+    size: Enterprise
+    tags: [BigTech, Hardware]
+  - name: Amazon
+    domain: amazon.jobs
+    ats_type: custom
+    size: Enterprise
+    tags: [BigTech, Ecom]
+  - name: Netflix
+    domain: netflix.com
+    ats_type: custom
+    size: Enterprise
+    tags: [BigTech, Media]
+  - name: Tesla
+    domain: tesla.com
+    ats_type: custom
+    size: Enterprise
+    tags: [BigTech, Auto]
+  - name: Nvidia
+    domain: nvidia.com
+    ats_type: workday
+    size: Enterprise
+    tags: [BigTech, Chip]
+  - name: Intel
+    domain: intel.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Chip]
+  - name: AMD
+    domain: amd.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Chip]
+  - name: Qualcomm
+    domain: qualcomm.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Chip]
+  - name: Broadcom
+    domain: broadcom.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Chip]
+  - name: Micron
+    domain: micron.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Memory]
+  - name: Applied Materials
+    domain: appliedmaterials.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Mfg]
+  - name: Lam Research
+    domain: lamresearch.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Mfg]
+  - name: KLA
+    domain: kla.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Mfg]
+  - name: Synopsys
+    domain: synopsys.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, EDA]
+  - name: Cadence
+    domain: cadence.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, EDA]
+  - name: Arm
+    domain: arm.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, IP]
+  - name: TSMC
+    domain: tsmc.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Foundry]
+  - name: Samsung Semiconductor
+    domain: samsung.com
+    ats_type: workday
+    size: Enterprise
+    tags: [Semi, Memory]
+
+# Modern Data Stack & Tools
+  - name: Prefect
+    domain: prefect.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Workflow]
+  - name: Dagster
+    domain: dagster.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Workflow]
+  - name: Astronomer
+    domain: astronomer.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Airflow]
+  - name: Monte Carlo
+    domain: montecarlodata.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Observability]
+  - name: BigEye
+    domain: bigeye.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Observability]
+  - name: Collibra
+    domain: collibra.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Governance]
+  - name: Alation
+    domain: alation.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Catalog]
+  - name: ThoughtSpot
+    domain: thoughtspot.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Analytics]
+  - name: Sisense
+    domain: sisense.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Analytics]
+  - name: Mode
+    domain: mode.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Analytics]
+  - name: Heap
+    domain: heap.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Analytics]
+  - name: Mixpanel
+    domain: mixpanel.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Analytics]
+  - name: Amplitude
+    domain: amplitude.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, Analytics]
+  - name: Pendo
+    domain: pendo.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Product]
+  - name: Productboard
+    domain: productboard.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Product]
+  - name: Aha!
+    domain: aha.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [SaaS, Product]
+  - name: Linear
+    domain: linear.app
+    ats_type: ashby
+    size: Startup
+    tags: [DevTools, PM]
+  - name: Raycast
+    domain: raycast.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevOps, Productivity]
+  - name: Warp
+    domain: warp.dev
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Terminal]
+  - name: Replit
+    domain: replit.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, IDE]
+  - name: CodeSandbox
+    domain: codesandbox.io
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, IDE]
+  - name: StackBlitz
+    domain: stackblitz.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, IDE]
+  - name: Netlify
+    domain: netlify.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Cloud]
+  - name: Heroku
+    domain: heroku.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [DevTools, Cloud]
+  - name: Cloudinary
+    domain: cloudinary.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Media]
+  - name: Mux
+    domain: mux.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [DevTools, Video]
+  - name: Twilio Segment
+    domain: segment.com
+    ats_type: greenhouse
+    size: Enterprise
+    tags: [Data, CDP]
+  - name: RudderStack
+    domain: rudderstack.com
+    ats_type: greenhouse
+    size: Startup
+    tags: [Data, CDP]
