@@ -108,15 +108,21 @@ async function fetchJobs() {
 
         // Handle Favorites Mode
         if (currentFilters.favorites_only) {
+            console.log("DEBUG: Favorites mode active. Token check...");
             const token = localStorage.getItem('token');
             if (token) {
                 try {
                     const favResp = await fetch('/api/user/favorites', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
+                    console.log("DEBUG: Favorites API response status:", favResp.status);
+
                     if (favResp.ok) {
                         const favorites = await favResp.json();
+                        console.log("DEBUG: Favorites fetched:", favorites);
+
                         if (favorites.length === 0) {
+                            console.log("DEBUG: No favorites found. Clearing jobs.");
                             // User has no favorites, show empty state immediately and return
                             jobs = [];
                             updateURL();
@@ -126,12 +132,17 @@ async function fetchJobs() {
                         const companyNames = favorites.map(f => f.name);
                         // Append each company as a separate 'companies' parameter
                         companyNames.forEach(c => params.append('companies', c));
+                        console.log("DEBUG: Companies appended to params:", params.getAll('companies'));
                     }
                 } catch (e) {
                     console.error('Error fetching favorites for filter:', e);
                 }
+            } else {
+                console.log("DEBUG: No token found for favorites filter.");
             }
         }
+
+        console.log("DEBUG: Final Fetch URL:", `/api/jobs?${params.toString()}`);
 
         const response = await fetch(`/api/jobs?${params.toString()}`);
         jobs = await response.json();

@@ -7,7 +7,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 import re
 from bson import ObjectId
-from src.database.models import Company, ATSSystem, CompanyMetadata
 
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +29,8 @@ except ImportError:
         create_access_token, 
         decode_access_token
     )
+
+from src.database.models import Company, ATSSystem, CompanyMetadata
 from datetime import datetime
 
 load_dotenv()
@@ -93,7 +94,6 @@ async def get_jobs(
     location: Optional[str] = None,
     category: Optional[str] = None,
     days: Optional[int] = None,
-    company: Optional[str] = None,
     companies: Optional[List[str]] = Query(None)
 ):
     """Fetch jobs with search and filtering"""
