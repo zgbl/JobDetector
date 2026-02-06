@@ -257,7 +257,22 @@ async def get_me(request: Request):
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     
-    return payload
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    db = get_db()
+    user = db.users.find_one({"email": email})
+    
+    if not user:
+        # User might have been deleted
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    return {
+        "email": user["email"],
+        "full_name": user.get("full_name"),
+        "created_at": user["created_at"].isoformat() if hasattr(user.get("created_at"), "isoformat") else str(user.get("created_at", ""))
+    }
 
 # --- Saved Search Endpoints ---
 
