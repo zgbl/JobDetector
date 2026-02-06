@@ -56,6 +56,13 @@ async def favicon():
     from fastapi.responses import Response
     return Response(status_code=204)
 
+@app.get("/favorites.html", response_class=HTMLResponse)
+async def read_favorites():
+    favorites_file = project_root_path / "favorites.html"
+    if favorites_file.exists():
+        return favorites_file.read_text()
+    return "<h1>Page not found</h1>"
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "JobDetector API is running"}
