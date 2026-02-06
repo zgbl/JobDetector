@@ -1,7 +1,7 @@
 import os
 import sys
 from typing import List, Optional
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from dotenv import load_dotenv
@@ -81,7 +81,9 @@ async def get_jobs(
     remote_type: Optional[str] = None,
     location: Optional[str] = None,
     category: Optional[str] = None,
-    days: Optional[int] = None
+    days: Optional[int] = None,
+    company: Optional[str] = None,
+    companies: Optional[List[str]] = Query(None)
 ):
     """Fetch jobs with search and filtering"""
     db = get_db()
@@ -102,6 +104,9 @@ async def get_jobs(
     
     if company:
         query["company"] = company
+        
+    if companies:
+        query["company"] = {"$in": companies}
     
     if job_type:
         query["job_type"] = job_type

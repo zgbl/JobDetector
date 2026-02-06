@@ -10,7 +10,9 @@ let currentFilters = {
     remote_only: false,
     category: '',
     location: '',
-    days: ''
+    days: '',
+    company: '',
+    favorites_only: false
 };
 let currentFilter = 'all';
 let currentSearchQuery = '';
@@ -102,6 +104,34 @@ async function fetchJobs() {
         if (currentFilters.category) params.append('category', currentFilters.category);
         if (currentFilters.location) params.append('location', currentFilters.location);
         if (currentFilters.days) params.append('days', currentFilters.days);
+        if (currentFilters.company) params.append('company', currentFilters.company);
+
+        // Handle Favorites Mode
+        if (currentFilters.favorites_only) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const favResp = await fetch('/api/user/favorites', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (favResp.ok) {
+                        const favorites = await favResp.json();
+                        if (favorites.length === 0) {
+                            // User has no favorites, show empty state immediately and return
+                            jobs = [];
+                            updateURL();
+                            applyFilterAndRender();
+                            return;
+                        }
+                        const companyNames = favorites.map(f => f.name);
+                        // Append each company as a separate 'companies' parameter
+                        companyNames.forEach(c => params.append('companies', c));
+                    }
+                } catch (e) {
+                    console.error('Error fetching favorites for filter:', e);
+                }
+            }
+        }
 
         const response = await fetch(`/api/jobs?${params.toString()}`);
         jobs = await response.json();
@@ -861,14 +891,21 @@ function loadFiltersFromURL() {
     currentFilters.days = params.get('days') || '';
     currentFilters.job_type = params.get('job_type') || '';
     currentFilters.remote_only = params.get('remote_only') === 'true';
+    currentFilters.company = params.get('company') || '';
+    currentFilters.favorites_only = params.get('favorites') === 'true';
 
     // Populate UI
     const keywordInput = document.getElementById('keywordFilter');
     if (keywordInput) keywordInput.value = currentFilters.q;
 
-    // Sync nav search
     const navSearch = document.getElementById('jobSearch');
-    if (navSearch) navSearch.value = currentFilters.q;
+    if (navSearch && currentFilters.q) navSearch.value = currentFilters.q;
+    // If we have a company filter but no keyword, maybe show it in search bar for context?
+    // Or we could have a dedicated pill. For now let's just allow it to work silently or put in search
+    if (currentFilters.company && !currentFilters.q && navSearch) {
+        navSearch.value = `Company: ${currentFilters.company}`;
+        // Note: this is visually indicating but search logic uses 'q' or 'company' param separately
+    }
 
     const catSelect = document.getElementById('categoryFilter');
     if (catSelect) catSelect.value = currentFilters.category;
