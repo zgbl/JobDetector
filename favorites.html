@@ -18,43 +18,164 @@
             margin-top: 100px;
         }
 
-        .company-meta {
-            margin: 15px 0;
+        /* Collection Cards - MICRO SIZE */
+        .collection-card {
             display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .remove-btn {
-            background: rgba(255, 50, 50, 0.1);
-            color: #ff5555;
-            border: 1px solid rgba(255, 50, 50, 0.2);
-            padding: 8px 16px;
-            border-radius: 50px;
+            align-items: center;
+            gap: 8px;
+            padding: 0.6rem 0.8rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            min-height: auto;
         }
 
-        .remove-btn:hover {
-            background: rgba(255, 50, 50, 0.2);
+        .collection-card:hover {
             transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-blue);
         }
 
-        .view-btn {
-            padding: 8px 24px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            display: inline-block;
-            border: 1px solid var(--accent-blue);
-            color: var(--accent-blue);
-            transition: all 0.3s ease;
+        .collection-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
         }
 
-        .view-btn:hover {
-            background: var(--accent-blue);
+        .collection-info h4 {
+            margin: 0;
+            color: var(--text-main);
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .collection-info p {
+            display: none;
+        }
+
+        .collections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .collection-card .arrow {
+            display: none;
+        }
+
+        /* --- USER FAVORITES: COMPACT ROW STYLE --- */
+        .companies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            /* Wider but shorter items */
+            gap: 0.8rem;
+        }
+
+        .company-card {
+            display: flex;
+            /* Horizontal Layout */
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .company-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--accent-blue);
+        }
+
+        .company-info-compact {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+            /* Enable truncation */
+        }
+
+        .logo-compact {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient-primary);
             color: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .company-name-compact {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .company-actions-compact {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .icon-btn.view:hover {
+            color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .icon-btn.remove:hover {
+            color: #ff5555;
+            background: rgba(255, 85, 85, 0.1);
+        }
+
+        /* View All Button Compact */
+        .view-btn-compact {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            transition: 0.2s;
+        }
+
+        .view-btn-compact:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -82,40 +203,93 @@
     <!-- Main Content -->
     <main class="dashboard">
         <div class="section-header">
-            <h2>My Favorite <span class="gradient-text">Companies</span></h2>
-            <p style="color: var(--text-dim); margin-top: 1rem;">Track specific companies. Adding a new company here
-                queues it for discovery.</p>
+            <h2>My <span class="gradient-text">Favorites</span></h2>
         </div>
 
-        <!-- Add Company Form -->
-        <div class="glass-card"
-            style="padding: 2rem; margin-bottom: 3rem; max-width: 800px; margin-left: auto; margin-right: auto;">
-            <div style="text-align: right; margin-bottom: 2rem;">
-                <a href="/?favorites=true" class="view-btn"
-                    style="background: var(--gradient-primary); color: white; border: none; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);">
-                    <i class="fas fa-layer-group"></i> View All Jobs from Favorites
+        <!-- Curated Collections -->
+        <div class="collections-section"
+            style="margin-bottom: 2rem; max-width: 1200px; margin-left: auto; margin-right: auto;">
+            <h4
+                style="margin-bottom: 1rem; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+                Discover Collections</h4>
+            <div class="collections-grid">
+                <!-- Big Tech -->
+                <div class="glass-card collection-card" onclick="viewCollection('bigtech')">
+                    <div class="collection-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;"><i
+                            class="fas fa-building"></i></div>
+                    <div class="collection-info">
+                        <h4>Internet Giants</h4>
+                    </div>
+                </div>
+
+                <!-- AI Innovators -->
+                <div class="glass-card collection-card" onclick="viewCollection('ai')">
+                    <div class="collection-icon" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"><i
+                            class="fas fa-brain"></i></div>
+                    <div class="collection-info">
+                        <h4>AI Innovators</h4>
+                    </div>
+                </div>
+
+                <!-- Fintech -->
+                <div class="glass-card collection-card" onclick="viewCollection('fintech')">
+                    <div class="collection-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i
+                            class="fas fa-chart-line"></i></div>
+                    <div class="collection-info">
+                        <h4>Fintech Leaders</h4>
+                    </div>
+                </div>
+
+                <!-- Startups -->
+                <div class="glass-card collection-card" onclick="viewCollection('startup')">
+                    <div class="collection-icon" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i
+                            class="fas fa-rocket"></i></div>
+                    <div class="collection-info">
+                        <h4>High Growth Startups</h4>
+                    </div>
+                </div>
+
+                <!-- FAANG SWE -->
+                <div class="glass-card collection-card" onclick="viewCollection('faang_swe')">
+                    <div class="collection-icon" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;"><i
+                            class="fas fa-code"></i></div>
+                    <div class="collection-info">
+                        <h4>FAANG SWE Roles</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add & Manage Favorites -->
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4
+                    style="color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">
+                    My List</h4>
+                <a href="/?favorites=true" class="view-btn-compact">
+                    <i class="fas fa-layer-group"></i> View All Jobs
                 </a>
             </div>
 
-            <form id="add-favorite-form" style="display: flex; gap: 1rem; align-items: center;">
-                <div class="search-wrapper" style="flex: 1; width: auto;">
+            <!-- Add Form (Compact) -->
+            <form id="add-favorite-form" style="display: flex; gap: 0.8rem; margin-bottom: 1.5rem;">
+                <div class="search-wrapper" style="flex: 1; margin: 0;">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="company-input" placeholder="Enter company name (e.g. OpenAI, Stripe...)"
-                        required>
+                    <input type="text" id="company-input" placeholder="Add company (e.g. OpenAI)..."
+                        style="padding: 0.6rem 0.6rem 0.6rem 2.5rem; height: auto;" required>
                 </div>
-                <button type="submit" class="btn-primary" style="white-space: nowrap; padding: 0.8rem 1.5rem;">
-                    <i class="fas fa-plus"></i> Add Company
+                <button type="submit" class="btn-primary" style="padding: 0.6rem 1.2rem; height: auto;">
+                    <i class="fas fa-plus"></i>
                 </button>
             </form>
-            <div id="add-message" style="text-align: center; margin-top: 1rem; min-height: 20px; font-size: 0.9rem;">
-            </div>
-        </div>
+            <div id="add-message" style="margin-bottom: 1rem; font-size: 0.85rem; height: 1.2em;"></div>
 
-        <!-- Favorites Grid -->
-        <div id="favorites-grid" class="companies-grid">
-            <!-- Cards injected by JS -->
-            <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-dim);">
-                <i class="fas fa-spinner fa-spin"></i> Loading favorites...
+            <!-- Favorites Grid -->
+            <div id="favorites-grid" class="companies-grid">
+                <!-- Cards injected by JS -->
+                <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-dim);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
             </div>
         </div>
     </main>
@@ -127,11 +301,9 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
             if (!user) {
-                // If not logged in, redirect to home with login param
                 window.location.href = '/?login=true';
                 return;
             }
-
             loadFavorites();
             document.getElementById('add-favorite-form').addEventListener('submit', handleAddFavorite);
         });
@@ -151,37 +323,35 @@
 
                 if (companies.length === 0) {
                     grid.innerHTML = `
-                        <div class="glass-card" style="grid-column: 1/-1; text-align: center; padding: 4rem;">
-                            <i class="far fa-star" style="font-size: 3rem; color: var(--text-dim); margin-bottom: 1rem;"></i>
-                            <p style="color: var(--text-dim); font-size: 1.2rem;">No favorite companies yet. Add one above!</p>
+                        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; border: 1px dashed var(--border-color); border-radius: 8px;">
+                            <p style="color: var(--text-dim);">No favorite companies yet.</p>
                         </div>
                     `;
                     return;
                 }
 
-                grid.innerHTML = companies.map(comp => {
-                    const sizeClass = (comp.metadata?.size || '').toLowerCase().replace(' ', '-');
-                    return `
-                    <div class="company-card glass-card" style="cursor: default;">
-                        <div class="logo-large">${comp.name[0]}</div>
-                        <h3>${comp.name}</h3>
-                        <div class="domain">${comp.domain || 'Domain pending'}</div>
-                        
-                        <div class="company-meta">
-                             <span class="tag blue">${comp.ats_system?.type || 'unknown'}</span>
-                             ${comp.metadata?.industry ? `<span class="tag">${comp.metadata.industry}</span>` : ''}
+                // COMPACT ROW TEMPLATE
+                grid.innerHTML = companies.map(comp => `
+                    <div class="company-card">
+                        <div class="company-info-compact">
+                            <div class="logo-compact">${comp.name[0]}</div>
+                            <div class="company-name-compact" title="${comp.name}">${comp.name}</div>
                         </div>
                         
-                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 1.5rem;">
-                            <a href="/?company=${encodeURIComponent(comp.name)}" class="view-btn">View Jobs</a>
-                            <button onclick="removeFavorite('${comp.name}')" class="remove-btn">Remove</button>
+                        <div class="company-actions-compact">
+                            <a href="/?company=${encodeURIComponent(comp.name)}" class="icon-btn view" title="View Jobs">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                            <button onclick="removeFavorite('${comp.name}')" class="icon-btn remove" title="Remove">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     </div>
-                `}).join('');
+                `).join('');
 
             } catch (err) {
                 console.error(err);
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444;">Error loading favorites.</div>';
+                grid.innerHTML = '<div style="color: #ef4444;">Error loading favorites.</div>';
             }
         }
 
@@ -198,10 +368,7 @@
 
                 const res = await fetch(`${API_BASE}/user/favorites`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ company_name: name })
                 });
 
@@ -209,9 +376,10 @@
 
                 if (res.ok) {
                     msgEl.style.color = 'var(--accent-green)';
-                    msgEl.textContent = `Successfully added ${data.company_name} to favorites!`;
+                    msgEl.textContent = `Added ${data.company_name}`;
                     input.value = '';
-                    loadFavorites(); // Refresh list
+                    loadFavorites();
+                    setTimeout(() => { msgEl.textContent = ''; }, 3000);
                 } else {
                     throw new Error(data.detail || 'Failed to add');
                 }
@@ -222,24 +390,32 @@
         }
 
         async function removeFavorite(name) {
-            if (!confirm(`Remove ${name} from favorites?`)) return;
-
+            if (!confirm(`Remove ${name}?`)) return;
             const token = localStorage.getItem('token');
             try {
                 const res = await fetch(`${API_BASE}/user/favorites/${encodeURIComponent(name)}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+                if (res.ok) loadFavorites();
+            } catch (err) { console.error(err); }
+        }
 
-                if (res.ok) {
-                    loadFavorites();
-                } else {
-                    alert('Failed to remove');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Error removing favorite');
-            }
+        function viewCollection(type) {
+            const collections = {
+                'bigtech': ['Google', 'Meta', 'Amazon', 'Microsoft', 'Apple', 'Netflix', 'Uber', 'Airbnb', 'Tesla'],
+                'ai': ['OpenAI', 'Anthropic', 'Databricks', 'Scale AI', 'Hugging Face', 'Perplexity'],
+                'fintech': ['Stripe', 'Block', 'Robinhood', 'Coinbase', 'Affirm', 'Plaid', 'Brex'],
+                'startup': ['Notion', 'Figma', 'Canva', 'Rippling', 'Airtable', 'Deel', 'Ramp'],
+                'faang_swe': { companies: ['Google', 'Meta', 'Amazon', 'Apple', 'Netflix'], q: 'Software Engineer' }
+            };
+            const data = collections[type];
+            if (!data) return;
+            const params = new URLSearchParams();
+            if (Array.isArray(data)) data.forEach(c => params.append('companies', c));
+            else { data.companies.forEach(c => params.append('companies', c)); if (data.q) params.append('q', data.q); }
+            window.location.href = `/?${params.toString()}`;
+            console.log("DEBUG: Redirecting to collection:", `/?${params.toString()}`);
         }
     </script>
 </body>

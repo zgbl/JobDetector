@@ -12,6 +12,7 @@ let currentFilters = {
     location: '',
     days: '',
     company: '',
+    companies: [],
     favorites_only: false
 };
 let currentFilter = 'all';
@@ -105,6 +106,12 @@ async function fetchJobs() {
         if (currentFilters.location) params.append('location', currentFilters.location);
         if (currentFilters.days) params.append('days', currentFilters.days);
         if (currentFilters.company) params.append('company', currentFilters.company);
+
+        // Add companies list filter (e.g. from Collections)
+        if (currentFilters.companies && currentFilters.companies.length > 0) {
+            currentFilters.companies.forEach(c => params.append('companies', c));
+            console.log("DEBUG: Companies appended from URL filter:", currentFilters.companies);
+        }
 
         // Handle Favorites Mode
         if (currentFilters.favorites_only) {
@@ -898,6 +905,12 @@ function loadFiltersFromURL() {
 
     currentFilters.q = params.get('q') || '';
     currentFilters.category = params.get('category') || '';
+
+    // Parse companies list
+    const companies = params.getAll('companies');
+    if (companies && companies.length > 0) {
+        currentFilters.companies = companies;
+    }
     currentFilters.location = params.get('location') || '';
     currentFilters.days = params.get('days') || '';
     currentFilters.job_type = params.get('job_type') || '';
