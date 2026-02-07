@@ -65,27 +65,25 @@
             display: none;
         }
 
+        .collection-card .arrow {
+            display: none;
+        }
+
         .collections-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 0.75rem;
         }
 
-        .collection-card .arrow {
-            display: none;
-        }
-
         /* --- USER FAVORITES: COMPACT ROW STYLE --- */
         .companies-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            /* Wider but shorter items */
             gap: 0.8rem;
         }
 
         .company-card {
             display: flex;
-            /* Horizontal Layout */
             align-items: center;
             justify-content: space-between;
             padding: 0.6rem 1rem;
@@ -106,7 +104,6 @@
             gap: 10px;
             flex: 1;
             min-width: 0;
-            /* Enable truncation */
         }
 
         .logo-compact {
@@ -159,7 +156,11 @@
             background: rgba(255, 85, 85, 0.1);
         }
 
-        /* View All Button Compact */
+        .icon-btn.check:hover {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
         .view-btn-compact {
             display: inline-flex;
             align-items: center;
@@ -176,6 +177,35 @@
 
         .view-btn-compact:hover {
             opacity: 0.9;
+        }
+
+        /* Monitor Specific Styles */
+        .monitor-card {
+            border-left: 3px solid var(--accent-purple);
+        }
+
+        .monitor-status {
+            font-size: 0.75rem;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
+        .status-ok {
+            color: #10b981;
+        }
+
+        .status-warn {
+            color: #f59e0b;
+        }
+
+        .status-stale {
+            color: #ff5555;
+        }
+
+        .monitor-input-group {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
         }
     </style>
 </head>
@@ -221,7 +251,6 @@
                         <h4>Internet Giants</h4>
                     </div>
                 </div>
-
                 <!-- AI Innovators -->
                 <div class="glass-card collection-card" onclick="viewCollection('ai')">
                     <div class="collection-icon" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"><i
@@ -230,7 +259,6 @@
                         <h4>AI Innovators</h4>
                     </div>
                 </div>
-
                 <!-- Fintech -->
                 <div class="glass-card collection-card" onclick="viewCollection('fintech')">
                     <div class="collection-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i
@@ -239,7 +267,6 @@
                         <h4>Fintech Leaders</h4>
                     </div>
                 </div>
-
                 <!-- Startups -->
                 <div class="glass-card collection-card" onclick="viewCollection('startup')">
                     <div class="collection-icon" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i
@@ -248,7 +275,6 @@
                         <h4>High Growth Startups</h4>
                     </div>
                 </div>
-
                 <!-- FAANG SWE -->
                 <div class="glass-card collection-card" onclick="viewCollection('faang_swe')">
                     <div class="collection-icon" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;"><i
@@ -272,19 +298,33 @@
             </div>
 
             <!-- Add Form (Compact) -->
-            <form id="add-favorite-form" style="display: flex; gap: 0.8rem; margin-bottom: 1.5rem;">
-                <div class="search-wrapper" style="flex: 1; margin: 0;">
+            <form id="add-favorite-form" style="display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 1.5rem;">
+                <div class="search-wrapper" style="flex: 1; margin: 0; min-width: 200px;">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="company-input" placeholder="Add company (e.g. OpenAI)..."
+                    <input type="text" id="company-input" placeholder="Company Name (e.g. OpenAI)"
                         style="padding: 0.6rem 0.6rem 0.6rem 2.5rem; height: auto;" required>
                 </div>
+                <div class="search-wrapper" style="flex: 1; margin: 0; min-width: 200px;">
+                    <i class="fas fa-link"></i>
+                    <input type="url" id="monitor-input" placeholder="(Optional) Monitor URL for Big Tech"
+                        style="padding: 0.6rem 0.6rem 0.6rem 2.5rem; height: auto;">
+                </div>
                 <button type="submit" class="btn-primary" style="padding: 0.6rem 1.2rem; height: auto;">
-                    <i class="fas fa-plus"></i>
+                    <i class="fas fa-plus"></i> Add
                 </button>
             </form>
             <div id="add-message" style="margin-bottom: 1rem; font-size: 0.85rem; height: 1.2em;"></div>
 
-            <!-- Favorites Grid -->
+            <!-- Monitors Section -->
+            <div id="monitors-section" style="margin-bottom: 2rem; display: none;">
+                <h5
+                    style="color: var(--accent-purple); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; margin-bottom: 10px;">
+                    <i class="fas fa-eye"></i> External Monitors (Manual Check)
+                </h5>
+                <div id="monitors-grid" class="companies-grid"></div>
+            </div>
+
+            <!-- Scrapers Grid -->
             <div id="favorites-grid" class="companies-grid">
                 <!-- Cards injected by JS -->
                 <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-dim);">
@@ -310,6 +350,8 @@
 
         async function loadFavorites() {
             const grid = document.getElementById('favorites-grid');
+            const monitorsGrid = document.getElementById('monitors-grid');
+            const monitorsSection = document.getElementById('monitors-section');
             const token = localStorage.getItem('token');
 
             try {
@@ -327,27 +369,71 @@
                             <p style="color: var(--text-dim);">No favorite companies yet.</p>
                         </div>
                     `;
+                    monitorsSection.style.display = 'none';
                     return;
                 }
 
-                // COMPACT ROW TEMPLATE
-                grid.innerHTML = companies.map(comp => `
-                    <div class="company-card">
-                        <div class="company-info-compact">
-                            <div class="logo-compact">${comp.name[0]}</div>
-                            <div class="company-name-compact" title="${comp.name}">${comp.name}</div>
+                // Split companies into Monitors vs Scrapers
+                const monitors = companies.filter(c => c.is_monitor);
+                const scrapers = companies.filter(c => !c.is_monitor);
+
+                // Render Monitors
+                if (monitors.length > 0) {
+                    monitorsSection.style.display = 'block';
+                    monitorsGrid.innerHTML = monitors.map(comp => {
+                        const daysSince = getDaysSince(comp.last_checked_at);
+                        let statusClass = 'status-ok';
+                        let statusText = 'Checked recently';
+
+                        if (daysSince > 14) { statusClass = 'status-stale'; statusText = `${daysSince} days ago`; }
+                        else if (daysSince > 7) { statusClass = 'status-warn'; statusText = `${daysSince} days ago`; }
+
+                        return `
+                        <div class="company-card monitor-card">
+                            <div class="company-info-compact">
+                                <div class="logo-compact" style="background: var(--gradient-accent);">${comp.name[0]}</div>
+                                <div class="company-name-compact" title="${comp.name}">${comp.name}</div>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center;">
+                                <span class="monitor-status ${statusClass}">${statusText}</span>
+                                <div class="company-actions-compact">
+                                    <button onclick="checkMonitor('${comp.name}', '${comp.monitor_url}')" class="icon-btn check" title="Check Now">
+                                        <i class="fas fa-external-link-alt"></i> CHECK
+                                    </button>
+                                    <button onclick="removeFavorite('${comp.name}')" class="icon-btn remove" title="Remove">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div class="company-actions-compact">
-                            <a href="/?company=${encodeURIComponent(comp.name)}" class="icon-btn view" title="View Jobs">
-                                <i class="fas fa-external-link-alt"></i>
-                            </a>
-                            <button onclick="removeFavorite('${comp.name}')" class="icon-btn remove" title="Remove">
-                                <i class="fas fa-times"></i>
-                            </button>
+                    `}).join('');
+                } else {
+                    monitorsSection.style.display = 'none';
+                }
+
+                // Render Scrapers
+                if (scrapers.length > 0) {
+                    grid.innerHTML = scrapers.map(comp => `
+                        <div class="company-card">
+                            <div class="company-info-compact">
+                                <div class="logo-compact">${comp.name[0]}</div>
+                                <div class="company-name-compact" title="${comp.name}">${comp.name}</div>
+                            </div>
+                            
+                            <div class="company-actions-compact">
+                                <a href="/?company=${encodeURIComponent(comp.name)}" class="icon-btn view" title="View Jobs">
+                                    <i class="fas fa-list"></i>
+                                </a>
+                                <button onclick="removeFavorite('${comp.name}')" class="icon-btn remove" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-dim); padding: 2rem;">No scraped favorites yet.</div>';
+                }
 
             } catch (err) {
                 console.error(err);
@@ -355,21 +441,34 @@
             }
         }
 
+        function getDaysSince(dateString) {
+            if (!dateString) return 999;
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
         async function handleAddFavorite(e) {
             e.preventDefault();
             const input = document.getElementById('company-input');
+            const monitorInput = document.getElementById('monitor-input');
             const msgEl = document.getElementById('add-message');
             const token = localStorage.getItem('token');
             const name = input.value;
+            const monitorUrl = monitorInput.value;
 
             try {
                 msgEl.style.color = 'var(--text-dim)';
                 msgEl.textContent = 'Adding...';
 
+                const payload = { company_name: name };
+                if (monitorUrl) payload.monitor_url = monitorUrl;
+
                 const res = await fetch(`${API_BASE}/user/favorites`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ company_name: name })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
@@ -378,6 +477,7 @@
                     msgEl.style.color = 'var(--accent-green)';
                     msgEl.textContent = `Added ${data.company_name}`;
                     input.value = '';
+                    monitorInput.value = '';
                     loadFavorites();
                     setTimeout(() => { msgEl.textContent = ''; }, 3000);
                 } else {
@@ -387,6 +487,21 @@
                 msgEl.style.color = '#ef4444';
                 msgEl.textContent = err.message;
             }
+        }
+
+        async function checkMonitor(name, url) {
+            // 1. Open URL
+            window.open(url, '_blank');
+
+            // 2. Update Timestamp
+            const token = localStorage.getItem('token');
+            try {
+                await fetch(`${API_BASE}/user/favorites/${encodeURIComponent(name)}/check`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                loadFavorites(); // Refresh to update status
+            } catch (err) { console.error(err); }
         }
 
         async function removeFavorite(name) {
@@ -415,7 +530,6 @@
             if (Array.isArray(data)) data.forEach(c => params.append('companies', c));
             else { data.companies.forEach(c => params.append('companies', c)); if (data.q) params.append('q', data.q); }
             window.location.href = `/?${params.toString()}`;
-            console.log("DEBUG: Redirecting to collection:", `/?${params.toString()}`);
         }
     </script>
 </body>

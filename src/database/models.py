@@ -77,6 +77,7 @@ class Company:
     name: str
     domain: str
     careers_url: Optional[str] = None
+    ats_url: Optional[str] = None  # Direct link to ATS board (e.g. boards.greenhouse.io/airbnb)
     ats_system: Optional[ATSSystem] = None
     scraper_config: Optional[ScraperConfig] = None
     schedule: Schedule = field(default_factory=Schedule)
@@ -90,6 +91,7 @@ class Company:
             'name': self.name,
             'domain': self.domain,
             'careers_url': self.careers_url,
+            'ats_url': self.ats_url,
             'is_active': self.is_active,
         }
         

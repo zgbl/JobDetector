@@ -18,6 +18,7 @@ from src.database.connection import get_db, close_db
 from src.scrapers.greenhouse import GreenhouseScraper
 from src.scrapers.lever import LeverScraper
 from src.scrapers.workday import WorkdayScraper
+from src.scrapers.ashby import AshbyScraper
 
 # Ensure logs directory exists BEFORE logging configuration
 Path("logs").mkdir(exist_ok=True)
@@ -38,12 +39,29 @@ async def scrape_company(company, scrapers, db, semaphore):
     async with semaphore:
         # Determine ATS type
         ats_type = None
-        ats_info = company.get('ats_system', {})
-        if isinstance(ats_info, dict):
-            ats_type = ats_info.get('type')
+        ats_url = company.get('ats_url')
+        
+        # 1. Try to detect from ATS URL
+        if ats_url:
+            if 'greenhouse.io' in ats_url:
+                ats_type = 'greenhouse'
+            elif 'lever.co' in ats_url:
+                ats_type = 'lever'
+            elif 'workday.com' in ats_url or 'myworkdayjobs.com' in ats_url:
+                ats_type = 'workday'
+            elif 'ashbyhq.com' in ats_url:
+                ats_type = 'ashby'
+            elif 'workable.com' in ats_url:
+                ats_type = 'workable'
+                
+        # 2. Fallback to configured type
+        if not ats_type:
+            ats_info = company.get('ats_system', {})
+            if isinstance(ats_info, dict):
+                ats_type = ats_info.get('type')
         
         if not ats_type:
-            logger.warning(f"跳过 {company['name']}: 未定义 ATS 类型")
+            logger.warning(f"跳过 {company['name']}: 未定义 ATS 类型且无法从 URL 识别")
             return 0
             
         scraper = scrapers.get(ats_type.lower())
@@ -100,7 +118,8 @@ async def run_production_scrape():
     scrapers = {
         'greenhouse': GreenhouseScraper(),
         'lever': LeverScraper(),
-        'workday': WorkdayScraper()
+        'workday': WorkdayScraper(),
+        'ashby': AshbyScraper(),
     }
     
     # 1. Fetch all companies from DB

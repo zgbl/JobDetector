@@ -50,10 +50,19 @@ class GreenhouseScraper(BaseScraper):
         获取Greenhouse board token
         
         方法：
-        1. 如果公司配置中有board_token，直接使用
-        2. 尝试从公司域名推断（company_name）
-        3. 访问careers页面提取
+        1. 如果有 ats_url，从 URL 提取
+        2. 如果公司配置中有board_token (api_endpoint)，直接使用
+        3. 尝试从公司域名推断（company_name）
+        4. 访问careers页面提取
         """
+        # 方法0: 从 ats_url 提取 (最高优先级)
+        ats_url = company.get('ats_url')
+        if ats_url:
+            # Match boards.greenhouse.io/{TOKEN} or /embed/job_board?for={TOKEN}
+            match = re.search(r'greenhouse\.io/(?:embed/job_board\?for=)?([^/?&]+)', ats_url)
+            if match:
+                return match.group(1)
+
         # 方法1: 从配置读取
         ats_system = company.get('ats_system', {})
         if isinstance(ats_system, dict):

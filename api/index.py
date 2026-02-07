@@ -506,46 +506,68 @@ async def get_favorites(request: Request):
 
 @app.post("/api/user/favorites")
 async def add_favorite(request: Request):
-    """Add a company to favorites"""
-    auth_header = request.headers.get("Authorization")
-    token = auth_header.split(" ")[1] if auth_header and auth_header.startswith("Bearer ") else None
-    if not token:
-        raise HTTPException(status_code=401, detail="Missing token")
-    
-    payload = decode_access_token(token)
-    if not payload:
+    """Add a company to user favorites"""
+    user = verify_token(request)
+    if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
-    email = payload.get("sub")
     
     data = await request.json()
-    raw_name = data.get("company_name")
+    email = user['email']
+    raw_name = data.get('company_name')
+    monitor_url = data.get('monitor_url')
     
     if not raw_name:
-        raise HTTPException(status_code=400, detail="Company name required")
+        raise HTTPException(status_code=400, detail="Company name is required")
         
-    from src.services.normalization import normalize_company_name
-    normalized_name = normalize_company_name(raw_name)
-    
-    if not normalized_name:
-         raise HTTPException(status_code=400, detail="Invalid company name")
-         
-    db = get_db()
-    
-    # 1. Check if company exists (case-insensitive)
-    existing_company = db.companies.find_one({
-        "name": {"$regex":f"^{re.escape(normalized_name)}$", "$options": "i"}
-    })
-    
+    # Normalize name
+    normalized_name, _ = normalize_company_name(raw_name)
     final_company_name = normalized_name
     final_company_id = None
     
+    # Flags
+    is_monitor = False
+    ats_url = None
+    ats_type = None
+
+    # Logic: "Magic Add"
+    # If a URL is provided, try to DISCOVER an ATS first.
+    if monitor_url:
+        try:
+            from src.services.ats_discovery import ATSDiscoveryService
+            service = ATSDiscoveryService()
+            discovered_url, discovered_type = await service.discover_ats(monitor_url)
+            
+            if discovered_url:
+                # SUCCESS: It's a scrapable company!
+                ats_url = discovered_url
+                ats_type = discovered_type
+                is_monitor = False # We can scrape it!
+            else:
+                # FAILURE: It's a manual monitor
+                is_monitor = True
+        except Exception as e:
+            print(f"Discovery error: {e}")
+            is_monitor = True # Fallback to monitor
+    
+    # Check if company exists in master DB
+    existing_company = db.companies.find_one({"name": {"$regex": f"^{final_company_name}$", "$options": "i"}})
+    
     if existing_company:
-        final_company_name = existing_company["name"]
-        final_company_id = str(existing_company["_id"])
+        final_company_id = existing_company.get('company_id')
+        final_company_name = existing_company.get('name') # Use canonical name
+        
+        # Merge new info if we discovered it
+        update_fields = {}
+        if ats_url and not existing_company.get('ats_url'):
+            update_fields['ats_url'] = ats_url
+        if ats_type and not existing_company.get('ats_system'):
+            update_fields['ats_system'] = {'type': ats_type, 'detected_at': datetime.utcnow()}
+            
+        if update_fields:
+            db.companies.update_one({'_id': existing_company['_id']}, {'$set': update_fields})
+            
     else:
-        # 2. Create new company if not exists
-        # We assume minimal info for now. 
-        # Ideally, a background worker would pick this up to find domain/ATS
+        # Create new company record stub
         from src.database.models import Company, ATSSystem, CompanyMetadata
         
         metadata = CompanyMetadata(
@@ -555,31 +577,64 @@ async def add_favorite(request: Request):
         )
         
         new_company = Company(
-            name=normalized_name,
+            name=final_company_name,
             domain="", # Unknown initially
-            ats_system=ATSSystem(type="unknown"),
+            ats_system=ATSSystem(type=ats_type if ats_type else "unknown", detected_at=datetime.utcnow()),
+            ats_url=ats_url,
             metadata=metadata,
             is_active=True
         )
         
         res = db.companies.insert_one(new_company.to_dict())
         final_company_id = str(res.inserted_id)
-        print(f"Created new company from user request: {normalized_name}")
         
-    # 3. Add to User Favorites
-    # Upsert to avoid duplicates
+    # Upsert User Favorite
+    fav_entry = {
+        "created_at": datetime.utcnow(),
+        "company_id": final_company_id,
+        "is_monitor": is_monitor
+    }
+    if is_monitor:
+        fav_entry['monitor_url'] = monitor_url
+        fav_entry['last_checked_at'] = None
+        
     db.user_favorites.update_one(
         {"user_email": email, "company_name": final_company_name},
         {
-            "$set": {
-                "created_at": datetime.utcnow(),
-                "company_id": final_company_id
-            }
+            "$set": fav_entry
         },
         upsert=True
     )
     
-    return {"message": "Added to favorites", "company_name": final_company_name}
+    return {
+        "status": "success", 
+        "company_name": final_company_name, 
+        "is_monitor": is_monitor,
+        "ats_detected": bool(ats_url)
+    }
+
+@app.post("/api/user/favorites/{company_name}/check")
+async def check_monitor(company_name: str, request: Request):
+    """Update last_checked_at for a monitor"""
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.split(" ")[1] if auth_header and auth_header.startswith("Bearer ") else None
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+        
+    payload = decode_access_token(token)
+    email = payload.get("sub")
+    
+    db = get_db()
+    
+    result = db.user_favorites.update_one(
+        {"user_email": email, "company_name": company_name},
+        {"$set": {"last_checked_at": datetime.utcnow()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Favorite not found")
+        
+    return {"message": "Monitor updated"}
 
 @app.delete("/api/user/favorites/{company_name}")
 async def remove_favorite(company_name: str, request: Request):
