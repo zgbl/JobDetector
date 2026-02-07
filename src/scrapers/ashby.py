@@ -50,7 +50,7 @@ class AshbyScraper(BaseScraper):
         # Ashby uses a hidden API: https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams
         # But even easier, they often embed __NEXT_DATA__ in the HTML.
         
-        jobs = await self._scrape_via_html_parsing(url, company['name'])
+        jobs = await self._scrape_via_html_parsing(url, company)
         self.logger.info(f"Scraped {len(jobs)} jobs from {company['name']} (Ashby)")
         return jobs
 
@@ -62,7 +62,7 @@ class AshbyScraper(BaseScraper):
         except:
             return False
 
-    async def _scrape_via_html_parsing(self, url: str, company_name: str) -> List[Dict]:
+    async def _scrape_via_html_parsing(self, url: str, company: Dict) -> List[Dict]:
         """
         Ashby renders mostly server-side or hydrates via JSON.
         We will try to fetch the HTML and parse the script tags or the DOM.
@@ -102,11 +102,11 @@ class AshbyScraper(BaseScraper):
         slug_match = re.search(r'jobs\.ashbyhq\.com/([^/]+)', url)
         if slug_match:
             slug = slug_match.group(1)
-            return await self._scrape_via_api(slug, company_name)
+            return await self._scrape_via_api(slug, company)
             
         return []
 
-    async def _scrape_via_api(self, slug: str, company_name: str) -> List[Dict]:
+    async def _scrape_via_api(self, slug: str, company: Dict) -> List[Dict]:
         """
         Ashby has a public-ish API used by their frontend.
         Endpoint: https://api.ashbyhq.com/posting-api/job-board/{slug}
@@ -183,13 +183,21 @@ class AshbyScraper(BaseScraper):
             posted_date = datetime.utcnow()
 
         # Prepare for normalization
+        job_type = raw_job.get('employmentType', 'Full-time')
+        is_remote = raw_job.get('isRemote', False)
+        remote_type = 'Remote' if is_remote else 'On-site'
+        if not is_remote and 'hybrid' in location.lower():
+            remote_type = 'Hybrid'
+
         normalized_raw = {
             'id': job_id,
             'title': title,
             'location': location,
             'url': source_url,
             'description': description,
-            'posted_date': posted_date
+            'posted_date': posted_date,
+            'job_type': job_type,
+            'remote_type': remote_type
         }
         
         job = self.normalize_job_data(
@@ -211,8 +219,6 @@ class AshbyScraper(BaseScraper):
 
         job.update({
             'salary': salary,
-            'job_type': job_type,
-            'remote_type': remote_type,
             'skills': self.extract_skills(description),
             'raw_data': raw_job
         })

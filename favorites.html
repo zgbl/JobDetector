@@ -523,13 +523,18 @@
                 'fintech': ['Stripe', 'Block', 'Robinhood', 'Coinbase', 'Affirm', 'Plaid', 'Brex'],
                 'startup': ['Notion', 'Figma', 'Canva', 'Rippling', 'Airtable', 'Deel', 'Ramp'],
                 'faang_swe': { companies: ['Google', 'Meta', 'Amazon', 'Apple', 'Netflix'], q: 'Software Engineer' },
-                'japan': ['Mercari', 'PayPay', 'Rakuten', 'SmartHR', 'Money Forward', 'HENNGE', 'WealthPark', 'Autify']
+                'japan': { location: 'Japan' }
             };
             const data = collections[type];
             if (!data) return;
             const params = new URLSearchParams();
-            if (Array.isArray(data)) data.forEach(c => params.append('companies', c));
-            else { data.companies.forEach(c => params.append('companies', c)); if (data.q) params.append('q', data.q); }
+            if (Array.isArray(data)) {
+                data.forEach(c => params.append('companies', c));
+            } else {
+                if (data.companies) data.companies.forEach(c => params.append('companies', c));
+                if (data.q) params.append('q', data.q);
+                if (data.location) params.append('location', data.location);
+            }
             window.location.href = `/?${params.toString()}`;
         }
     </script>
