@@ -62,13 +62,13 @@ class WorkdayScraper(BaseScraper):
                             async with session.post(api_url, json=payload, ssl=ssl_context) as resp2:
                                 if resp2.status == 200:
                                     data = await resp2.json()
-                                    return await self._parse_workday_response(data, company['name'], base_url, tenant, "External")
+                                    return await self._parse_workday_response(data, company, base_url, tenant, "External")
                         
                         self.logger.error(f"Workday API 请求失败: {response.status} for {api_url}")
                         return []
                         
                     data = await response.json()
-                    return await self._parse_workday_response(data, company['name'], base_url, tenant, board)
+                    return await self._parse_workday_response(data, company, base_url, tenant, board)
                     
         except Exception as e:
             self.logger.error(f"抓取 Workday 职位失败 ({company['name']}): {e}")
@@ -120,55 +120,44 @@ class WorkdayScraper(BaseScraper):
                     
         return None
 
-    async def _parse_workday_response(self, data: Dict, company_name: str, base_url: str, tenant: str, board: str) -> List[Dict]:
+    async def _parse_workday_response(self, data: Dict, company: Dict, base_url: str, tenant: str, board: str) -> List[Dict]:
         """解析 Workday API 响应"""
         job_postings = data.get('jobPostings', [])
         jobs = []
         
         for job_data in job_postings:
             try:
-                # Workday API 返回的简化版数据
-                # {
-                #   "title": "Software Engineer",
-                #   "externalPath": "/job/workday/Software-Engineer_JR-123",
-                #   "locationsText": "Pleasanton, CA",
-                #   "postedOn": "30+ Days Ago",
-                #   "bulletFields": ["JR-123"]
-                # }
-                
                 ext_path = job_data.get('externalPath', '')
                 job_id_raw = ext_path.split('_')[-1] if '_' in ext_path else ext_path.split('/')[-1]
                 
                 title = job_data.get('title', '').strip()
-                description = '' # Still empty for now
+                description = job_data.get('description', '') or ''
                 location = job_data.get('locationsText', '')
-                content_hash = self.generate_content_hash(title, description, location)
                 
-                # 标准化
-                job = {
-                    'job_id': f"workday_{job_id_raw}",
+                # Prepare for normalization
+                normalized_raw = {
+                    'id': f"workday_{job_id_raw}",
                     'title': title,
-                    'company': company_name,
                     'location': location,
-                    'salary': None,
-                    'job_type': 'Full-time',
-                    'remote_type': 'On-site',
+                    'url': f"{base_url}{ext_path}",
                     'description': description,
-                    'requirements': [],
-                    'skills': [],
-                    'source': 'workday',
-                    'source_url': f"{base_url}{ext_path}",
-                    'posted_date': None,
-                    'scraped_at': datetime.utcnow(),
-                    'last_seen_at': datetime.utcnow(),
-                    'content_hash': content_hash,
-                    'is_active': True,
-                    'raw_data': job_data
+                    'posted_date': None
                 }
                 
-                # 你可以增加一步：抓取详情以获取 description 和 skills
-                # 详情接口通常是 GET /wday/cxs/{tenant}/{board}/job/{ext_path}
-                # 但为了速度，这里先存基础信息
+                job = self.normalize_job_data(
+                    normalized_raw, 
+                    company['name'], 
+                    'workday', 
+                    company.get('location')
+                )
+                
+                # Add Workday-specific fields
+                job.update({
+                    'job_type': 'Full-time',
+                    'remote_type': 'On-site',
+                    'skills': [],
+                    'raw_data': job_data
+                })
                 
                 jobs.append(job)
                 

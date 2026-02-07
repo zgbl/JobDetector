@@ -54,7 +54,7 @@ class LeverScraper(BaseScraper):
                     jobs = []
                     for job_data in jobs_data:
                         try:
-                            job = await self._parse_job(job_data, company['name'], board_token)
+                            job = await self._parse_job(job_data, company, board_token)
                             if job:
                                 jobs.append(job)
                         except Exception as e:
@@ -84,7 +84,7 @@ class LeverScraper(BaseScraper):
             
         return company['name'].lower().replace(' ', '')
 
-    async def _parse_job(self, job_data: Dict, company_name: str, board_token: str) -> Optional[Dict]:
+    async def _parse_job(self, job_data: Dict, company: Dict, board_token: str) -> Optional[Dict]:
         """解析 Lever 职位数据"""
         try:
             job_id = f"lever_{job_data.get('id', '')}"
@@ -148,29 +148,36 @@ class LeverScraper(BaseScraper):
             job_type = self._determine_job_type(title, commitment, description)
             remote_type = self._determine_remote_type(location, description)
             
-            return {
-                'job_id': job_id,
+            # Prepare for normalization
+            normalized_raw = {
+                'id': job_id,
                 'title': title,
-                'company': company_name,
                 'location': location,
-                'salary': salary,
-                'job_type': job_type,
-                'remote_type': remote_type,
+                'url': source_url,
                 'description': description,
-                'requirements': [], 
+                'posted_date': posted_date
+            }
+            
+            job = self.normalize_job_data(
+                normalized_raw, 
+                company['name'], 
+                'lever', 
+                company.get('location')
+            )
+            
+            # Add Lever-specific fields
+            job.update({
+                'job_type': self._determine_job_type(title, commitment, description),
+                'remote_type': self._determine_remote_type(location, description),
                 'skills': skills,
-                'source': 'lever',
-                'source_url': source_url,
-                'posted_date': posted_date,
-                'scraped_at': datetime.utcnow(),
-                'last_seen_at': datetime.utcnow(),
-                'content_hash': content_hash,
-                'is_active': True,
+                'salary': salary,
                 'raw_data': {
                     'categories': categories,
                     'additional': job_data.get('additional', '')
                 }
-            }
+            })
+            
+            return job
             
         except Exception as e:
             self.logger.error(f"解析 Lever 职位失败: {e}")

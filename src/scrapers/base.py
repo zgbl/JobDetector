@@ -29,7 +29,7 @@ class BaseScraper(ABC):
         """
         pass
     
-    def normalize_job_data(self, raw_data: Dict, company_name: str, source: str) -> Dict:
+    def normalize_job_data(self, raw_data: Dict, company_name: str, source: str, company_location: Optional[str] = None) -> Dict:
         """
         标准化职位数据
         
@@ -37,22 +37,38 @@ class BaseScraper(ABC):
             raw_data: 原始数据
             company_name: 公司名称
             source: 数据源
+            company_location: 公司所在地 (例如 "Japan")
             
         Returns:
             标准化的职位数据
         """
         # Generate content hash
+        job_location = raw_data.get('location', '').strip()
+        
+        # Smart location tagging: if job location is vague, append company location
+        if company_location and job_location:
+            vague_terms = ['hybrid', 'remote', 'on-site', 'onsite']
+            if job_location.lower() in vague_terms:
+                job_location = f"{job_location} ({company_location})"
+            elif company_location.lower() not in job_location.lower():
+                # For startups, the city alone is often given (e.g. "Tokyo")
+                # If "Japan" isn't in there, we can append it
+                pass 
+        elif company_location and not job_location:
+            job_location = company_location
+
         content_hash = self.generate_content_hash(
             raw_data.get('title', ''),
             raw_data.get('description', ''),
-            raw_data.get('location', '')
+            job_location
         )
         
         return {
             'job_id': raw_data.get('id', ''),
             'title': raw_data.get('title', '').strip(),
             'company': company_name,
-            'location': raw_data.get('location', ''),
+            'location': job_location,
+            'company_location': company_location,
             'description': raw_data.get('description', ''),
             'source': source,
             'source_url': raw_data.get('url', ''),

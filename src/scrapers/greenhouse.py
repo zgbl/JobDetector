@@ -40,7 +40,7 @@ class GreenhouseScraper(BaseScraper):
             return []
         
         # 调用API获取职位
-        jobs = await self._fetch_jobs_from_api(board_token, company['name'])
+        jobs = await self._fetch_jobs_from_api(board_token, company)
         
         self.logger.info(f"从 {company['name']} 抓取到 {len(jobs)} 个职位")
         return jobs
@@ -112,7 +112,7 @@ class GreenhouseScraper(BaseScraper):
         
         return False
     
-    async def _fetch_jobs_from_api(self, board_token: str, company_name: str) -> List[Dict]:
+    async def _fetch_jobs_from_api(self, board_token: str, company: Dict) -> List[Dict]:
         """
         从Greenhouse API获取职位
         
@@ -156,7 +156,7 @@ class GreenhouseScraper(BaseScraper):
                             if job_detail:
                                 # 合并基础信息和详细信息
                                 full_job_data = {**job_data, **job_detail}
-                                job = await self._parse_job(full_job_data, company_name, board_token)
+                                job = await self._parse_job(full_job_data, company, board_token)
                                 if job:
                                     jobs.append(job)
                         except Exception as e:
@@ -199,7 +199,7 @@ class GreenhouseScraper(BaseScraper):
             self.logger.warning(f"获取职位详情失败 {job_id}: {e}")
             return None
     
-    async def _parse_job(self, job_data: Dict, company_name: str, board_token: str) -> Optional[Dict]:
+    async def _parse_job(self, job_data: Dict, company: Dict, board_token: str) -> Optional[Dict]:
         """
         解析Greenhouse职位数据
         
@@ -262,41 +262,35 @@ class GreenhouseScraper(BaseScraper):
                 except:
                     posted_date = None
             
-            # 提取技能和哈希
-            skills = self.extract_skills(description)
-            content_hash = self.generate_content_hash(title, description, location)
-            
-            # 提取薪资（如果描述中有）
-            salary = self.extract_salary(description)
-            
-            # 职位类型判断
-            job_type = self._determine_job_type(title, description)
-            remote_type = self._determine_remote_type(location, description)
-            
-            job = {
-                'job_id': job_id,
+            # Prepare for normalization
+            normalized_raw = {
+                'id': job_id,
                 'title': title,
-                'company': company_name,
                 'location': location,
-                'salary': salary,
-                'job_type': job_type,
-                'remote_type': remote_type,
+                'url': source_url,
                 'description': description,
-                'requirements': [],
-                'skills': skills,
-                'source': 'greenhouse',
-                'source_url': source_url,
-                'posted_date': posted_date,
-                'scraped_at': datetime.utcnow(),
-                'last_seen_at': datetime.utcnow(),
-                'content_hash': content_hash,
-                'is_active': True,
+                'posted_date': posted_date
+            }
+            
+            job = self.normalize_job_data(
+                normalized_raw, 
+                company['name'], 
+                'greenhouse', 
+                company.get('location')
+            )
+            
+            # Add Greenhouse-specific fields
+            job.update({
+                'job_type': self._determine_job_type(title, description),
+                'remote_type': self._determine_remote_type(location, description),
+                'skills': self.extract_skills(description),
+                'salary': self.extract_salary(description),
                 'raw_data': {
                     'id': job_data.get('id'),
                     'departments': department_names,
                     'board_token': board_token
                 }
-            }
+            })
             
             return job
             

@@ -19,6 +19,8 @@ from src.scrapers.greenhouse import GreenhouseScraper
 from src.scrapers.lever import LeverScraper
 from src.scrapers.workday import WorkdayScraper
 from src.scrapers.ashby import AshbyScraper
+from src.scrapers.workable import WorkableScraper
+from src.services.language_filter import LanguageFilterService
 
 # Ensure logs directory exists BEFORE logging configuration
 Path("logs").mkdir(exist_ok=True)
@@ -77,6 +79,39 @@ async def scrape_company(company, scrapers, db, semaphore):
                 # Save/Update jobs in DB
                 saved_count = 0
                 for job in jobs:
+                    # 0. Content analysis (English-Only & IT-Only check)
+                    job_text = job.get('description', '') + ' ' + job.get('title', '')
+                    
+                    # A. Category Check (IT Only)
+                    is_it, it_reason = LanguageFilterService.is_it_role(job['title']) # Prioritize title for category
+                    if not is_it:
+                        # Fallback to description if title is ambiguous
+                        is_it_desc, it_reason_desc = LanguageFilterService.is_it_role(job_text)
+                        if not is_it_desc:
+                            logger.info(f"🚫 {company['name']}: 职位 '{job['title']}' 非 IT 职位被过滤: {it_reason_desc}")
+                            db.rejected_jobs.update_one(
+                                {'content_hash': job['content_hash']},
+                                {'$set': {'title': job['title'], 'company': job['company'], 'rejected_at': datetime.utcnow(), 'reason': f"Non-IT: {it_reason_desc}"}},
+                                upsert=True
+                            )
+                            continue
+
+                    # B. Language Check (English Only)
+                    is_eng, eng_reason = LanguageFilterService.is_english_only(job_text)
+                    if not is_eng:
+                        logger.info(f"🚫 {company['name']}: 职位 '{job['title']}' 因要求日语被过滤: {eng_reason}")
+                        db.rejected_jobs.update_one(
+                            {'content_hash': job['content_hash']},
+                            {'$set': {'title': job['title'], 'company': job['company'], 'rejected_at': datetime.utcnow(), 'reason': f"Language: {eng_reason}"}},
+                            upsert=True
+                        )
+                        continue
+
+                    # 0.5 Check if already rejected
+                    if db.rejected_jobs.find_one({'content_hash': job['content_hash']}):
+                        logger.debug(f"⏭️ {company['name']}: 跳过已知不符合要求的职位 '{job['title']}'")
+                        continue
+
                     # 1. 查找现有职位
                     existing_job = db.jobs.find_one({'job_id': job['job_id']})
                     
@@ -120,6 +155,7 @@ async def run_production_scrape():
         'lever': LeverScraper(),
         'workday': WorkdayScraper(),
         'ashby': AshbyScraper(),
+        'workable': WorkableScraper(),
     }
     
     # 1. Fetch all companies from DB

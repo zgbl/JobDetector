@@ -92,7 +92,7 @@ class AshbyScraper(BaseScraper):
                 raw_jobs = job_board.get('jobs', [])
                 
                 if raw_jobs:
-                    return [self._parse_job(j, company_name, url) for j in raw_jobs]
+                    return [self._parse_job(j, company, url) for j in raw_jobs]
             except Exception as e:
                 self.logger.warning(f"Failed to parse __NEXT_DATA__: {e}")
 
@@ -124,27 +124,23 @@ class AshbyScraper(BaseScraper):
                     if response.status == 200:
                         data = await response.json()
                         raw_jobs = data.get('jobs', [])
-                        return [self._parse_job(j, company_name, f"https://jobs.ashbyhq.com/{slug}") for j in raw_jobs]
+                        return [self._parse_job(j, company, f"https://jobs.ashbyhq.com/{slug}") for j in raw_jobs]
         except Exception as e:
             self.logger.error(f"Ashby API scrape failed for {slug}: {e}")
             
         return []
 
-    def _parse_job(self, raw_job: Dict, company_name: str, base_url: str) -> Dict:
+    def _parse_job(self, raw_job: Dict, company: Dict, base_url: str) -> Dict:
         """
         Parse generic Ashby job object.
         """
         # ID
         job_id = f"ashby_{raw_job.get('id')}"
-        
-        # Title
         title = raw_job.get('title', 'Unknown Role')
         
         # Location
-        # Ashby locations can be complex objects or strings
         loc_raw = raw_job.get('location') or raw_job.get('address') or {}
         if isinstance(loc_raw, dict):
-            # Try to build a string: "San Francisco, CA, USA"
             parts = [loc_raw.get('city'), loc_raw.get('region'), loc_raw.get('country')]
             location = ", ".join([p for p in parts if p])
         else:
@@ -186,53 +182,42 @@ class AshbyScraper(BaseScraper):
         else:
             posted_date = datetime.utcnow()
 
-        # Job Type / Remote
-        job_type = "Full-time" # Default
-        employment_type = raw_job.get('employmentType')
-        if employment_type:
-            job_type = employment_type.replace('_', ' ').title()
-            
-        remote_type = "On-site"
-        if raw_job.get('isRemote'):
-            remote_type = "Remote"
-        
-        # Skills & Salary
-        skills = self.extract_skills(description)
-        salary = self.extract_salary(description)
-        # Also check structured compensation
-        comp = raw_job.get('compensation')
-        if not salary and comp:
-             # Try to parse obj
-             # { "min": 100, "max": 200, "currency": "USD", "type": "Yearly" }
-             if isinstance(comp, dict) and comp.get('min'):
-                 salary = {
-                     'min': int(comp.get('min')),
-                     'max': int(comp.get('max')),
-                     'currency': comp.get('currency', 'USD')
-                 }
-
-        content_hash = self.generate_content_hash(title, description, location)
-        
-        return {
-            'job_id': job_id,
+        # Prepare for normalization
+        normalized_raw = {
+            'id': job_id,
             'title': title,
-            'company': company_name,
             'location': location,
+            'url': source_url,
+            'description': description,
+            'posted_date': posted_date
+        }
+        
+        job = self.normalize_job_data(
+            normalized_raw, 
+            company['name'], 
+            'ashby', 
+            company.get('location')
+        )
+        
+        # Add Ashby-specific fields
+        salary = self.extract_salary(description)
+        comp = raw_job.get('compensation')
+        if not salary and comp and isinstance(comp, dict) and comp.get('min'):
+             salary = {
+                 'min': int(comp.get('min')),
+                 'max': int(comp.get('max')),
+                 'currency': comp.get('currency', 'USD')
+             }
+
+        job.update({
             'salary': salary,
             'job_type': job_type,
             'remote_type': remote_type,
-            'description': description,
-            'requirements': [],
-            'skills': skills,
-            'source': 'ashby',
-            'source_url': source_url,
-            'posted_date': posted_date,
-            'scraped_at': datetime.utcnow(),
-            'last_seen_at': datetime.utcnow(),
-            'content_hash': content_hash,
-            'is_active': True,
+            'skills': self.extract_skills(description),
             'raw_data': raw_job
-        }
+        })
+        
+        return job
 
     def _clean_html(self, html_text):
         soup = BeautifulSoup(html_text, 'html.parser')

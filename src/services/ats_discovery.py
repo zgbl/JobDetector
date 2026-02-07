@@ -16,7 +16,7 @@ class ATSDiscoveryService:
     
     # Known ATS patterns
     ATS_PATTERNS = {
-        'greenhouse': r'boards\.greenhouse\.io',
+        'greenhouse': r'boards?\.greenhouse\.io',
         'lever': r'jobs\.lever\.co',
         'ashby': r'jobs\.ashbyhq\.com',
         'workable': r'apply\.workable\.com',
@@ -57,12 +57,22 @@ class ATSDiscoveryService:
                 # Check 1.5: Active Probing (Guessing)
                 # Extract slug from domain
                 domain_parts = urlparse(start_url).netloc.split('.')
-                # handle www.anthropic.com -> anthropic
-                # handle anthropic.com -> anthropic
-                # handle app.anthropic.com -> anthropic? maybe.
-                slug = domain_parts[-2] if len(domain_parts) >= 2 else domain_parts[0]
-                if slug in ['www', 'careers', 'jobs']: # Bad extraction
-                    slug = domain_parts[-3] if len(domain_parts) >= 3 else slug
+                if domain_parts[0] == 'www':
+                    domain_parts = domain_parts[1:]
+                
+                # For smarthr.co.jp, we want 'smarthr'
+                # parts: ['smarthr', 'co', 'jp']
+                # If last parts are common TLDs, ignore them
+                tlds = ['com', 'co', 'jp', 'net', 'org', 'ai', 'io', 'ne']
+                
+                filtered_parts = [p for p in domain_parts if p.lower() not in tlds]
+                if filtered_parts:
+                    slug = filtered_parts[0]
+                else:
+                    slug = domain_parts[0]
+                
+                if slug in ['www', 'careers', 'jobs']: # Bad extraction fallback
+                    slug = domain_parts[-2] if len(domain_parts) >= 2 else domain_parts[0]
                 
                 logger.info(f"🕵️  Probing ATS patterns for slug: '{slug}'")
                 probed_url, probed_type = await self._probe_known_ats_patterns(session, slug)
@@ -147,6 +157,22 @@ class ATSDiscoveryService:
                         final_url = str(resp.url)
                         # Verify we are still on the ATS domain
                         if self._identify_ats_type(final_url) == type:
+                            # Special check for Ashby: it returns 200 for 404s
+                            if type == 'ashby':
+                                text = await resp.text()
+                                # Valid boards have a populated jobBoard object in __appData
+                                # Invalid ones have "jobBoard":null
+                                if '"jobBoard":null' in text:
+                                    logger.debug(f"🔍 Probe: Ashby returned 200 but jobBoard is null for {url}")
+                                    continue
+                            
+                            # Special check for Workable: it returns 200 for 404s
+                            if type == 'workable':
+                                text = await resp.text()
+                                if 'name="account" content=""' in text:
+                                    logger.debug(f"🔍 Probe: Workable returned 200 but account is empty for {url}")
+                                    continue
+                            
                             return final_url, type
             except:
                 continue

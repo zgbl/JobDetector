@@ -126,6 +126,18 @@ async def get_jobs(
         query["remote_type"] = remote_type
 
     if location:
+        # Normalize common country names
+        country_map = {
+            "usa": "United States|USA|U.S.",
+            "japan": "Japan|Tokyo|Osaka|Kyoto",
+            "china": "China|Shanghai|Beijing|Shenzhen",
+            "uk": "United Kingdom|UK|London",
+            "germany": "Germany|Berlin|Munich",
+            "france": "France|Paris",
+        }
+        
+        search_val = country_map.get(location.lower(), location)
+        
         if location.lower() == "remote":
             and_conditions.append({
                 "$or": [
@@ -134,7 +146,13 @@ async def get_jobs(
                 ]
             })
         else:
-            query["location"] = {"$regex": location, "$options": "i"}
+            # Check both job location and company base location
+            and_conditions.append({
+                "$or": [
+                    {"location": {"$regex": search_val, "$options": "i"}},
+                    {"company_location": {"$regex": search_val, "$options": "i"}}
+                ]
+            })
 
     if category:
         # Map common categories to keywords
