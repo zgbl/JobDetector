@@ -15,6 +15,7 @@ let currentFilters = {
     companies: [],
     favorites_only: false
 };
+let currentTotalCount = 0;
 let currentFilter = 'all';
 let currentSearchQuery = '';
 let currentCompanySearch = '';
@@ -152,7 +153,17 @@ async function fetchJobs() {
         console.log("DEBUG: Final Fetch URL:", `/api/jobs?${params.toString()}`);
 
         const response = await fetch(`/api/jobs?${params.toString()}`);
-        jobs = await response.json();
+        const data = await response.json();
+
+        // Handle new response format: { jobs: [], total: X }
+        if (data && typeof data === 'object' && data.jobs) {
+            jobs = data.jobs;
+            currentTotalCount = data.total;
+        } else {
+            // Fallback for array response
+            jobs = Array.isArray(data) ? data : [];
+            currentTotalCount = jobs.length;
+        }
 
         // Update URL
         updateURL();
@@ -180,8 +191,8 @@ async function fetchCompanies(query = '') {
 // Render Functions
 function applyFilterAndRender() {
     filteredJobs = [...jobs];
-    // Backend already does most filtering, but we keep this for local refinements if needed
-    resultsCount.textContent = filteredJobs.length;
+    // Use the actual total count from the backend instead of the local array length
+    resultsCount.textContent = currentTotalCount || filteredJobs.length;
     renderJobs();
 }
 

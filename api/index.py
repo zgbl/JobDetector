@@ -188,7 +188,10 @@ async def get_jobs(
     print(f"DEBUG QUERY: {query}")
 
     try:
-        # Get jobs sorted by date (newest first)
+        # 1. Get total matching count (without limit)
+        total_count = db.jobs.count_documents(query)
+        
+        # 2. Get jobs sorted by date (newest first) with limit
         jobs = list(db.jobs.find(query).sort("posted_date", -1).limit(100))
         
         # Format for API (handle ObjectId and datetime)
@@ -199,7 +202,10 @@ async def get_jobs(
             if job.get("scraped_at"):
                 job["scraped_at"] = job["scraped_at"].isoformat() if hasattr(job["scraped_at"], "isoformat") else str(job["scraped_at"])
                 
-        return jobs
+        return {
+            "jobs": jobs,
+            "total": total_count
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
