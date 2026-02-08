@@ -83,10 +83,10 @@ async def scrape_company(company, scrapers, db, semaphore):
                     job_text = job.get('description', '') + ' ' + job.get('title', '')
                     
                     # A. Category Check (IT Only)
-                    is_it, it_reason = LanguageFilterService.is_it_role(job['title']) # Prioritize title for category
+                    is_it, it_reason = LanguageFilterService.is_it_role(job['title'], is_title=True) # Prioritize title for category
                     if not is_it:
                         # Fallback to description if title is ambiguous
-                        is_it_desc, it_reason_desc = LanguageFilterService.is_it_role(job_text)
+                        is_it_desc, it_reason_desc = LanguageFilterService.is_it_role(job_text, is_title=False)
                         if not is_it_desc:
                             logger.info(f"🚫 {company['name']}: 职位 '{job['title']}' 非 IT 职位被过滤: {it_reason_desc}")
                             db.rejected_jobs.update_one(

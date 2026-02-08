@@ -218,12 +218,19 @@ async def get_companies(q: Optional[str] = None):
         query["name"] = {"$regex": q, "$options": "i"}
     
     try:
-        companies = list(db.companies.find(query).sort("name", 1))
+        # Fetch all companies (MongoDB sort on nested fields can be unreliable)
+        companies = list(db.companies.find(query))
+        
+        # Sort in Python: first by active_jobs descending, then by name ascending
+        companies.sort(key=lambda c: (-c.get('stats', {}).get('active_jobs', 0), c.get('name', '')))
+        
         for comp in companies:
             comp["_id"] = str(comp["_id"])
-            # Ensure metadata exists
+            # Ensure metadata and stats exist
             if not comp.get("metadata"):
                 comp["metadata"] = {}
+            if not comp.get("stats"):
+                comp["stats"] = {"active_jobs": 0, "total_jobs_found": 0}
         return companies
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

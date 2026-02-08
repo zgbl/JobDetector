@@ -440,8 +440,9 @@ mark {
 /* Jobs Grid */
 .jobs-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(350px, 450px));
     gap: 1.5rem;
+    justify-content: start;
 }
 
 .job-card {
@@ -768,18 +769,28 @@ mark {
     box-shadow: 0 10px 30px rgba(129, 140, 248, 0.2);
 }
 
-.company-card .logo-large {
-    width: 64px;
-    height: 64px;
-    background: var(--gradient-primary);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: 800;
-    color: white;
-    margin: 0 auto 1.5rem;
+.company-card.silent {
+    opacity: 0.6;
+    filter: grayscale(0.8);
+}
+
+.company-card.silent:hover {
+    opacity: 0.9;
+    filter: grayscale(0.2);
+}
+
+.company-job-count {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.company-job-count.active {
+    color: var(--accent-green);
+}
+
+.company-job-count.none {
+    color: var(--text-dim);
 }
 
 .company-card h3 {

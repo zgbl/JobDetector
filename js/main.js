@@ -234,8 +234,11 @@ function renderCompanies() {
 
     companiesGrid.innerHTML = companies.map(company => {
         const sizeClass = (company.metadata?.size || '').toLowerCase().replace(' ', '-');
+        const activeJobs = company.stats?.active_jobs || 0;
+        const isSilent = activeJobs === 0;
+
         return `
-            <div class="company-card glass-card" onclick="showCompanyDetailsByName('${company.name}')">
+            <div class="company-card glass-card ${isSilent ? 'silent' : ''}" onclick="showCompanyDetailsByName('${company.name}')">
                 <div class="logo-large">${company.name[0]}</div>
                 <h3>${company.name}</h3>
                 <div class="domain">${company.domain}</div>
@@ -243,6 +246,9 @@ function renderCompanies() {
                     <span class="badge ${sizeClass}">${company.metadata?.size || 'Unknown Size'}</span>
                     <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-dim);">
                         ${company.metadata?.industry || ''}
+                    </div>
+                    <div class="company-job-count ${activeJobs > 0 ? 'active' : 'none'}">
+                        <i class="fas fa-briefcase"></i> ${activeJobs} Jobs
                     </div>
                 </div>
             </div>
