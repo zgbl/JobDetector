@@ -445,6 +445,13 @@ async def update_search(search_id: str, request: Request):
         "created_at": user["created_at"].isoformat() if hasattr(user.get("created_at"), "isoformat") else str(user.get("created_at", ""))
     }
 
+@app.get("/api/collections")
+async def get_collections():
+    """Fetch all curated job collections"""
+    db = get_db()
+    collections = list(db.collections.find({}, {"_id": 0}))
+    return collections
+
 @app.get("/api/stats")
 async def get_stats():
     """Get dashboard stats"""

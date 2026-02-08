@@ -242,46 +242,9 @@
             <h4
                 style="margin-bottom: 1rem; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
                 Discover Collections</h4>
-            <div class="collections-grid">
-                <!-- Big Tech -->
-                <div class="glass-card collection-card" onclick="viewCollection('bigtech')">
-                    <div class="collection-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;"><i
-                            class="fas fa-building"></i></div>
-                    <div class="collection-info">
-                        <h4>Internet Giants</h4>
-                    </div>
-                </div>
-                <!-- AI Innovators -->
-                <div class="glass-card collection-card" onclick="viewCollection('ai')">
-                    <div class="collection-icon" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"><i
-                            class="fas fa-brain"></i></div>
-                    <div class="collection-info">
-                        <h4>AI Innovators</h4>
-                    </div>
-                </div>
-                <!-- Fintech -->
-                <div class="glass-card collection-card" onclick="viewCollection('fintech')">
-                    <div class="collection-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i
-                            class="fas fa-chart-line"></i></div>
-                    <div class="collection-info">
-                        <h4>Fintech Leaders</h4>
-                    </div>
-                </div>
-                <!-- Startups -->
-                <div class="glass-card collection-card" onclick="viewCollection('startup')">
-                    <div class="collection-icon" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i
-                            class="fas fa-rocket"></i></div>
-                    <div class="collection-info">
-                        <h4>High Growth Startups</h4>
-                    </div>
-                </div>
-                <!-- Japan IT -->
-                <div class="glass-card collection-card" onclick="viewCollection('japan')">
-                    <div class="collection-icon" style="background: rgba(239, 68, 68, 0.2); color: #ef4444;"><i
-                            class="fas fa-sun"></i></div>
-                    <div class="collection-info">
-                        <h4>Japan IT</h4>
-                    </div>
+            <div class="collections-grid" id="collections-grid">
+                <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-dim);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading Collections...
                 </div>
             </div>
         </div>
@@ -344,6 +307,7 @@
                 window.location.href = '/?login=true';
                 return;
             }
+            loadCollections();
             loadFavorites();
             document.getElementById('add-favorite-form').addEventListener('submit', handleAddFavorite);
         });
@@ -516,16 +480,37 @@
             } catch (err) { console.error(err); }
         }
 
+        let dynamicCollections = {};
+
+        async function loadCollections() {
+            const grid = document.getElementById('collections-grid');
+            try {
+                const res = await fetch(`${API_BASE}/collections`);
+                const data = await res.json();
+
+                // Store for viewCollection function
+                data.forEach(c => {
+                    dynamicCollections[c.id] = c.data;
+                });
+
+                grid.innerHTML = data.map(c => `
+                    <div class="glass-card collection-card" onclick="viewCollection('${c.id}')">
+                        <div class="collection-icon" style="background: ${c.color}; color: ${c.text_color};">
+                            <i class="${c.icon}"></i>
+                        </div>
+                        <div class="collection-info">
+                            <h4>${c.name}</h4>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading collections:', e);
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #ef4444;">Failed to load collections.</p>';
+            }
+        }
+
         function viewCollection(type) {
-            const collections = {
-                'bigtech': ['Google', 'Meta', 'Amazon', 'Microsoft', 'Apple', 'Netflix', 'Uber', 'Airbnb', 'Tesla'],
-                'ai': ['OpenAI', 'Anthropic', 'Databricks', 'Scale AI', 'Hugging Face', 'Perplexity'],
-                'fintech': ['Stripe', 'Block', 'Robinhood', 'Coinbase', 'Affirm', 'Plaid', 'Brex'],
-                'startup': ['Notion', 'Figma', 'Canva', 'Rippling', 'Airtable', 'Deel', 'Ramp'],
-                'faang_swe': { companies: ['Google', 'Meta', 'Amazon', 'Apple', 'Netflix'], q: 'Software Engineer' },
-                'japan': { location: 'Japan' }
-            };
-            const data = collections[type];
+            const data = dynamicCollections[type];
             if (!data) return;
             const params = new URLSearchParams();
             if (Array.isArray(data)) {
