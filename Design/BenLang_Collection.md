@@ -204,19 +204,18 @@ def create_collection(db, company_names: List[str]):
 
 ## Automation Strategy
 
-### Manual Workflow (MVP)
-1. User copies Ben Lang's post to `/data/ImportList/BenLang-YYYY-MM-DD.txt`
-2. Run: `python scripts/import_benlang.py --file BenLang-2024-02-08.txt`
-3. Script outputs:
-   - ✅ Found 33 companies
-   - ✅ Discovered 28 career sites (5 failed)
-   - 🔄 Importing jobs...
-4. Auto-creates collection in DB
-
-### Future: LinkedIn Scraper (Optional)
-- Monitor Ben Lang's LinkedIn profile
-- Auto-detect posts with keywords: "RAISED", "HIRING", "$100M+"
-- Auto-parse and import
+### Automated Workflow (Implemented)
+1. **Vercel Cron**: Configured in `vercel.json` to run every 6 hours (`0 */6 * * *`)
+2. **Endpoint**: `GET /api/cron_benlang`
+   - Triggered by Vercel Cron
+   - Parses `data/ImportList/BenLang.txt`
+   - Runs `BenLangImporter` in **Async Mode** (parallel processing)
+   - Deduplicates companies against database
+   - Start job scraping for valid companies
+3. **Optimizations**:
+   - **Async/Await**: Implemented `asyncio` for importer to handle 300+ companies within Vercel timeout limits
+   - **Deduplication**: `clean_benlang_list.py` removes duplicate entries from source text
+   - **Collection Sync**: Automatically updates the `companies` list in the `ben-lang-feb-2024` collection document
 
 ---
 
@@ -265,15 +264,14 @@ def create_collection(db, company_names: List[str]):
 
 ## Timeline Estimate
 
-| Phase | Task | Time | Priority |
-|-------|------|------|----------|
-| 1 | Text parser | 30 min | P0 |
-| 2 | Career site discovery | 2 hrs | P0 |
-| 3 | ATS discovery integration | 1 hr | P0 |
-| 4 | Collection DB schema | 30 min | P0 |
-| 5 | Frontend UI | 1 hr | P1 |
-| 6 | Styling & polish | 30 min | P1 |
-| **Total** | **MVP** | **~6 hours** | |
+| Phase | Task | Status | Implementation |
+|-------|------|--------|----------------|
+| 1 | Text parser | ✅ Done | `scripts/parse_benlang.py` with regex support for new formats |
+| 2 | Career site discovery | ✅ Done | `scripts/import_benlang.py` (Async) |
+| 3 | ATS discovery integration | ✅ Done | Integrated `ATSDiscoveryService` (Greenhouse, Lever, Ashby, etc.) |
+| 4 | Collection DB schema | ✅ Done | `collections` collection with `ben-lang-feb-2024` ID |
+| 5 | Frontend UI | ✅ Done | Added to Favorites page with dynamic loading |
+| 6 | Automation | ✅ Done | Vercel Cron + Async Refactor |
 
 ---
 

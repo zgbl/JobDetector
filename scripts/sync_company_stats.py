@@ -3,7 +3,7 @@
 Sync company job counts from jobs collection to companies collection.
 Updates the stats.active_jobs field for each company.
 """
-from api.index import get_db
+from api.db import get_db
 
 def sync_company_job_counts():
     db = get_db()

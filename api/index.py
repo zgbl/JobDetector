@@ -16,7 +16,7 @@ project_root_path = Path(__file__).parent.parent
 project_root = str(project_root_path)
 sys.path.insert(0, project_root)
 
-from src.database.connection import get_db
+from api.db import get_db
 try:
     from api.auth_utils import (
         get_password_hash,

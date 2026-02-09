@@ -11,7 +11,7 @@ from datetime import datetime
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from api.index import get_db
+from api.db import get_db
 from src.scrapers.greenhouse import GreenhouseScraper
 from src.scrapers.lever import LeverScraper
 from src.scrapers.ashby import AshbyScraper

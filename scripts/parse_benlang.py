@@ -12,7 +12,8 @@ class BenLangParser:
     """Parser for Ben Lang's company list format"""
     
     # Regex pattern for: "1) Company Name - description (location)"
-    PATTERN = r'^\d+\)\s+(.+?)\s+-\s+(.+?)\s+\((.+?)\)\s*$'
+    # Adjusted to handle potential variability in spacing or characters
+    PATTERN = r'^\d+\)\s+(.+?)\s+[-–—]\s+(.+?)\s+\((.+?)\)\s*$'
     
     # Company suffixes to clean
     SUFFIXES = [

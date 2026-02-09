@@ -9,7 +9,7 @@ from datetime import datetime
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from api.index import get_db
+from api.db import get_db
 from scripts.parse_benlang import BenLangParser
 
 
@@ -27,7 +27,7 @@ def create_benlang_collection():
     # Collection document matching frontend schema
     collection_doc = {
         'id': 'ben-lang-feb-2024',  # Frontend expects 'id', not 'slug'
-        'name': "Ben Lang's $100M+ Raises",
+        'name': "Ben Lang's List",
         'description': '33 well-funded companies (raised $100M+) actively hiring',
         'icon': 'fas fa-money-bill-wave',  # FontAwesome icon
         'color': 'rgba(255, 215, 0, 0.2)',  # Gold background

@@ -8,13 +8,18 @@ import os
 from pathlib import Path
 from typing import List, Dict, Optional
 import re
+from datetime import datetime
+import asyncio
+# from api.db import get_db # Moved below
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from api.db import get_db
+
 from scripts.parse_benlang import BenLangParser
 from src.services.ats_discovery import ATSDiscoveryService
-from api.index import get_db
+from api.db import get_db
 
 
 class BenLangImporter:
@@ -74,98 +79,87 @@ class BenLangImporter:
         
         return existing
     
-    def import_company(self, company_data: Dict) -> Dict:
+    async def import_company_async(self, company_data: Dict, semaphore: asyncio.Semaphore) -> Dict:
         """
-        Import a single company with ATS discovery.
-        
-        Args:
-            company_data: Dict from parser with name, description, location
+        Import a single company with ATS discovery (Async).
+        """
+        async with semaphore:
+            company_name = company_data['name']
             
-        Returns:
-            Dict with status, domain, ats_type, job_count
-        """
-        company_name = company_data['name']
-        
-        # Check if already exists
-        existing = self.check_existing_company(company_name)
-        if existing:
-            return {
-                'name': company_name,
-                'status': 'exists',
-                'domain': existing.get('domain'),
-                'ats_type': existing.get('ats_type'),
-                'skip_reason': 'Already in database'
-            }
-        
-        # Find career site
-        career_info = self.find_career_site(company_name)
-        if not career_info:
-            return {
-                'name': company_name,
-                'status': 'no_career_site',
-                'error': 'Could not determine career site'
-            }
-        
-        domain = career_info['domain']
-        
-        # Discover ATS (handle async)
-        ats_type = None
-        board_identifier = None
-        
-        if not self.dry_run:
-            try:
-                # Run async discover_ats in sync context
-                import asyncio
-                result = asyncio.run(self.ats_discovery.discover_ats(domain))
-                if result and len(result) == 2:
-                    ats_type, board_identifier = result
-            except Exception as e:
-                print(f"   ⚠️  ATS discovery failed: {e}")
-        
-        # Prepare company document
-        company_doc = {
-            'name': company_name,
-            'domain': domain,
-            'ats_type': ats_type or 'unknown',
-            'board_identifier': board_identifier,
-            'metadata': {
-                'size': 'startup',  # All Ben Lang companies are well-funded
-                'industry': company_data.get('description', ''),
-                'location': company_data.get('location', ''),
-                'source': 'benlang',
-                'raw_name': company_data.get('raw_name', company_name)
-            },
-            'stats': {
-                'active_jobs': 0,
-                'total_jobs_found': 0
-            }
-        }
-        
-        # Insert into database
-        if not self.dry_run and self.db is not None:
-            try:
-                self.db.companies.insert_one(company_doc)
-            except Exception as e:
+            # Check if already exists (Sync DB call - okay for now or use ThreadPool if strict)
+            existing = self.check_existing_company(company_name)
+            if existing:
                 return {
                     'name': company_name,
-                    'status': 'error',
-                    'error': str(e)
+                    'status': 'exists',
+                    'domain': existing.get('domain'),
+                    'ats_type': existing.get('ats_type')
                 }
-        
-        return {
-            'name': company_name,
-            'status': 'imported',
-            'domain': domain,
-            'ats_type': ats_type or 'unknown',
-            'career_url': career_info.get('career_url')
-        }
+            
+            # Find career site (Sync logic but fast/CPU bound)
+            career_info = self.find_career_site(company_name)
+            if not career_info:
+                return {
+                    'name': company_name,
+                    'status': 'no_career_site',
+                    'error': 'Could not determine career site'
+                }
+            
+            domain = career_info['domain']
+            
+            # Discover ATS (Async)
+            ats_type = None
+            board_identifier = None
+            
+            if not self.dry_run:
+                try:
+                    result = await self.ats_discovery.discover_ats(domain)
+                    if result and len(result) == 2:
+                        ats_type, board_identifier = result
+                except Exception as e:
+                    print(f"   ⚠️  ATS discovery failed for {company_name}: {e}")
+            
+            # Prepare company document
+            company_doc = {
+                'name': company_name,
+                'domain': domain,
+                'ats_type': ats_type or 'unknown',
+                'board_identifier': board_identifier,
+                'metadata': {
+                    'size': 'startup',
+                    'industry': company_data.get('description', ''),
+                    'location': company_data.get('location', ''),
+                    'source': 'benlang',
+                    'raw_name': company_data.get('raw_name', company_name)
+                },
+                'stats': {
+                    'active_jobs': 0,
+                    'total_jobs_found': 0
+                }
+            }
+            
+            # Insert into database
+            if not self.dry_run and self.db is not None:
+                try:
+                    self.db.companies.insert_one(company_doc)
+                except Exception as e:
+                    return {
+                        'name': company_name,
+                        'status': 'error',
+                        'error': str(e)
+                    }
+            
+            return {
+                'name': company_name,
+                'status': 'imported',
+                'domain': domain,
+                'ats_type': ats_type or 'unknown',
+                'career_url': career_info.get('career_url')
+            }
     
-    def import_all(self, companies: List[Dict]) -> Dict:
+    async def import_all_async(self, companies: List[Dict]) -> Dict:
         """
-        Import all companies and return summary.
-        
-        Returns:
-            Summary dict with counts and results
+        Import all companies async.
         """
         results = {
             'total': len(companies),
@@ -175,21 +169,26 @@ class BenLangImporter:
             'companies': []
         }
         
-        for i, company in enumerate(companies, 1):
-            print(f"\n[{i}/{len(companies)}] Processing: {company['name']}")
-            
-            result = self.import_company(company)
+        semaphore = asyncio.Semaphore(10) # Process 10 at a time
+        tasks = [self.import_company_async(c, semaphore) for c in companies]
+        
+        import_results = await asyncio.gather(*tasks)
+        
+        for result in import_results:
             results['companies'].append(result)
             
             if result['status'] == 'imported':
                 results['imported'] += 1
-                print(f"   ✅ Imported: {result.get('domain')} ({result.get('ats_type')})")
+                print(f"✅ Imported: {result['name']} -> {result.get('domain')} ({result.get('ats_type')})")
             elif result['status'] == 'exists':
                 results['exists'] += 1
-                print(f"   ℹ️  Already exists: {result.get('domain')}")
+                # print(f"ℹ️  Exists: {result['name']}") # Too noisy
+            elif result['status'] == 'no_career_site':
+                results['failed'] += 1
+                print(f"⚠️  No Site: {result['name']}")
             else:
                 results['failed'] += 1
-                print(f"   ❌ Failed: {result.get('error', 'Unknown error')}")
+                print(f"❌ Failed: {result['name']} - {result.get('error', 'Unknown')}")
         
         return results
 
@@ -214,10 +213,13 @@ def main():
     companies = benlang_parser.parse_file(str(file_path))
     print(f"✅ Found {len(companies)} companies\n")
     
+    import asyncio
+    
     # Import
     print(f"{'🔍' if args.dry_run else '📥'} {'DRY RUN - ' if args.dry_run else ''}Importing companies...\n")
     importer = BenLangImporter(dry_run=args.dry_run)
-    results = importer.import_all(companies)
+    # results = importer.import_all(companies)
+    results = asyncio.run(importer.import_all_async(companies))
     
     # Summary
     print("\n" + "="*60)
@@ -228,6 +230,30 @@ def main():
     print(f"ℹ️  Already exists: {results['exists']}")
     print(f"❌ Failed: {results['failed']}")
     print(f"Success rate: {(results['imported'] / results['total'] * 100):.1f}%")
+
+    # Update Collection
+    if not args.dry_run:
+        db = get_db()
+        # Get all successfully imported or existing company names
+        # We want to add ALL parsed companies to the collection, assuming they are valid
+        # Filter out failed ones? Or just add all from the list since we want the collection to reflect the text file?
+        # Let's add all that were processed (imported or exists)
+        
+        valid_companies = [r['name'] for r in results['companies'] if r['status'] in ('imported', 'exists')]
+        
+        if valid_companies:
+            print(f"\n📚 Updating 'ben-lang-feb-2024' collection with {len(valid_companies)} companies...")
+            db.collections.update_one(
+                {'id': 'ben-lang-feb-2024'},
+                {'$set': {
+                    'name': "Ben Lang's List",
+                    'data.companies': valid_companies, 
+                    'updated_at': datetime.utcnow(),
+                    'count': len(valid_companies)
+                }},
+                upsert=True
+            )
+            print("✅ Collection updated")
     
     if args.dry_run:
         print("\n⚠️  DRY RUN MODE - No changes made to database")
