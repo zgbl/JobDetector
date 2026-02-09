@@ -42,6 +42,16 @@ const modalBody = document.getElementById('modalBody');
 // New Elements
 const navJobs = document.getElementById('navJobs');
 const navCompanies = document.getElementById('navCompanies');
+const loadMoreBtn = document.createElement('button'); // Create Load More button dynamically
+loadMoreBtn.className = 'btn-primary load-more-btn';
+loadMoreBtn.innerHTML = 'Load More Jobs <i class="fas fa-chevron-down"></i>';
+loadMoreBtn.style.display = 'none';
+loadMoreBtn.style.margin = '2rem auto';
+loadMoreBtn.onclick = () => fetchJobs(true);
+
+// Pagination State
+let currentSkip = 0;
+const PAGE_LIMIT = 100;
 const jobsSection = document.querySelector('.hero-section').parentNode; // The main dashboard
 const companySection = document.getElementById('companySection');
 const companiesGrid = document.getElementById('companiesGrid');
@@ -62,6 +72,23 @@ async function init() {
     // Setup listeners first so UI remains responsive even if data loads slow/fails
     // Setup listeners first so UI remains responsive even if data loads slow/fails
     setupEventListeners();
+
+    // Keyword Search Listener
+    const keywordInput = document.getElementById('keywordFilter');
+    if (keywordInput) {
+        let debounceTimer;
+        keywordInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const query = e.target.value.trim();
+                currentFilters.q = query;
+                currentSearchQuery = query; // For highlighting
+                // Reset to first page
+                currentSkip = 0;
+                fetchJobs();
+            }, 500); // 500ms debounce
+        });
+    }
 
     // Load filters from URL
     loadFiltersFromURL();
@@ -96,8 +123,15 @@ async function fetchStats() {
     }
 }
 
-async function fetchJobs() {
-    showLoading();
+async function fetchJobs(loadMore = false) {
+    if (!loadMore) {
+        showLoading();
+        currentSkip = 0;
+    } else {
+        loadMoreBtn.classList.add('loading');
+        loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    }
+
     try {
         const params = new URLSearchParams();
         if (currentFilters.q) params.append('q', currentFilters.q);
@@ -108,67 +142,76 @@ async function fetchJobs() {
         if (currentFilters.days) params.append('days', currentFilters.days);
         if (currentFilters.company) params.append('company', currentFilters.company);
 
+        // Pagnation params
+        params.append('skip', currentSkip);
+        params.append('limit', PAGE_LIMIT);
+
         // Add companies list filter (e.g. from Collections)
         if (currentFilters.companies && currentFilters.companies.length > 0) {
             currentFilters.companies.forEach(c => params.append('companies', c));
-            console.log("DEBUG: Companies appended from URL filter:", currentFilters.companies);
         }
 
         // Handle Favorites Mode
         if (currentFilters.favorites_only) {
-            console.log("DEBUG: Favorites mode active. Token check...");
             const token = localStorage.getItem('token');
             if (token) {
                 try {
                     const favResp = await fetch('/api/user/favorites', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    console.log("DEBUG: Favorites API response status:", favResp.status);
-
                     if (favResp.ok) {
                         const favorites = await favResp.json();
-                        console.log("DEBUG: Favorites fetched:", favorites);
-
                         if (favorites.length === 0) {
-                            console.log("DEBUG: No favorites found. Clearing jobs.");
-                            // User has no favorites, show empty state immediately and return
                             jobs = [];
                             updateURL();
                             applyFilterAndRender();
+                            loadMoreBtn.classList.remove('loading');
                             return;
                         }
                         const companyNames = favorites.map(f => f.name);
-                        // Append each company as a separate 'companies' parameter
                         companyNames.forEach(c => params.append('companies', c));
-                        console.log("DEBUG: Companies appended to params:", params.getAll('companies'));
                     }
                 } catch (e) {
-                    console.error('Error fetching favorites for filter:', e);
+                    console.error('Error handling favorites:', e);
                 }
-            } else {
-                console.log("DEBUG: No token found for favorites filter.");
             }
         }
-
-        console.log("DEBUG: Final Fetch URL:", `/api/jobs?${params.toString()}`);
 
         const response = await fetch(`/api/jobs?${params.toString()}`);
         const data = await response.json();
 
+        let newJobs = [];
+
         // Handle new response format: { jobs: [], total: X }
         if (data && typeof data === 'object' && data.jobs) {
-            jobs = data.jobs;
+            newJobs = data.jobs;
             currentTotalCount = data.total;
         } else {
             // Fallback for array response
-            jobs = Array.isArray(data) ? data : [];
-            currentTotalCount = jobs.length;
+            newJobs = Array.isArray(data) ? data : [];
+            currentTotalCount = newJobs.length; // Approximate if API doesn't return total
+        }
+
+        if (loadMore) {
+            jobs = [...jobs, ...newJobs];
+            currentSkip += PAGE_LIMIT;
+            loadMoreBtn.classList.remove('loading');
+            loadMoreBtn.innerHTML = 'Load More Jobs <i class="fas fa-chevron-down"></i>';
+        } else {
+            jobs = newJobs;
+            currentSkip = PAGE_LIMIT; // Next page starts at limit
         }
 
         // Update URL
         updateURL();
 
         applyFilterAndRender();
+
+        // Ensure Load More button is in the grid container
+        if (!document.querySelector('.load-more-btn')) {
+            jobsGrid.parentNode.insertBefore(loadMoreBtn, jobsGrid.nextSibling);
+        }
+
     } catch (error) {
         console.error('Error fetching jobs:', error);
         jobsGrid.innerHTML = '<div class="error">Failed to load opportunities. Please try again later.</div>';
@@ -224,6 +267,13 @@ function renderJobs() {
             </div>
         </div>
     `).join('');
+
+    // Toggle Load More button
+    if (filteredJobs.length < currentTotalCount) {
+        loadMoreBtn.style.display = 'block';
+    } else {
+        loadMoreBtn.style.display = 'none';
+    }
 }
 
 function renderCompanies() {

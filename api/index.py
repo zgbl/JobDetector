@@ -94,7 +94,9 @@ async def get_jobs(
     location: Optional[str] = None,
     category: Optional[str] = None,
     days: Optional[int] = None,
-    companies: Optional[List[str]] = Query(None)
+    companies: Optional[List[str]] = Query(None),
+    skip: int = 0,
+    limit: int = 100
 ):
     """Fetch jobs with search and filtering"""
     db = get_db()
@@ -103,15 +105,18 @@ async def get_jobs(
     and_conditions = []
     
     if q:
-        # Search in title, company, and description
-        and_conditions.append({
-            "$or": [
-                {"title": {"$regex": q, "$options": "i"}},
-                {"company": {"$regex": q, "$options": "i"}},
-                {"description": {"$regex": q, "$options": "i"}},
-                {"skills": {"$in": [re.compile(q, re.I)]}}
-            ]
-        })
+        # Support multi-keyword search (AND logic)
+        terms = q.strip().split()
+        for term in terms:
+            escaped_term = re.escape(term)
+            and_conditions.append({
+                "$or": [
+                    {"title": {"$regex": escaped_term, "$options": "i"}},
+                    {"company": {"$regex": escaped_term, "$options": "i"}},
+                    {"description": {"$regex": escaped_term, "$options": "i"}},
+                    {"skills": {"$in": [re.compile(escaped_term, re.I)]}}
+                ]
+            })
     
     if company:
         query["company"] = company
@@ -191,8 +196,8 @@ async def get_jobs(
         # 1. Get total matching count (without limit)
         total_count = db.jobs.count_documents(query)
         
-        # 2. Get jobs sorted by date (newest first) with limit
-        jobs = list(db.jobs.find(query).sort("posted_date", -1).limit(100))
+        # 2. Get jobs sorted by date (newest first) with pagination
+        jobs = list(db.jobs.find(query).sort("posted_date", -1).skip(skip).limit(limit))
         
         # Format for API (handle ObjectId and datetime)
         for job in jobs:
