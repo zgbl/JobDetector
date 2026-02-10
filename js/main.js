@@ -116,7 +116,71 @@ async function init() {
     } catch (e) {
         console.error('Data loading failed:', e);
     }
+
+    // Check for email verification success
+    const verified = params.get('verified');
+    if (verified === 'true') {
+        alert('Email verified successfully! You can now log in.');
+    }
+
+    // Check for password reset success
+    const reset = params.get('reset');
+    if (reset === 'success') {
+        alert('Password reset successful! You can now log in with your new password.');
+    }
 }
+
+// Forgot Password Handler
+document.addEventListener('DOMContentLoaded', () => {
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+
+    if (forgotPasswordLink) {
+        forgotPasswordLink.onclick = (e) => {
+            e.preventDefault();
+            document.getElementById('authModal').style.display = 'none';
+            forgotPasswordModal.style.display = 'block';
+        };
+    }
+
+    if (forgotPasswordBtn) {
+        forgotPasswordBtn.onclick = async () => {
+            const email = document.getElementById('forgotEmail').value;
+
+            if (!email) {
+                alert('Please enter your email address');
+                return;
+            }
+
+            forgotPasswordBtn.disabled = true;
+            forgotPasswordBtn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Password reset link sent! Please check your email.');
+                    forgotPasswordModal.style.display = 'none';
+                    document.getElementById('forgotEmail').value = '';
+                } else {
+                    alert(data.detail || 'Failed to send reset link');
+                }
+            } catch (error) {
+                alert('An error occurred. Please try again.');
+            } finally {
+                forgotPasswordBtn.disabled = false;
+                forgotPasswordBtn.textContent = 'Send Reset Link';
+            }
+        };
+    }
+});
 
 // Fetch Functions
 async function fetchStats() {

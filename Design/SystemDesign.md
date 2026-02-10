@@ -6,6 +6,28 @@
 
 ---
 
+## 0. 💡 当前实现架构 (Implemented Architecture)
+
+目前项目已实现为 **Serverless Full-Stack** 架构，主要由以下三部分协同工作：
+
+### 1. 技术栈协作 (Collaboration)
+*   **Web (Frontend)**: 基于 **Vanilla JS** 的单页应用逻辑。负责用户交互、URL 路由、状态管理。通过 `fetch` API 与 Python 后端通信。
+*   **Python (Backend)**: 基于 **FastAPI** 的 RESTful API。
+    *   **API Runner**: 生产环境运行在 **Vercel Serverless Functions** 上；本地开发使用 **Uvicorn** (`port 8123`)。
+    *   **Automation**: 爬虫脚本 (`scripts/`) 通过 **GitHub Actions** 每 6 小时定时运行。
+*   **MongoDB (Database)**: 存储层。使用 **MongoDB Atlas** (云端) 或本地实例。作为 Scrapers (推数据) 和 API (读数据) 的中心枢纽。
+
+### 2. 运行流程 (Runners)
+| 环节 | 技术/运行器 | 说明 |
+| :--- | :--- | :--- |
+| **数据抓取** | **GitHub Actions** | 周期性运行 `prod_scraper.py` 抓取数据并存入 MongoDB。 |
+| **API 服务** | **Vercel / Uvicorn** | 处理前端请求，执行 Auth、收藏、搜索等业务逻辑。 |
+| **前端展现** | **Vercel CDN** | 静态分发 HTML/CSS/JS，极速加载。 |
+
+> 详情请参阅专用文档：[Web_Architecture.md](./Web_Architecture.md)
+
+---
+
 # 📦 PART 1: MVP 设计（Demo阶段）
 
 ## 1. MVP 架构概述

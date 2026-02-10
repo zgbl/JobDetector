@@ -256,6 +256,9 @@
                     </div>
                     <button type="button" class="btn-primary full-width" id="loginBtn">Login</button>
                 </form>
+                <p class="auth-footer">
+                    <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+                </p>
                 <p class="auth-footer">Don't have an account? <a href="#" id="showRegister">Register</a></p>
             </div>
 
@@ -278,6 +281,28 @@
                     <button type="button" class="btn-primary full-width" id="registerBtn">Create Account</button>
                 </form>
                 <p class="auth-footer">Already have an account? <a href="#" id="showLoginLink">Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content auth-card glass-card">
+            <span class="close-modal" onclick="closeModal('forgotPasswordModal')">&times;</span>
+
+            <div>
+                <h2 class="auth-title">Reset Password</h2>
+                <p class="auth-subtitle">Enter your email to receive a password reset link</p>
+                <form id="forgotPasswordForm" onsubmit="return false;">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="forgotEmail" placeholder="name@company.com" required>
+                    </div>
+                    <button type="button" class="btn-primary full-width" id="forgotPasswordBtn">Send Reset Link</button>
+                </form>
+                <p class="auth-footer"><a href="#"
+                        onclick="closeModal('forgotPasswordModal'); document.getElementById('authModal').style.display='block';">Back
+                        to Login</a></p>
             </div>
         </div>
     </div>

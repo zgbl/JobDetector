@@ -6,9 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from dotenv import load_dotenv
 import re
+import secrets
 from bson import ObjectId
 
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 # Add project root to path for database connection and models
@@ -17,6 +18,7 @@ project_root = str(project_root_path)
 sys.path.insert(0, project_root)
 
 from api.db import get_db
+from api.email_service import get_email_service
 try:
     from api.auth_utils import (
         get_password_hash,
@@ -31,7 +33,7 @@ except ImportError:
     )
 
 from src.database.models import Company, ATSSystem, CompanyMetadata
-from datetime import datetime
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -271,16 +273,33 @@ async def register(request: Request):
     if db.users.find_one({"email": email}):
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    # Generate verification token
+    verification_token = secrets.token_urlsafe(32)
+    verification_expires = datetime.utcnow() + timedelta(hours=24)
+
     user_doc = {
         "email": email,
         "hashed_password": get_password_hash(password),
         "full_name": full_name or email.split("@")[0],
         "created_at": datetime.utcnow(),
-        "is_active": True
+        "is_active": True,
+        "is_verified": False,
+        "verification_token": verification_token,
+        "verification_token_expires": verification_expires
     }
     
     db.users.insert_one(user_doc)
-    return {"message": "User registered successfully"}
+    
+    # Send verification email
+    base_url = os.getenv("BASE_URL", "http://localhost:8123")
+    email_service = get_email_service()
+    email_sent = email_service.send_verification_email(email, verification_token, base_url)
+    
+    if not email_sent:
+        # Log warning but don't fail registration
+        print(f"Warning: Failed to send verification email to {email}")
+    
+    return {"message": "Registration successful! Please check your email to verify your account."}
 
 @app.post("/api/auth/login")
 async def login(request: Request):
@@ -293,6 +312,10 @@ async def login(request: Request):
     
     if not user or not verify_password(password, user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Check if email is verified
+    if not user.get("is_verified", False):
+        raise HTTPException(status_code=403, detail="Please verify your email before logging in. Check your inbox for the verification link.")
 
     access_token = create_access_token(data={"sub": user["email"]})
     return {
@@ -303,6 +326,107 @@ async def login(request: Request):
             "full_name": user.get("full_name")
         }
     }
+
+@app.get("/api/auth/verify-email")
+async def verify_email(token: str = Query(...)):
+    """Verify user email with token"""
+    db = get_db()
+    
+    # Find user with this verification token
+    user = db.users.find_one({"verification_token": token})
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+    
+    # Check if token is expired
+    if user.get("verification_token_expires") and user["verification_token_expires"] < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Verification token has expired. Please request a new one.")
+    
+    # Update user as verified
+    db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {"is_verified": True},
+            "$unset": {"verification_token": "", "verification_token_expires": ""}
+        }
+    )
+    
+    # Redirect to login page with success message
+    return RedirectResponse(url="/?verified=true", status_code=302)
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(request: Request):
+    """Send password reset email"""
+    data = await request.json()
+    email = data.get("email")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    
+    db = get_db()
+    user = db.users.find_one({"email": email})
+    
+    # Don't reveal if email exists or not (security best practice)
+    if not user:
+        return {"message": "If an account with that email exists, a password reset link has been sent."}
+    
+    # Generate reset token
+    reset_token = secrets.token_urlsafe(32)
+    reset_expires = datetime.utcnow() + timedelta(hours=1)
+    
+    # Save reset token
+    db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "reset_token": reset_token,
+                "reset_token_expires": reset_expires
+            }
+        }
+    )
+    
+    # Send reset email
+    base_url = os.getenv("BASE_URL", "http://localhost:8123")
+    email_service = get_email_service()
+    email_sent = email_service.send_password_reset_email(email, reset_token, base_url)
+    
+    if not email_sent:
+        print(f"Warning: Failed to send password reset email to {email}")
+    
+    return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+@app.post("/api/auth/reset-password")
+async def reset_password(request: Request):
+    """Reset password with token"""
+    data = await request.json()
+    token = data.get("token")
+    new_password = data.get("password")
+    
+    if not token or not new_password:
+        raise HTTPException(status_code=400, detail="Token and new password required")
+    
+    db = get_db()
+    
+    # Find user with this reset token
+    user = db.users.find_one({"reset_token": token})
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    # Check if token is expired
+    if user.get("reset_token_expires") and user["reset_token_expires"] < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Reset token has expired. Please request a new one.")
+    
+    # Update password and remove reset token
+    db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {"hashed_password": get_password_hash(new_password)},
+            "$unset": {"reset_token": "", "reset_token_expires": ""}
+        }
+    )
+    
+    return {"message": "Password reset successful. You can now log in with your new password."}
 
 @app.get("/api/auth/me")
 async def get_me(request: Request):

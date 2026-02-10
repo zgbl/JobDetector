@@ -22,23 +22,54 @@ This project follows the **JAMstack** philosophy using a **Single-Page Applicati
   - *Why FastAPI?* It is one of the fastest Python frameworks available, built on top of Starlette and Pydantic. It's asynchronous (ASGI) and uses Python type hints for validation.
 - **Runtime**: **Vercel Serverless Functions**. The Python code only runs when an API request is made, saving resources and costs.
 
-## 3. Visual Workflow
+## 3. Visual Workflow & Collaboration
+
+The system uses a **decoupled architecture** where data ingestion, data storage, and data serving are handled by different components.
+
 ```mermaid
-graph LR
-    User([End User]) --> Browser[Web Browser]
+graph TB
+    subgraph "1. Client Layer (Web)"
+        User([End User]) --> Browser[Web Browser]
+        Browser -- "Fetch API" --> API_End[API Endpoints]
+    end
     
-    subgraph "Vercel Edge Network"
-        Browser -- "1. Request Static Files" --> Edge[Edge CDN]
-        Edge -- "2. Serve index.html/CSS/JS" --> Browser
+    subgraph "2. Compute Layer (Python)"
+        API_End --> FastAPI[FastAPI Implementation]
+        
+        subgraph "Data Ingestion (Scrapers)"
+            GHA[GitHub Actions] -- "Scheduled Task" --> Scrapers[Python Scrapers]
+        end
     end
 
-    subgraph "Vercel Serverless (AWS Lambda under the hood)"
-        Browser -- "3. Fetch /api/jobs" --> FastAPI[FastAPI Instance]
-        FastAPI -- "4. Query" --> DB[(MongoDB Atlas)]
-        DB -- "5. Data" --> FastAPI
-        FastAPI -- "6. JSON Response" --> Browser
+    subgraph "3. Data Layer (MongoDB)"
+        FastAPI -- "Read/Write" --> DB[(MongoDB Atlas)]
+        Scrapers -- "Ingest" --> DB
+    end
+
+    subgraph "Collaboration Logic"
+        Note1[Web: UI + State Management]
+        Note2[Python: Business Logic + REST API]
+        Note3[MongoDB: Persistent Storage]
     end
 ```
+
+### How They Work Together:
+1.  **Web (Frontend)**: Vanilla JS handles URL routing, filtering, and job display. It requests data from the Python API and renders it without refreshing the page.
+2.  **Python (Backend)**: 
+    - **API Layer**: FastAPI runs on **Vercel Serverless Functions** (production) or **Uvicorn** (local). It validates tokens, handles job searches/favorites, and serves JSON to the frontend.
+    - **Scraping Layer**: Python scripts run in **GitHub Actions** on a schedule (every 6 hours). They pull data from external sites, clean it, and push it directly to MongoDB.
+3.  **MongoDB (Database)**: Acts as the "Source of Truth". Both the API and the Scrapers connect to it via `api/db.py` using the `MONGODB_URI`.
+
+---
+
+## 4. Components & Runners
+
+| Component | Runner (Local) | Runner (Production) | Purpose |
+|-----|-----|-----|-----|
+| **Web Server** | `http-server` / Live Server | Vercel Static CDN | Serves HTML/CSS/JS |
+| **API Backend** | `uvicorn api.index:app` | Vercel Serverless | Handles requests, Auth, DB queries |
+| **Scrapers** | `python scripts/prod_scraper.py` | **GitHub Actions** | Periodically fetches new jobs |
+| **Database** | Local Mongo / Atlas | **MongoDB Atlas** | Stores jobs, users, and stats |
 
 ## 4. Key Advantages (How to explain to others)
 
