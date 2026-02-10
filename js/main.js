@@ -93,6 +93,10 @@ async function init() {
     // Load filters from URL
     loadFiltersFromURL();
 
+    // Check if there's a job ID in URL
+    const params = new URLSearchParams(window.location.search);
+    const jobId = params.get('jobId');
+
     // Then fetch data in parallel or sequence, wrapped in try/catch
     try {
         checkAuth();
@@ -104,6 +108,11 @@ async function init() {
     try {
         await fetchStats();
         await fetchJobs();
+
+        // If jobId in URL, open that job modal
+        if (jobId) {
+            await showJobDetailsById(jobId);
+        }
     } catch (e) {
         console.error('Data loading failed:', e);
     }
@@ -310,6 +319,10 @@ function showJobDetails(jobId, jobData = null) {
     const job = jobData || jobs.find(j => j._id === jobId);
     if (!job) return;
 
+    // Update URL with job ID
+    const newUrl = `${window.location.pathname}?jobId=${jobId}`;
+    window.history.pushState({ jobId }, '', newUrl);
+
     modalBody.innerHTML = `
         <div class="modal-header">
             <div class="job-company" onclick="showCompanyDetailsByName('${job.company}')" style="cursor: pointer; color: var(--accent-blue);">${job.company}</div>
@@ -430,6 +443,36 @@ async function showJobDetailsFromExternal(jobId, companyName) {
     }
 }
 
+// Helper to fetch and show job by ID (for direct links)
+async function showJobDetailsById(jobId) {
+    // First check if job is already in local state
+    let job = jobs.find(j => j._id === jobId);
+
+    if (job) {
+        showJobDetails(jobId, job);
+        return;
+    }
+
+    // If not found locally, we need to fetch it from API
+    // Since we don't have a direct /api/jobs/:id endpoint, we'll search for it
+    try {
+        const response = await fetch(`/api/jobs?limit=1000`);
+        const data = await response.json();
+        const allJobs = data.jobs || data;
+        job = allJobs.find(j => j._id === jobId);
+
+        if (job) {
+            showJobDetails(jobId, job);
+        } else {
+            console.error('Job not found:', jobId);
+            alert('Job not found or no longer available');
+        }
+    } catch (error) {
+        console.error('Error fetching job:', error);
+        alert('Failed to load job details');
+    }
+}
+
 // Utility Functions
 function setupEventListeners() {
     // Search with debounce
@@ -467,6 +510,16 @@ function setupEventListeners() {
             if (modal) {
                 modal.style.display = "none";
                 document.body.style.overflow = "auto";
+
+                // Clean up job URL if closing job modal
+                if (modal.id === 'jobModal') {
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.has('jobId')) {
+                        params.delete('jobId');
+                        const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+                        window.history.pushState({}, '', newUrl);
+                    }
+                }
             }
         };
     });
@@ -475,23 +528,33 @@ function setupEventListeners() {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = "none";
             document.body.style.overflow = "auto";
+
+            // Clean up job URL if closing job modal
+            if (event.target.id === 'jobModal') {
+                const params = new URLSearchParams(window.location.search);
+                if (params.has('jobId')) {
+                    params.delete('jobId');
+                    const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+                    window.history.pushState({}, '', newUrl);
+                }
+            }
         }
     };
 
     // Navigation Switching
     navJobs.onclick = (e) => {
-        e.preventDefault();
-        switchToView('jobs');
+        // Allow default navigation to '/'
+        // No need to prevent default
     };
 
     navCompanies.onclick = (e) => {
-        e.preventDefault();
-        switchToView('companies');
+        // Allow default navigation to '/?view=companies'
+        // No need to prevent default
     };
 
     const companyStatCard = document.getElementById('companyStatCard');
     if (companyStatCard) {
-        companyStatCard.onclick = () => switchToView('companies');
+        companyStatCard.onclick = () => window.location.href = '/?view=companies';
     }
 
     // Company Search
@@ -969,6 +1032,12 @@ function updateURL() {
 
 function loadFiltersFromURL() {
     const params = new URLSearchParams(window.location.search);
+
+    // Check for view parameter
+    const view = params.get('view');
+    if (view === 'companies') {
+        switchToView('companies');
+    }
 
     currentFilters.q = params.get('q') || '';
     currentFilters.category = params.get('category') || '';

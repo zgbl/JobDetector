@@ -31,7 +31,9 @@ jobs:
         run: |
           # 1. Ensure companies are in DB (handles new DB setup)
           python scripts/import_companies.py
-          # 2. Run the production master scraper
+          # 2. Import Ben Lang companies (auto-update every 6 hours)
+          python scripts/import_benlang.py --file BenLang.txt
+          # 3. Run the production master scraper
           python scripts/prod_scraper.py
 
           

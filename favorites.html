@@ -304,6 +304,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
             if (!user) {
+                // Redirect to main page login, not favorites (to avoid infinite loop)
                 window.location.href = '/?login=true';
                 return;
             }
