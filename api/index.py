@@ -33,7 +33,7 @@ except ImportError:
     )
 
 from src.database.models import Company, ATSSystem, CompanyMetadata
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 load_dotenv()
 
@@ -66,6 +66,13 @@ async def read_favorites():
     favorites_file = project_root_path / "favorites.html"
     if favorites_file.exists():
         return favorites_file.read_text()
+    return "<h1>Page not found</h1>"
+
+@app.get("/reset-password.html", response_class=HTMLResponse)
+async def read_reset_password():
+    reset_file = project_root_path / "reset-password.html"
+    if reset_file.exists():
+        return reset_file.read_text()
     return "<h1>Page not found</h1>"
 
 @app.get("/api/health")
@@ -186,7 +193,7 @@ async def get_jobs(
 
     if days:
         from datetime import timedelta
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
         query["posted_date"] = {"$gte": cutoff}
 
     if and_conditions:
@@ -275,13 +282,13 @@ async def register(request: Request):
 
     # Generate verification token
     verification_token = secrets.token_urlsafe(32)
-    verification_expires = datetime.utcnow() + timedelta(hours=24)
+    verification_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=24)
 
     user_doc = {
         "email": email,
         "hashed_password": get_password_hash(password),
         "full_name": full_name or email.split("@")[0],
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
         "is_active": True,
         "is_verified": False,
         "verification_token": verification_token,
@@ -339,7 +346,7 @@ async def verify_email(token: str = Query(...)):
         raise HTTPException(status_code=400, detail="Invalid or expired verification token")
     
     # Check if token is expired
-    if user.get("verification_token_expires") and user["verification_token_expires"] < datetime.utcnow():
+    if user.get("verification_token_expires") and user["verification_token_expires"] < datetime.now(timezone.utc).replace(tzinfo=None):
         raise HTTPException(status_code=400, detail="Verification token has expired. Please request a new one.")
     
     # Update user as verified
@@ -357,10 +364,13 @@ async def verify_email(token: str = Query(...)):
 @app.post("/api/auth/forgot-password")
 async def forgot_password(request: Request):
     """Send password reset email"""
+    print("\n--- Forgot Password Request Received ---")
     data = await request.json()
     email = data.get("email")
+    print(f"Target Email: {email}")
     
     if not email:
+        print("Error: No email provided in request")
         raise HTTPException(status_code=400, detail="Email required")
     
     db = get_db()
@@ -368,13 +378,16 @@ async def forgot_password(request: Request):
     
     # Don't reveal if email exists or not (security best practice)
     if not user:
+        print(f"Security Notice: Email '{email}' not found in DB. Returning generic success.")
         return {"message": "If an account with that email exists, a password reset link has been sent."}
     
+    print(f"User found for '{email}'. Generating reset token...")
     # Generate reset token
     reset_token = secrets.token_urlsafe(32)
-    reset_expires = datetime.utcnow() + timedelta(hours=1)
+    reset_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1)
     
     # Save reset token
+    print("Saving reset token to DB...")
     db.users.update_one(
         {"_id": user["_id"]},
         {
@@ -388,11 +401,15 @@ async def forgot_password(request: Request):
     # Send reset email
     base_url = os.getenv("BASE_URL", "http://localhost:8123")
     email_service = get_email_service()
+    print(f"Attempting to send reset email to {email} via {email_service.smtp_server}...")
     email_sent = email_service.send_password_reset_email(email, reset_token, base_url)
     
     if not email_sent:
-        print(f"Warning: Failed to send password reset email to {email}")
+        print(f"❌ ERROR: Failed to send password reset email to {email}")
+    else:
+        print(f"✅ SUCCESS: Password reset email sent to {email}")
     
+    print("--- Request Finished ---\n")
     return {"message": "If an account with that email exists, a password reset link has been sent."}
 
 @app.post("/api/auth/reset-password")
@@ -414,7 +431,7 @@ async def reset_password(request: Request):
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
     # Check if token is expired
-    if user.get("reset_token_expires") and user["reset_token_expires"] < datetime.utcnow():
+    if user.get("reset_token_expires") and user["reset_token_expires"] < datetime.now(timezone.utc).replace(tzinfo=None):
         raise HTTPException(status_code=400, detail="Reset token has expired. Please request a new one.")
     
     # Update password and remove reset token
@@ -519,7 +536,7 @@ async def save_search(request: Request):
         "name": name,
         "criteria": criteria,
         "email_alert": email_alert,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
         "last_emailed_at": None
     }
     
@@ -728,7 +745,7 @@ async def add_favorite(request: Request):
         if ats_url and not existing_company.get('ats_url'):
             update_fields['ats_url'] = ats_url
         if ats_type and not existing_company.get('ats_system'):
-            update_fields['ats_system'] = {'type': ats_type, 'detected_at': datetime.utcnow()}
+            update_fields['ats_system'] = {'type': ats_type, 'detected_at': datetime.now(timezone.utc).replace(tzinfo=None)}
             
         if update_fields:
             db.companies.update_one({'_id': existing_company['_id']}, {'$set': update_fields})
@@ -740,13 +757,13 @@ async def add_favorite(request: Request):
         metadata = CompanyMetadata(
             added_by="user_request", 
             tags=["User Favorite"],
-            added_at=datetime.utcnow()
+            added_at=datetime.now(timezone.utc).replace(tzinfo=None)
         )
         
         new_company = Company(
             name=final_company_name,
             domain="", # Unknown initially
-            ats_system=ATSSystem(type=ats_type if ats_type else "unknown", detected_at=datetime.utcnow()),
+            ats_system=ATSSystem(type=ats_type if ats_type else "unknown", detected_at=datetime.now(timezone.utc).replace(tzinfo=None)),
             ats_url=ats_url,
             metadata=metadata,
             is_active=True
@@ -757,7 +774,7 @@ async def add_favorite(request: Request):
         
     # Upsert User Favorite
     fav_entry = {
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
         "company_id": final_company_id,
         "is_monitor": is_monitor
     }
@@ -795,7 +812,7 @@ async def check_monitor(company_name: str, request: Request):
     
     result = db.user_favorites.update_one(
         {"user_email": email, "company_name": company_name},
-        {"$set": {"last_checked_at": datetime.utcnow()}}
+        {"$set": {"last_checked_at": datetime.now(timezone.utc).replace(tzinfo=None)}}
     )
     
     if result.matched_count == 0:
