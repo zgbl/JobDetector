@@ -113,7 +113,7 @@ def check_and_send_alerts():
                     <span style="color: #666;">{job.get('location', '')} • Posted {job.get('posted_date', 'Recently')}</span>
                 </li>
                 """
-            html += f"</ul><p><a href='http://localhost:8123'>View all on JobDetector</a></p>"
+            html += f"</ul><p><a href='https://jobdetector.vercel.app'>View all on JobDetector</a></p>"
             
             if send_email(user_email, f"Job Alert: {len(new_jobs)} new jobs for {alert['name']}", html):
                 # Update last_emailed_at

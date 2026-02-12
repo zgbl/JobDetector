@@ -35,7 +35,7 @@ except ImportError:
 from src.database.models import Company, ATSSystem, CompanyMetadata
 from datetime import datetime, timedelta, timezone
 
-load_dotenv()
+load_dotenv(dotenv_path=project_root_path / ".env")
 
 app = FastAPI(title="JobDetector Dashboard")
 
@@ -48,6 +48,25 @@ app.add_middleware(
 )
 
 # Serve index.html at root
+# Simple Rate Limiting State (In-memory, reset on server restart)
+rate_limit_store = {}
+
+async def check_rate_limit(request: Request, limit: int = 5, window: int = 60):
+    """Simple IP-based rate limiting"""
+    client_ip = request.client.host
+    now = datetime.now()
+    
+    if client_ip not in rate_limit_store:
+        rate_limit_store[client_ip] = []
+        
+    # Clean old requests
+    rate_limit_store[client_ip] = [t for t in rate_limit_store[client_ip] if now - t < timedelta(seconds=window)]
+    
+    if len(rate_limit_store[client_ip]) >= limit:
+        raise HTTPException(status_code=429, detail="Too many requests. Please try again later.")
+    
+    rate_limit_store[client_ip].append(now)
+
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     index_file = project_root_path / "index.html"
@@ -75,6 +94,15 @@ async def read_reset_password():
         return reset_file.read_text()
     return "<h1>Page not found</h1>"
 
+@app.get("/feedback.html", response_class=HTMLResponse)
+async def read_feedback():
+    feedback_file = project_root_path / "feedback.html"
+    if feedback_file.exists():
+        return feedback_file.read_text()
+    return "<h1>Page not found</h1>"
+
+
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "JobDetector API is running"}
@@ -100,6 +128,7 @@ async def get_jobs(
     company: Optional[str] = None,
     job_type: Optional[str] = None,
     remote_type: Optional[str] = None,
+    locations: Optional[List[str]] = Query(None),
     location: Optional[str] = None,
     category: Optional[str] = None,
     days: Optional[int] = None,
@@ -139,8 +168,10 @@ async def get_jobs(
     if remote_type:
         query["remote_type"] = remote_type
 
-    if location:
-        # Normalize common country names
+    # Multi-location logic
+    effective_locations = locations or ([location] if location else [])
+    if effective_locations:
+        location_conditions = []
         country_map = {
             "usa": "United States|USA|U.S.",
             "japan": "Japan|Tokyo|Osaka|Kyoto",
@@ -150,23 +181,30 @@ async def get_jobs(
             "france": "France|Paris",
         }
         
-        search_val = country_map.get(location.lower(), location)
+        for loc in effective_locations:
+            if not loc: continue
+            
+            if loc.lower() == "remote":
+                location_conditions.append({
+                    "$or": [
+                        {"location": {"$regex": "remote", "$options": "i"}},
+                        {"remote_type": "Remote"}
+                    ]
+                })
+            else:
+                search_val = country_map.get(loc.lower(), loc)
+                location_conditions.append({
+                    "$or": [
+                        {"location": {"$regex": search_val, "$options": "i"}},
+                        {"company_location": {"$regex": search_val, "$options": "i"}}
+                    ]
+                })
         
-        if location.lower() == "remote":
-            and_conditions.append({
-                "$or": [
-                    {"location": {"$regex": "remote", "$options": "i"}},
-                    {"remote_type": "Remote"}
-                ]
-            })
-        else:
-            # Check both job location and company base location
-            and_conditions.append({
-                "$or": [
-                    {"location": {"$regex": search_val, "$options": "i"}},
-                    {"company_location": {"$regex": search_val, "$options": "i"}}
-                ]
-            })
+        if location_conditions:
+            if len(location_conditions) == 1:
+                and_conditions.append(location_conditions[0])
+            else:
+                and_conditions.append({"$or": location_conditions})
 
     if category:
         # Map common categories to keywords
@@ -267,6 +305,8 @@ async def get_company_jobs(company_name: str):
 
 @app.post("/api/auth/register")
 async def register(request: Request):
+    """Register a new user (Rate limited)"""
+    await check_rate_limit(request, limit=3, window=300) # Max 3 per 5 mins
     data = await request.json()
     email = data.get("email")
     password = data.get("password")
@@ -310,6 +350,8 @@ async def register(request: Request):
 
 @app.post("/api/auth/login")
 async def login(request: Request):
+    """Login and get token (Rate limited)"""
+    await check_rate_limit(request, limit=10, window=60)
     data = await request.json()
     email = data.get("email")
     password = data.get("password")
@@ -363,6 +405,8 @@ async def verify_email(token: str = Query(...)):
 
 @app.post("/api/auth/forgot-password")
 async def forgot_password(request: Request):
+    """Initiate password reset (Rate limited)"""
+    await check_rate_limit(request, limit=3, window=600) # Max 3 per 10 mins
     """Send password reset email"""
     print("\n--- Forgot Password Request Received ---")
     data = await request.json()
@@ -468,9 +512,16 @@ async def get_me(request: Request):
         # User might have been deleted
         raise HTTPException(status_code=401, detail="User not found")
     
+    # Admin check
+    admin_email = os.getenv("ADMIN_EMAIL")
+    is_admin = (admin_email and email.lower() == admin_email.lower()) or user.get("is_admin", False)
+    
+    print(f"DEBUG: Checking admin for {email}. Configured ADMIN_EMAIL: {admin_email}. Result: {is_admin}")
+    
     return {
         "email": user["email"],
         "full_name": user.get("full_name"),
+        "is_admin": is_admin,
         "created_at": user["created_at"].isoformat() if hasattr(user.get("created_at"), "isoformat") else str(user.get("created_at", ""))
     }
 
@@ -796,6 +847,111 @@ async def add_favorite(request: Request):
         "is_monitor": is_monitor,
         "ats_detected": bool(ats_url)
     }
+
+@app.post("/api/feedback")
+async def submit_feedback(data: dict, request: Request):
+    """Submit user feedback (Rate limited)"""
+    await check_rate_limit(request, limit=5, window=600) # Max 5 per 10 mins
+    content = data.get("content")
+    email = data.get("email") # Optional user-provided email
+    
+    if not content:
+        raise HTTPException(status_code=400, detail="Feedback content is required")
+    if len(content) > 2000:
+        raise HTTPException(status_code=400, detail="Feedback too long (max 2000 chars)")
+
+    # Try to get user email from token if available
+    auth_header = request.headers.get("Authorization")
+    user_email = None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+        payload = decode_access_token(token)
+        if payload:
+            user_email = payload.get("sub")
+
+    db = get_db()
+    feedback_doc = {
+        "content": content,
+        "provided_email": email,
+        "user_email": user_email,
+        "user_agent": request.headers.get("User-Agent"),
+        "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+        "status": "new"
+    }
+    
+    db.user_feedbacks.insert_one(feedback_doc)
+    return {"message": "Feedback submitted successfully"}
+
+@app.get("/api/admin/feedbacks")
+async def get_feedbacks(request: Request, page: int = 1, limit: int = 10):
+    """Get all feedbacks with pagination (Admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    email = payload.get("sub")
+    
+    admin_email = os.getenv("ADMIN_EMAIL")
+    # Case-insensitive check
+    is_admin = (admin_email and email.lower() == admin_email.lower())
+    
+    if not is_admin:
+        # Fallback: check if the user has is_admin=True in the DB
+        db = get_db()
+        user = db.users.find_one({"email": email})
+        if not user or not user.get("is_admin"):
+            raise HTTPException(status_code=403, detail="Forbidden: Admin only")
+
+    db = get_db()
+    total = db.user_feedbacks.count_documents({})
+    skip = (page - 1) * limit
+    feedbacks = list(db.user_feedbacks.find().sort("created_at", -1).skip(skip).limit(limit))
+    
+    for f in feedbacks:
+        f["_id"] = str(f["_id"])
+    
+    return {
+        "feedbacks": feedbacks,
+        "total": total,
+        "page": page,
+        "limit": limit
+    }
+
+@app.delete("/api/admin/feedback/{feedback_id}")
+async def delete_feedback(feedback_id: str, request: Request):
+    """Delete a feedback entry (Admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    email = payload.get("sub")
+    admin_email = os.getenv("ADMIN_EMAIL")
+    is_admin = (admin_email and email.lower() == admin_email.lower())
+    
+    if not is_admin:
+        db = get_db()
+        user = db.users.find_one({"email": email})
+        if not user or not user.get("is_admin"):
+            raise HTTPException(status_code=403, detail="Forbidden: Admin only")
+
+    db = get_db()
+    try:
+        result = db.user_feedbacks.delete_one({"_id": ObjectId(feedback_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Feedback not found")
+        return {"message": "Feedback deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid feedback ID: {str(e)}")
 
 @app.post("/api/user/favorites/{company_name}/check")
 async def check_monitor(company_name: str, request: Request):

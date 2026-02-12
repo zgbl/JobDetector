@@ -24,16 +24,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Scraper
+      - name: Run Scraper & Alerts
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
         run: |
-          # 1. Ensure companies are in DB (handles new DB setup)
+          # 1. Ensure companies are in DB
           python scripts/import_companies.py
-          # 2. Import Ben Lang companies (auto-update every 6 hours)
+          # 2. Import Ben Lang companies
           python scripts/import_benlang.py --file BenLang.txt
           # 3. Run the production master scraper
           python scripts/prod_scraper.py
+          # 4. Send email alerts [NEW]
+          python scripts/send_alerts.py
 
           

@@ -4,7 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JobDetector | Modern Career Dashboard</title>
+    <title>JobDetector | Find High-Growth Tech Jobs Directly</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Discover career opportunities at top tech companies and startups. Direct-from-source job listings updated every 6 hours.">
+    <meta name="keywords" content="tech jobs, software engineer, remote jobs, startups, career dashboard, job hunter">
+    <meta name="author" content="JobDetector">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jobdetector.vercel.app/">
+    <meta property="og:title" content="JobDetector | Modern Career Dashboard">
+    <meta property="og:description"
+        content="Directly from source. Find your next opportunity at the world's fastest-growing companies.">
+    <meta property="og:image" content="https://jobdetector.vercel.app/assets/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://jobdetector.vercel.app/">
+    <meta property="twitter:title" content="JobDetector | Modern Career Dashboard">
+    <meta property="twitter:description"
+        content="Directly from source. Find your next opportunity at the world's fastest-growing companies.">
+    <meta property="twitter:image" content="https://jobdetector.vercel.app/assets/og-image.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,6 +65,9 @@
                 <a href="/favorites.html" class="nav-item">Favorites</a>
                 <a href="/?view=companies" class="nav-item" id="navCompanies">Companies</a>
                 <a href="#" class="nav-item" onclick="openSavedSearches()">My Searches</a>
+                <a href="/feedback.html" class="nav-item">Feedback</a>
+                <a href="#" class="nav-item" id="adminNavLink" style="display: none;"
+                    onclick="showAdminView()">Admin</a>
             </div>
             <div class="user-profile" id="userProfile">
                 <button class="btn-signin" id="showLogin">Sign In</button>
@@ -47,6 +76,42 @@
     </nav>
 
     <main class="dashboard">
+        <!-- Admin Feedback Section [NEW] -->
+        <section id="adminSection" style="display: none; padding-top: 2rem;">
+            <div class="section-header">
+                <h2>User <span class="gradient-text">Feedback</span> (Admin)</h2>
+                <div class="header-actions">
+                    <button class="btn-secondary" onclick="exportFeedback()">
+                        <i class="fas fa-file-export"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="stat-card glass-card" style="padding: 1.5rem; text-align: center;">
+                    <div class="stat-value" id="totalFeedback"
+                        style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">0</div>
+                    <div class="stat-label"
+                        style="color: var(--text-dim); text-transform: uppercase; font-size: 0.8rem;">Total Feedbacks
+                    </div>
+                </div>
+                <div class="stat-card glass-card" style="padding: 1.5rem; text-align: center;">
+                    <div class="stat-value" id="uniqueUsers"
+                        style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">0</div>
+                    <div class="stat-label"
+                        style="color: var(--text-dim); text-transform: uppercase; font-size: 0.8rem;">Unique Users</div>
+                </div>
+            </div>
+
+            <div id="adminFeedbackList" class="feedback-forum-list"
+                style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Data injected via JS -->
+            </div>
+            <div id="admin-pagination-container" class="pagination-container" style="display: none; margin-top: 2rem;">
+                <!-- Content injected via JS -->
+            </div>
+        </section>
         <header class="hero-section">
             <div class="hero-content">
                 <h1>Find your next <span class="gradient-text">opportunity</span></h1>
@@ -102,16 +167,17 @@
                         </select>
                     </div>
 
-                    <div class="dropdown-wrapper input-wrapper">
+                    <div class="dropdown-wrapper input-wrapper keyword-filter-wrapper">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="keywordFilter" placeholder="Keywords (e.g. React)">
+                        <div id="keywordTags" class="location-tags"></div>
+                        <input type="text" id="keywordFilter" placeholder="Keyword Search (Title, Company, Skills)">
                     </div>
 
-                    <div class="dropdown-wrapper input-wrapper">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <input list="locationOptions" id="locationFilter" placeholder="Location (e.g. USA)">
+                    <div class="dropdown-wrapper input-wrapper location-filter-wrapper">
+                        <i class="fas fa-globe-americas" style="color: var(--accent-blue);"></i>
+                        <div id="locationTags" class="location-tags"></div>
+                        <input list="locationOptions" id="locationFilter" placeholder="Location + Enter">
                         <datalist id="locationOptions">
-                            <!-- Countries -->
                             <option value="USA">
                             <option value="China">
                             <option value="Japan">
@@ -119,14 +185,10 @@
                             <option value="United Kingdom">
                             <option value="Canada">
                             <option value="Remote">
-                                <!-- US Tech Hubs -->
-                            <option value="San Francisco Bay Area">
+                            <option value="San Francisco">
                             <option value="New York">
                             <option value="Seattle">
                             <option value="Austin">
-                            <option value="Boston">
-                            <option value="Los Angeles">
-                            <option value="Chicago">
                         </datalist>
                     </div>
 
@@ -162,6 +224,11 @@
             </div>
         </section>
 
+        <!-- Pagination System [NEW] -->
+        <div id="pagination-container" class="pagination-container" style="display: none;">
+            <!-- Content injected via JS -->
+        </div>
+
         <!-- Company Explorer Section [NEW] -->
         <section id="companySection" style="display: none;">
             <div class="section-header">
@@ -175,6 +242,9 @@
                 <!-- Data injected via JS -->
             </div>
         </section>
+
+
+    </main>
     </main>
 
     <!-- Dynamic Modals -->
@@ -307,16 +377,39 @@
         </div>
     </div>
 
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="modal">
+        <div class="modal-content auth-card glass-card">
+            <span class="close-modal" onclick="closeModal('feedbackModal')">&times;</span>
+            <h2 class="auth-title">Share Your Feedback</h2>
+            <p class="auth-subtitle">Help us improve JobDetector</p>
+            <form id="feedbackForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label>How can we improve?</label>
+                    <textarea id="feedbackContent" placeholder="Your suggestions, bug reports, or feature requests..."
+                        rows="5" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Email (Optional)</label>
+                    <input type="email" id="feedbackEmail" placeholder="If you'd like us to follow up">
+                </div>
+                <button type="button" class="btn-primary full-width" id="submitFeedbackBtn">Send Feedback</button>
+            </form>
+        </div>
+    </div>
+
     <footer>
         <div class="footer-content">
             <p>&copy; 2026 JobDetector. Directly from source.</p>
+            <div class="footer-links">
+            </div>
             <div class="visit-counter-badge">
                 <i class="fas fa-users"></i> <span id="siteVisits">...</span> <span class="label">Job Seekers</span>
             </div>
         </div>
     </footer>
 
-    <script src="js/main.js"></script>
+    <script src="js/main.js?v=20260210_2315"></script>
 </body>
 
 </html>

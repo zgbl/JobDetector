@@ -1,4 +1,5 @@
 // App State
+console.warn('--- JOB DETECTOR MAIN.JS ATTACHED v1.0.3 ---');
 let jobs = [];
 let companies = [];
 let currentCompanyJobs = [];
@@ -9,7 +10,8 @@ let currentFilters = {
     job_type: '',
     remote_only: false,
     category: '',
-    location: '',
+    locations: [],
+    keywords: [], // Added for multi-tag keyword search
     days: '',
     company: '',
     companies: [],
@@ -36,22 +38,25 @@ const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const userProfile = document.getElementById('userProfile');
 const modalBody = document.getElementById('modalBody');
-// const closeModal = document.querySelector('.close-modal'); // Removed to avoid conflict
-// const authClose = document.querySelector('.auth-close'); // Consolidation
-
-// New Elements
 const navJobs = document.getElementById('navJobs');
 const navCompanies = document.getElementById('navCompanies');
-const loadMoreBtn = document.createElement('button'); // Create Load More button dynamically
-loadMoreBtn.className = 'btn-primary load-more-btn';
-loadMoreBtn.innerHTML = 'Load More Jobs <i class="fas fa-chevron-down"></i>';
-loadMoreBtn.style.display = 'none';
-loadMoreBtn.style.margin = '2rem auto';
-loadMoreBtn.onclick = () => fetchJobs(true);
+const keywordFilter = document.getElementById('keywordFilter');
+const categoryFilter = document.getElementById('categoryFilter');
+const locationFilter = document.getElementById('locationFilter');
+const dateFilter = document.getElementById('dateFilter');
+const clearFiltersBtn = document.getElementById('clearFilters');
+const locationTagsContainer = document.getElementById('locationTags');
+const keywordTagsContainer = document.getElementById('keywordTags');
+const filterPills = document.querySelectorAll('.filter-pill');
 
 // Pagination State
-let currentSkip = 0;
-const PAGE_LIMIT = 100;
+let currentPage = 1;
+const PAGE_LIMIT = 50;
+const paginationContainer = document.getElementById('pagination-container');
+const adminPaginationContainer = document.getElementById('admin-pagination-container');
+let currentFeedbackPage = 1;
+const FEEDBACK_LIMIT = 10;
+let feedbackTotalCount = 0;
 const jobsSection = document.querySelector('.hero-section').parentNode; // The main dashboard
 const companySection = document.getElementById('companySection');
 const companiesGrid = document.getElementById('companiesGrid');
@@ -69,26 +74,10 @@ const jobsDashboardParts = [
 
 // Init
 async function init() {
-    // Setup listeners first so UI remains responsive even if data loads slow/fails
-    // Setup listeners first so UI remains responsive even if data loads slow/fails
+    console.warn('!!! JOB DETECTOR JS v1.0.3 BOOTING !!!');
     setupEventListeners();
 
-    // Keyword Search Listener
-    const keywordInput = document.getElementById('keywordFilter');
-    if (keywordInput) {
-        let debounceTimer;
-        keywordInput.addEventListener('input', (e) => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                const query = e.target.value.trim();
-                currentFilters.q = query;
-                currentSearchQuery = query; // For highlighting
-                // Reset to first page
-                currentSkip = 0;
-                fetchJobs();
-            }, 500); // 500ms debounce
-        });
-    }
+    // Keyword Search Listener moved to setupEventListeners for consolidation
 
     // Load filters from URL
     loadFiltersFromURL();
@@ -196,27 +185,42 @@ async function fetchStats() {
     }
 }
 
-async function fetchJobs(loadMore = false) {
-    if (!loadMore) {
-        showLoading();
-        currentSkip = 0;
-    } else {
-        loadMoreBtn.classList.add('loading');
-        loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+async function fetchJobs(page = 1) {
+    showLoading();
+    currentPage = page;
+
+    // Smooth scroll to top when changing pages
+    if (page > 1) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     try {
         const params = new URLSearchParams();
-        if (currentFilters.q) params.append('q', currentFilters.q);
+
+        // Combine keyword tags and live search query
+        let fullQuery = [...currentFilters.keywords];
+        if (currentFilters.q && !fullQuery.includes(currentFilters.q)) {
+            fullQuery.push(currentFilters.q);
+        }
+
+        if (fullQuery.length > 0) {
+            params.append('q', fullQuery.join(' '));
+        }
         if (currentFilters.job_type) params.append('job_type', currentFilters.job_type);
         if (currentFilters.remote_only) params.append('remote_type', 'Remote');
         if (currentFilters.category) params.append('category', currentFilters.category);
-        if (currentFilters.location) params.append('location', currentFilters.location);
+
+        // Handle multiple locations
+        if (currentFilters.locations && currentFilters.locations.length > 0) {
+            currentFilters.locations.forEach(loc => params.append('locations', loc));
+        }
+
         if (currentFilters.days) params.append('days', currentFilters.days);
         if (currentFilters.company) params.append('company', currentFilters.company);
 
-        // Pagnation params
-        params.append('skip', currentSkip);
+        // Pagination params
+        const skip = (page - 1) * PAGE_LIMIT;
+        params.append('skip', skip);
         params.append('limit', PAGE_LIMIT);
 
         // Add companies list filter (e.g. from Collections)
@@ -236,9 +240,9 @@ async function fetchJobs(loadMore = false) {
                         const favorites = await favResp.json();
                         if (favorites.length === 0) {
                             jobs = [];
+                            currentTotalCount = 0;
                             updateURL();
                             applyFilterAndRender();
-                            loadMoreBtn.classList.remove('loading');
                             return;
                         }
                         const companyNames = favorites.map(f => f.name);
@@ -253,37 +257,17 @@ async function fetchJobs(loadMore = false) {
         const response = await fetch(`/api/jobs?${params.toString()}`);
         const data = await response.json();
 
-        let newJobs = [];
-
-        // Handle new response format: { jobs: [], total: X }
         if (data && typeof data === 'object' && data.jobs) {
-            newJobs = data.jobs;
+            jobs = data.jobs;
             currentTotalCount = data.total;
         } else {
-            // Fallback for array response
-            newJobs = Array.isArray(data) ? data : [];
-            currentTotalCount = newJobs.length; // Approximate if API doesn't return total
-        }
-
-        if (loadMore) {
-            jobs = [...jobs, ...newJobs];
-            currentSkip += PAGE_LIMIT;
-            loadMoreBtn.classList.remove('loading');
-            loadMoreBtn.innerHTML = 'Load More Jobs <i class="fas fa-chevron-down"></i>';
-        } else {
-            jobs = newJobs;
-            currentSkip = PAGE_LIMIT; // Next page starts at limit
+            jobs = Array.isArray(data) ? data : [];
+            currentTotalCount = jobs.length;
         }
 
         // Update URL
         updateURL();
-
         applyFilterAndRender();
-
-        // Ensure Load More button is in the grid container
-        if (!document.querySelector('.load-more-btn')) {
-            jobsGrid.parentNode.insertBefore(loadMoreBtn, jobsGrid.nextSibling);
-        }
 
     } catch (error) {
         console.error('Error fetching jobs:', error);
@@ -307,9 +291,9 @@ async function fetchCompanies(query = '') {
 // Render Functions
 function applyFilterAndRender() {
     filteredJobs = [...jobs];
-    // Use the actual total count from the backend instead of the local array length
     resultsCount.textContent = currentTotalCount || filteredJobs.length;
     renderJobs();
+    renderPagination();
 }
 
 function renderJobs() {
@@ -340,12 +324,89 @@ function renderJobs() {
             </div>
         </div>
     `).join('');
+}
 
-    // Toggle Load More button
-    if (filteredJobs.length < currentTotalCount) {
-        loadMoreBtn.style.display = 'block';
+function renderPagination() {
+    if (currentView !== 'jobs' || !currentTotalCount || currentTotalCount <= PAGE_LIMIT) {
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        return;
+    }
+
+    const totalPages = Math.ceil(currentTotalCount / PAGE_LIMIT);
+    if (paginationContainer) paginationContainer.style.display = 'flex';
+
+    let html = '';
+
+    // Previous Button
+    html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="fetchJobs(${currentPage - 1})">
+        <i class="fas fa-chevron-left"></i>
+    </button>`;
+
+    // Page numbers logic (show standard sliding window)
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i == 1 || i == totalPages || i >= currentPage - delta && i <= currentPage + delta) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l !== 1) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    rangeWithDots.forEach(i => {
+        if (i === '...') {
+            html += `<span class="pagination-dots">...</span>`;
+        } else {
+            html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="fetchJobs(${i})">${i}</button>`;
+        }
+    });
+
+    // Next Button
+    html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="fetchJobs(${currentPage + 1})">
+        <i class="fas fa-chevron-right"></i>
+    </button>`;
+
+    // Jump to page input
+    html += `
+        <div class="pagination-jump">
+            <span class="jump-label">Page</span>
+            <input type="number" 
+                   id="jumpPageInput" 
+                   class="page-input" 
+                   value="${currentPage}" 
+                   min="1" 
+                   max="${totalPages}"
+                   onkeypress="if(event.key === 'Enter') jumpToPage()">
+            <span class="jump-total">/ ${totalPages}</span>
+            <button class="btn-jump" onclick="jumpToPage()">Go</button>
+        </div>
+    `;
+
+    paginationContainer.innerHTML = html;
+}
+
+function jumpToPage() {
+    const input = document.getElementById('jumpPageInput');
+    const page = parseInt(input.value);
+    const totalPages = Math.ceil(currentTotalCount / PAGE_LIMIT);
+
+    if (page && page >= 1 && page <= totalPages) {
+        fetchJobs(page);
     } else {
-        loadMoreBtn.style.display = 'none';
+        alert(`Please enter a valid page number between 1 and ${totalPages}`);
     }
 }
 
@@ -544,7 +605,8 @@ function setupEventListeners() {
     jobSearch.addEventListener('input', (e) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
-            fetchJobs(e.target.value);
+            currentFilters.q = e.target.value;
+            fetchJobs(1);
         }, 500);
     });
 
@@ -563,7 +625,8 @@ function setupEventListeners() {
         btn.addEventListener('click', () => {
             const tag = btn.dataset.tag;
             jobSearch.value = tag;
-            fetchJobs(tag);
+            currentFilters.q = tag;
+            fetchJobs(1);
         });
     });
 
@@ -657,38 +720,96 @@ function setupEventListeners() {
     document.getElementById('loginBtn').onclick = handleLogin;
     document.getElementById('registerBtn').onclick = handleRegister;
 
-    // Advanced Filters
-    const keywordFilter = document.getElementById('keywordFilter');
-    const categoryFilter = document.getElementById('categoryFilter');
-    const locationFilter = document.getElementById('locationFilter');
-    const dateFilter = document.getElementById('dateFilter');
-    const clearFiltersBtn = document.getElementById('clearFilters');
-    const filterPills = document.querySelectorAll('.filter-pill');
-
-    categoryFilter.onchange = (e) => {
-        currentFilters.category = e.target.value;
-        fetchJobs();
-    };
+    // Advanced Filters (Listeners)
+    if (categoryFilter) {
+        categoryFilter.onchange = (e) => {
+            currentFilters.category = e.target.value;
+            fetchJobs();
+        };
+    }
 
     // Keyword Filter Sync
-    keywordFilter.oninput = (e) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            currentFilters.q = e.target.value;
-            // Sync with nav search
-            if (jobSearch) jobSearch.value = e.target.value;
-            fetchJobs();
-        }, 500);
-    };
+    if (keywordFilter) {
+        keywordFilter.oninput = (e) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                currentFilters.q = e.target.value;
+                currentSearchQuery = e.target.value; // For highlighting
+                // Sync with nav search
+                if (jobSearch) jobSearch.value = e.target.value;
+                currentPage = 1;
+                fetchJobs();
+            }, 500);
+        };
 
-    // Location Filter (Input + Datalist)
-    locationFilter.oninput = (e) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            currentFilters.location = e.target.value;
-            fetchJobs();
-        }, 500);
-    };
+        keywordFilter.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = e.target.value.trim();
+                if (val) {
+                    addKeywordTag(val);
+                    e.target.value = '';
+                    currentFilters.q = ''; // Clear live query as it's now a tag
+                    fetchJobs();
+                } else if (currentFilters.q) {
+                    fetchJobs();
+                }
+            }
+        };
+    }
+
+    // Keyword Tag Delegation
+    if (keywordTagsContainer) {
+        keywordTagsContainer.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-tag');
+            if (removeBtn) {
+                const keyword = removeBtn.dataset.keyword;
+                if (keyword) removeKeywordTag(keyword);
+            }
+        });
+    }
+
+    // Location Filter (Multi-tag interaction)
+    if (locationFilter) {
+        locationFilter.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = e.target.value.trim();
+                if (val) {
+                    addLocationTag(val);
+                    e.target.value = '';
+                    fetchJobs();
+                }
+            }
+        });
+
+        // Also support picking from datalist via input event
+        locationFilter.oninput = (e) => {
+            const val = e.target.value.trim();
+            const options = document.getElementById('locationOptions').querySelectorAll('option');
+            for (let opt of options) {
+                if (opt.value === val) {
+                    addLocationTag(val);
+                    e.target.value = '';
+                    fetchJobs();
+                    break;
+                }
+            }
+        };
+    }
+
+    // Delegation for tag removal (more robust)
+    if (locationTagsContainer) {
+        locationTagsContainer.addEventListener('click', (e) => {
+            console.log('LocationTagsContainer clicked, target:', e.target);
+            const removeBtn = e.target.closest('.remove-tag');
+            if (removeBtn) {
+                const loc = removeBtn.dataset.loc;
+                console.log('Remove button detected for:', loc);
+                if (loc) removeLocationTag(loc);
+            }
+        });
+    }
 
     /* locationFilter.onchange replaced by oninput above */
 
@@ -697,19 +818,33 @@ function setupEventListeners() {
         fetchJobs();
     };
 
-    clearFiltersBtn.onclick = () => {
-        currentFilters = {
-            q: '', job_type: '', remote_only: false, category: '', location: '', days: ''
+    if (clearFiltersBtn) {
+        clearFiltersBtn.onclick = () => {
+            currentFilters = {
+                q: '',
+                job_type: '',
+                remote_only: false,
+                category: '',
+                locations: [],
+                keywords: [],
+                days: '',
+                company: '',
+                companies: [],
+                favorites_only: false
+            };
+            if (categoryFilter) categoryFilter.value = '';
+            if (locationFilter) locationFilter.value = '';
+            if (keywordFilter) keywordFilter.value = '';
+            if (dateFilter) dateFilter.value = '';
+            if (jobSearch) jobSearch.value = '';
+            if (filterPills) filterPills.forEach(p => p.classList.remove('active'));
+            const allPill = document.querySelector('.filter-pill[data-filter="all"]');
+            if (allPill) allPill.classList.add('active');
+            renderLocationTags();
+            renderKeywordTags();
+            fetchJobs();
         };
-        categoryFilter.value = '';
-        locationFilter.value = '';
-        keywordFilter.value = ''; // Clear keyword input
-        dateFilter.value = '';
-        jobSearch.value = '';
-        filterPills.forEach(p => p.classList.remove('active'));
-        document.querySelector('.filter-pill[data-filter="all"]').classList.add('active');
-        fetchJobs();
-    };
+    }
 
     filterPills.forEach(pill => {
         pill.onclick = () => {
@@ -815,6 +950,7 @@ async function handleRegister(e) {
 }
 
 function updateAuthUI() {
+    const adminLink = document.getElementById('adminNavLink');
     if (currentUser) {
         userProfile.innerHTML = `
             <div class="user-display">
@@ -825,12 +961,17 @@ function updateAuthUI() {
                 </div>
             </div>
         `;
+        // Show Admin link if user is admin
+        if (currentUser.is_admin && adminLink) {
+            adminLink.style.display = 'inline-block';
+        }
     } else {
         userProfile.innerHTML = `<button class="btn-signin" id="showLogin">Sign In</button>`;
         // Re-attach listener if switched back
         document.getElementById('showLogin').onclick = () => {
             authModal.style.display = "block";
         };
+        if (adminLink) adminLink.style.display = 'none';
     }
 }
 
@@ -843,18 +984,34 @@ function logout() {
 
 function switchToView(view) {
     currentView = view;
+    const adminNavLink = document.getElementById('adminNavLink');
+    const adminSection = document.getElementById('adminSection');
+
+    // Reset all nav items
+    navJobs.classList.remove('active');
+    navCompanies.classList.remove('active');
+    if (adminNavLink) adminNavLink.classList.remove('active');
+
+    // Hide all sections
+    jobsDashboardParts.forEach(p => p.style.display = 'none');
+    companySection.style.display = 'none';
+    if (adminSection) adminSection.style.display = 'none';
+    if (paginationContainer) paginationContainer.style.display = 'none';
+    if (adminPaginationContainer) adminPaginationContainer.style.display = 'none';
+
     if (view === 'jobs') {
         navJobs.classList.add('active');
-        navCompanies.classList.remove('active');
         jobsDashboardParts.forEach(p => p.style.display = 'block');
-        companySection.style.display = 'none';
         applyFilterAndRender();
-    } else {
-        navJobs.classList.remove('active');
+    } else if (view === 'companies') {
         navCompanies.classList.add('active');
-        jobsDashboardParts.forEach(p => p.style.display = 'none');
         companySection.style.display = 'block';
         fetchCompanies();
+    } else if (view === 'admin') {
+        if (adminNavLink) adminNavLink.classList.add('active');
+        if (adminSection) adminSection.style.display = 'block';
+        currentFeedbackPage = 1;
+        fetchAdminFeedbacks(1);
     }
 }
 
@@ -1085,7 +1242,12 @@ function updateURL() {
     const params = new URLSearchParams();
     if (currentFilters.q) params.set('q', currentFilters.q);
     if (currentFilters.category) params.set('category', currentFilters.category);
-    if (currentFilters.location) params.set('location', currentFilters.location);
+    if (currentFilters.locations && currentFilters.locations.length > 0) {
+        params.set('locations', currentFilters.locations.join(','));
+    }
+    if (currentFilters.keywords && currentFilters.keywords.length > 0) {
+        params.set('keywords', currentFilters.keywords.join(','));
+    }
     if (currentFilters.days) params.set('days', currentFilters.days);
     if (currentFilters.job_type) params.set('job_type', currentFilters.job_type);
     if (currentFilters.remote_only) params.set('remote_only', 'true');
@@ -1111,7 +1273,33 @@ function loadFiltersFromURL() {
     if (companies && companies.length > 0) {
         currentFilters.companies = companies;
     }
-    currentFilters.location = params.get('location') || '';
+    // Parse locations (Support both ?locations=A,B and ?locations=A&locations=B)
+    const locsParam = params.get('locations');
+    let finalLocs = [];
+    if (locsParam) {
+        finalLocs = locsParam.split(',').map(l => l.trim()).filter(l => l !== '');
+    }
+    const locsAll = params.getAll('locations');
+    if (locsAll.length > 1) {
+        locsAll.forEach(l => {
+            if (!finalLocs.includes(l.trim())) finalLocs.push(l.trim());
+        });
+    }
+    currentFilters.locations = finalLocs;
+
+    // Parse keywords
+    const keywordsParam = params.get('keywords');
+    let finalKeywords = [];
+    if (keywordsParam) {
+        finalKeywords = keywordsParam.split(',').map(k => k.trim()).filter(k => k !== '');
+    }
+    const keywordsAll = params.getAll('keywords');
+    if (keywordsAll.length > 1) {
+        keywordsAll.forEach(k => {
+            if (!finalKeywords.includes(k.trim())) finalKeywords.push(k.trim());
+        });
+    }
+    currentFilters.keywords = finalKeywords;
     currentFilters.days = params.get('days') || '';
     currentFilters.job_type = params.get('job_type') || '';
     currentFilters.remote_only = params.get('remote_only') === 'true';
@@ -1119,26 +1307,20 @@ function loadFiltersFromURL() {
     currentFilters.favorites_only = params.get('favorites') === 'true';
 
     // Populate UI
-    const keywordInput = document.getElementById('keywordFilter');
-    if (keywordInput) keywordInput.value = currentFilters.q;
+    if (keywordFilter) keywordFilter.value = currentFilters.q;
+    if (jobSearch && currentFilters.q) jobSearch.value = currentFilters.q;
+    if (categoryFilter) categoryFilter.value = currentFilters.category;
 
-    const navSearch = document.getElementById('jobSearch');
-    if (navSearch && currentFilters.q) navSearch.value = currentFilters.q;
-    // If we have a company filter but no keyword, maybe show it in search bar for context?
-    // Or we could have a dedicated pill. For now let's just allow it to work silently or put in search
-    if (currentFilters.company && !currentFilters.q && navSearch) {
-        navSearch.value = `Company: ${currentFilters.company}`;
-        // Note: this is visually indicating but search logic uses 'q' or 'company' param separately
+    if (locationFilter) {
+        locationFilter.value = '';
+        renderLocationTags();
     }
 
-    const catSelect = document.getElementById('categoryFilter');
-    if (catSelect) catSelect.value = currentFilters.category;
+    if (keywordFilter) {
+        renderKeywordTags();
+    }
 
-    const locInput = document.getElementById('locationFilter');
-    if (locInput) locInput.value = currentFilters.location;
-
-    const dateSelect = document.getElementById('dateFilter');
-    if (dateSelect) dateSelect.value = currentFilters.days;
+    if (dateFilter) dateFilter.value = currentFilters.days;
 
     // Pills
     if (currentFilters.job_type) {
@@ -1175,3 +1357,313 @@ async function updateVisitCount() {
 
 // Run
 init();
+// Feedback and Location Tags Implementation
+
+
+function addLocationTag(loc) {
+    if (!currentFilters.locations.includes(loc)) {
+        currentFilters.locations.push(loc);
+        renderLocationTags();
+    }
+}
+
+function removeLocationTag(loc) {
+    console.log('!!! LOG: Attempting to remove tag:', loc);
+    const originalCount = currentFilters.locations.length;
+    currentFilters.locations = currentFilters.locations.filter(l => l.toLowerCase() !== loc.toLowerCase());
+
+    if (currentFilters.locations.length === originalCount) {
+        console.warn('!!! LOG: Tag not found or already removed:', loc);
+    } else {
+        console.log('!!! LOG: Tag removed successfully. New list:', currentFilters.locations);
+    }
+
+    renderLocationTags();
+    updateURL();
+    fetchJobs();
+}
+
+function renderLocationTags() {
+    if (!locationTagsContainer) {
+        console.error('!!! LOG: locationTagsContainer is NULL');
+        return;
+    }
+
+    // No animations, no fancy tricks - just stable HTML
+    locationTagsContainer.innerHTML = (currentFilters.locations || []).map(loc => {
+        if (!loc) return '';
+        return `
+            <div class="location-tag">
+                <span class="tag-text">${loc}</span>
+                <i class="fas fa-times remove-tag" data-loc="${loc}"></i>
+            </div>
+        `;
+    }).join('');
+
+    console.log('!!! LOG: Rendered tags:', currentFilters.locations);
+}
+
+function addKeywordTag(keyword) {
+    if (!currentFilters.keywords.includes(keyword)) {
+        currentFilters.keywords.push(keyword);
+        renderKeywordTags();
+    }
+}
+
+function removeKeywordTag(keyword) {
+    currentFilters.keywords = currentFilters.keywords.filter(k => k !== keyword);
+    renderKeywordTags();
+    fetchJobs();
+}
+
+function renderKeywordTags() {
+    if (!keywordTagsContainer) return;
+
+    keywordTagsContainer.innerHTML = (currentFilters.keywords || []).map(k => {
+        if (!k) return '';
+        return `
+            <div class="location-tag">
+                <span class="tag-text">${k}</span>
+                <i class="fas fa-times remove-tag" data-keyword="${k}"></i>
+            </div>
+        `;
+    }).join('');
+}
+
+// Ensure they are available globally if needed
+window.addLocationTag = addLocationTag;
+window.removeLocationTag = removeLocationTag;
+window.renderLocationTags = renderLocationTags;
+window.addKeywordTag = addKeywordTag;
+window.removeKeywordTag = removeKeywordTag;
+window.renderKeywordTags = renderKeywordTags;
+
+document.getElementById('submitFeedbackBtn').onclick = async () => {
+    const content = document.getElementById('feedbackContent').value;
+    const email = document.getElementById('feedbackEmail').value;
+
+    if (!content) {
+        alert('Please provide some feedback content');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ content, email })
+        });
+
+        if (response.ok) {
+            alert('Thank you for your feedback!');
+            closeModal('feedbackModal');
+            document.getElementById('feedbackForm').reset();
+        } else {
+            const err = await response.json();
+            alert(err.detail || 'Failed to submit feedback');
+        }
+    } catch (e) {
+        alert('Error submitting feedback');
+    }
+};
+
+// Admin Feedback Functions
+
+
+
+
+function exportFeedback() {
+    const table = document.querySelector('.feedback-table');
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = [], cols = rows[i].querySelectorAll('td, th');
+        for (let j = 0; j < cols.length; j++) {
+            row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+        }
+        csv.push(row.join(','));
+    }
+
+    const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+    const downloadLink = document.createElement('a');
+    downloadLink.download = `jobdetector_feedback_${new Date().toISOString().split('T')[0]}.csv`;
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = 'none';
+    downloadLink.click();
+}
+
+// Admin View Functions
+function showAdminView() {
+    switchToView('admin');
+}
+
+let allFeedbacks = [];
+
+async function fetchAdminFeedbacks(page = 1) {
+    currentFeedbackPage = page;
+    const list = document.getElementById('adminFeedbackList');
+    list.innerHTML = '<div class="glass-card" style="padding: 3rem; text-align: center; color: var(--text-dim);">Loading feedbacks...</div>';
+
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`/api/admin/feedbacks?page=${page}&limit=${FEEDBACK_LIMIT}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            allFeedbacks = data.feedbacks;
+            feedbackTotalCount = data.total;
+            renderAdminFeedback(allFeedbacks, feedbackTotalCount);
+            renderFeedbackPagination();
+        } else {
+            list.innerHTML = '<div class="glass-card" style="padding: 3rem; text-align: center; color: #ef4444;">Access denied or failed to load feedbacks.</div>';
+        }
+    } catch (e) {
+        console.error('Error loading feedbacks:', e);
+        list.innerHTML = '<div class="glass-card" style="padding: 3rem; text-align: center; color: #ef4444;">Error loading feedbacks.</div>';
+    }
+}
+
+function renderAdminFeedback(feedbacks, total) {
+    const list = document.getElementById('adminFeedbackList');
+    if (!feedbacks || feedbacks.length === 0) {
+        list.innerHTML = '<div class="glass-card" style="padding: 3rem; text-align: center; color: var(--text-dim);">No feedback found.</div>';
+        document.getElementById('totalFeedback').textContent = '0';
+        document.getElementById('uniqueUsers').textContent = '0';
+        return;
+    }
+
+    document.getElementById('totalFeedback').textContent = total || feedbacks.length;
+    const uniqueUsersCount = new Set(feedbacks.map(f => f.user_email).filter(e => e)).size;
+    document.getElementById('uniqueUsers').textContent = uniqueUsersCount;
+
+    list.innerHTML = feedbacks.map(f => `
+        <div class="feedback-card glass-card" id="feedback-${f._id}" style="padding: 2rem; position: relative; animation: fadeIn 0.4s ease-out;">
+            <div class="feedback-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                <div class="user-meta" style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="avatar" style="width: 40px; height: 40px; background: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700;">
+                        ${(f.user_email || 'G')[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="user-email" style="font-weight: 600; color: var(--accent-blue);">${f.user_email || 'Guest Account'}</div>
+                        <div class="post-date" style="font-size: 0.8rem; color: var(--text-dim);">${new Date(f.created_at).toLocaleString()}</div>
+                    </div>
+                </div>
+                <div class="feedback-actions">
+                    <button class="btn-icon delete-feedback-btn" onclick="deleteFeedback('${f._id}')" title="Delete Feedback" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; padding: 0.5rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="feedback-content" style="font-size: 1.05rem; line-height: 1.7; color: var(--text-light); white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(f.content)}</div>
+            ${f.provided_email ? `
+            <div class="provided-contact" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); font-size: 0.85rem; color: var(--text-dim);">
+                <i class="fas fa-envelope"></i> Contact Provided: <span style="color: var(--accent-blue)">${f.provided_email}</span>
+            </div>` : ''}
+        </div>
+    `).join('');
+}
+
+function renderFeedbackPagination() {
+    if (!feedbackTotalCount || feedbackTotalCount <= FEEDBACK_LIMIT) {
+        if (adminPaginationContainer) adminPaginationContainer.style.display = 'none';
+        return;
+    }
+
+    const totalPages = Math.ceil(feedbackTotalCount / FEEDBACK_LIMIT);
+    if (adminPaginationContainer) adminPaginationContainer.style.display = 'flex';
+
+    let html = '';
+    // Simple pagination for feedback
+    html += `<button class="page-btn" ${currentFeedbackPage === 1 ? 'disabled' : ''} onclick="fetchAdminFeedbacks(${currentFeedbackPage - 1})">
+        <i class="fas fa-chevron-left"></i>
+    </button>`;
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentFeedbackPage - 1 && i <= currentFeedbackPage + 1)) {
+            html += `<button class="page-btn ${i === currentFeedbackPage ? 'active' : ''}" onclick="fetchAdminFeedbacks(${i})">${i}</button>`;
+        } else if (i === currentFeedbackPage - 2 || i === currentFeedbackPage + 2) {
+            html += `<span class="page-dots">...</span>`;
+        }
+    }
+
+    html += `<button class="page-btn" ${currentFeedbackPage === totalPages ? 'disabled' : ''} onclick="fetchAdminFeedbacks(${currentFeedbackPage + 1})">
+        <i class="fas fa-chevron-right"></i>
+    </button>`;
+
+    adminPaginationContainer.innerHTML = html;
+}
+
+async function deleteFeedback(id) {
+    if (!confirm('Are you sure you want to delete this feedback?')) return;
+
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`/api/admin/feedback/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const card = document.getElementById(`feedback-${id}`);
+            if (card) {
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(20px)';
+                setTimeout(() => {
+                    card.remove();
+                    // Update stats
+                    const totalEl = document.getElementById('totalFeedback');
+                    if (totalEl) totalEl.textContent = parseInt(totalEl.textContent) - 1;
+                    if (parseInt(totalEl.textContent) === 0) {
+                        document.getElementById('adminFeedbackList').innerHTML = '<div class="glass-card" style="padding: 3rem; text-align: center; color: var(--text-dim);">No feedback found.</div>';
+                    }
+                }, 300);
+            }
+        } else {
+            alert('Failed to delete feedback');
+        }
+    } catch (e) {
+        console.error('Delete error:', e);
+        alert('Error deleting feedback');
+    }
+}
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function exportFeedback() {
+    if (allFeedbacks.length === 0) {
+        alert('No feedback to export');
+        return;
+    }
+
+    const headers = ['Date', 'User Email', 'Provided Email', 'Content'];
+    const csvRows = [headers.join(',')];
+
+    allFeedbacks.forEach(f => {
+        const row = [
+            new Date(f.created_at).toLocaleString(),
+            f.user_email || 'Guest',
+            f.provided_email || '',
+            `"${(f.content || '').replace(/"/g, '""')}"`
+        ];
+        csvRows.push(row.join(','));
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `jobdetector_feedback_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
