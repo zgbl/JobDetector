@@ -47,24 +47,14 @@
                 <i class="fas fa-satellite-dish"></i>
                 <span>JobDetector</span>
             </a>
-            <div class="nav-search">
-                <div class="search-wrapper">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="jobSearch" placeholder="Search title, company, or skills...">
-                </div>
-                <div class="quick-tags">
-                    <span>Try:</span>
-                    <button class="tag-btn" data-tag="Python">Python</button>
-                    <button class="tag-btn" data-tag="Go">Go</button>
-                    <button class="tag-btn" data-tag="Cloud">Cloud</button>
-                    <button class="tag-btn" data-tag="Frontend">Frontend</button>
-                </div>
-            </div>
             <div class="nav-links">
                 <a href="/" class="nav-item active" id="navJobs">Jobs</a>
                 <a href="/favorites.html" class="nav-item">Favorites</a>
                 <a href="/?view=companies" class="nav-item" id="navCompanies">Companies</a>
+                <a href="/about.html" class="nav-item">About</a>
                 <a href="#" class="nav-item" onclick="openSavedSearches()">My Searches</a>
+                <a href="#" id="navRequestCompany" class="nav-item" style="display: none;"
+                    onclick="switchToView('request-company')">Request Company</a>
                 <a href="/feedback.html" class="nav-item">Feedback</a>
                 <a href="#" class="nav-item" id="adminNavLink" style="display: none;"
                     onclick="showAdminView()">Admin</a>
@@ -111,11 +101,77 @@
             <div id="admin-pagination-container" class="pagination-container" style="display: none; margin-top: 2rem;">
                 <!-- Content injected via JS -->
             </div>
+
+            <div class="admin-tabs"
+                style="margin-top: 3rem; margin-bottom: 2rem; display: flex; gap: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                <button class="tab-btn active" onclick="switchAdminTab('feedback')">Feedback</button>
+                <button class="tab-btn" onclick="switchAdminTab('requests')">Company Requests</button>
+            </div>
+
+            <div id="adminFeedbackTab">
+                <div id="adminFeedbackList" class="feedback-forum-list"
+                    style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- Data injected via JS -->
+                </div>
+            </div>
+
+            <div id="adminRequestsTab" style="display: none;">
+                <div id="adminRequestsList" class="feedback-forum-list"
+                    style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- Data injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Request Company Section [NEW] -->
+        <section id="requestCompanySection" style="display: none; padding-top: 2rem; max-width: 800px; margin: 0 auto;">
+            <div class="section-header" style="text-align: center; margin-bottom: 3rem;">
+                <h2>Request New <span class="gradient-text">Company</span></h2>
+                <p style="color: var(--text-dim); margin-top: 1rem;">Want us to crawl a specific company? Let us know!
+                </p>
+            </div>
+
+            <div class="glass-card" style="padding: 3rem;">
+                <form id="companyRequestForm" onsubmit="handleCompanyRequest(event)">
+                    <div class="form-group" style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">Company Name *</label>
+                        <input type="text" id="reqCompanyName" required placeholder="e.g. OpenAI, Anthropic"
+                            style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">Careers Page / ATS URL
+                            (Optional)</label>
+                        <input type="url" id="reqCompanyUrl" placeholder="https://www.company.com/careers"
+                            style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white;">
+                        <small style="color: var(--text-dim); display: block; margin-top: 0.5rem;">Providing the careers
+                            link helps us set up crawling faster.</small>
+                    </div>
+                    <button type="submit" class="btn-primary"
+                        style="width: 100%; padding: 1.2rem; font-weight: 600;">Submit Request</button>
+                    <div id="requestStatus"
+                        style="margin-top: 1.5rem; text-align: center; display: none; padding: 1rem; border-radius: 8px;">
+                    </div>
+                </form>
+            </div>
         </section>
         <header class="hero-section">
             <div class="hero-content">
                 <h1>Find your next <span class="gradient-text">opportunity</span></h1>
                 <p>Tracking the most ambitious companies in tech.</p>
+                <div class="hero-search" style="margin-top: 2.5rem;">
+                    <div class="search-wrapper" style="margin: 0 auto; width: 600px; max-width: 90%; scale: 1.1;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="jobSearchHero" placeholder="Search title, company, or skills..."
+                            style="width: 100%; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--glass-border); border-radius: 50px; padding: 1rem 1.5rem 1rem 3.5rem; color: white; font-size: 1.1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                    </div>
+                    <div class="quick-tags" style="justify-content: center; margin-top: 1.5rem;">
+                        <span>Try:</span>
+                        <button class="tag-btn" data-tag="Python">Python</button>
+                        <button class="tag-btn" data-tag="Go">Go</button>
+                        <button class="tag-btn" data-tag="Cloud">Cloud</button>
+                        <button class="tag-btn" data-tag="Frontend">Frontend</button>
+                    </div>
+                </div>
             </div>
             <div class="stats-container">
                 <div class="stat-card glass-card">

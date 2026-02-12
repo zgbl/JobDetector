@@ -101,6 +101,13 @@ async def read_feedback():
         return feedback_file.read_text()
     return "<h1>Page not found</h1>"
 
+@app.get("/about.html", response_class=HTMLResponse)
+async def read_about():
+    about_file = project_root_path / "about.html"
+    if about_file.exists():
+        return about_file.read_text()
+    return "<h1>Page not found</h1>"
+
 
 
 @app.get("/api/health")
@@ -952,6 +959,140 @@ async def delete_feedback(feedback_id: str, request: Request):
         return {"message": "Feedback deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid feedback ID: {str(e)}")
+
+# --- Company Request Endpoints ---
+
+@app.post("/api/user/request-company")
+async def request_company(request: Request):
+    """Allow users to request a new company to be crawled"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user_email = payload.get("sub")
+    data = await request.json()
+    company_name = data.get("name", "").strip()
+    careers_url = data.get("careers_url", "").strip()
+
+    if not company_name:
+        raise HTTPException(status_code=400, detail="Company name is required")
+
+    db = get_db()
+    
+    # 1. Check if already exists in active companies
+    existing = db.companies.find_one({"name": {"$regex": f"^{company_name}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(status_code=400, detail="This company is already being crawled")
+
+    # 2. Check if already in requests
+    existing_req = db.company_requests.find_one({
+        "name": {"$regex": f"^{company_name}$", "$options": "i"},
+        "status": "pending"
+    })
+    if existing_req:
+        raise HTTPException(status_code=400, detail="A request for this company is already pending")
+
+    request_doc = {
+        "name": company_name,
+        "careers_url": careers_url,
+        "user_email": user_email,
+        "status": "pending",
+        "created_at": datetime.utcnow()
+    }
+    
+    db.company_requests.insert_one(request_doc)
+    return {"message": "Request submitted successfully. Our team will review it soon."}
+
+@app.get("/api/admin/company-requests")
+async def get_company_requests(request: Request):
+    """Get all company requests (Admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    email = payload.get("sub")
+    admin_email = os.getenv("ADMIN_EMAIL")
+    is_admin = (admin_email and email.lower() == admin_email.lower())
+    
+    if not is_admin:
+        db = get_db()
+        user = db.users.find_one({"email": email})
+        if not user or not user.get("is_admin"):
+            raise HTTPException(status_code=403, detail="Forbidden: Admin only")
+
+    db = get_db()
+    requests = list(db.company_requests.find().sort("created_at", -1))
+    for r in requests:
+        r["_id"] = str(r["_id"])
+    return requests
+
+@app.post("/api/admin/company-requests/{request_id}/process")
+async def process_company_request(request_id: str, request: Request):
+    """Approve or Reject a company request (Admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    email = payload.get("sub")
+    admin_email = os.getenv("ADMIN_EMAIL")
+    is_admin = (admin_email and email.lower() == admin_email.lower())
+    
+    if not is_admin:
+        db = get_db()
+        user = db.users.find_one({"email": email})
+        if not user or not user.get("is_admin"):
+            raise HTTPException(status_code=403, detail="Forbidden: Admin only")
+
+    data = await request.json()
+    action = data.get("action") # "approve" or "reject"
+    
+    if action not in ["approve", "reject"]:
+        raise HTTPException(status_code=400, detail="Invalid action. Use 'approve' or 'reject'.")
+
+    db = get_db()
+    req_doc = db.company_requests.find_one({"_id": ObjectId(request_id)})
+    if not req_doc:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    if action == "approve":
+        # Create the company in the companies collection
+        # We'll use the provided URL to try and detect the ATS later during crawling
+        new_company = {
+            "name": req_doc["name"],
+            "domain": "", # Will be filled if possible during crawl
+            "careers_url": req_doc.get("careers_url", ""),
+            "ats_url": req_doc.get("careers_url", ""), # Fallback
+            "is_active": True,
+            "schedule": {"frequency_hours": 24, "priority": 1},
+            "stats": {"total_jobs_found": 0, "active_jobs": 0},
+            "metadata": {
+                "added_by": f"request:{req_doc['user_email']}",
+                "added_at": datetime.utcnow(),
+                "verified": False,
+                "tags": ["User Requested"]
+            }
+        }
+        db.companies.insert_one(new_company)
+        db.company_requests.update_one({"_id": ObjectId(request_id)}, {"$set": {"status": "approved"}})
+        return {"message": f"Company '{req_doc['name']}' approved and added to crawl queue."}
+    else:
+        db.company_requests.update_one({"_id": ObjectId(request_id)}, {"$set": {"status": "rejected"}})
+        return {"message": "Request rejected."}
 
 @app.post("/api/user/favorites/{company_name}/check")
 async def check_monitor(company_name: str, request: Request):

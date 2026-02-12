@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | JobDetector</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="JobDetector missions: Direct-from-source job listings. No noise, just opportunities.">
+    <meta name="author" content="JobDetector">
+
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        .about-section {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+        }
+
+        .about-hero {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .about-hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .mission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .feature-card {
+            padding: 2rem;
+            height: 100%;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--accent-blue);
+        }
+
+        .invest-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            margin-top: 4rem;
+        }
+
+        .invest-title {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-email {
+            font-size: 1.2rem;
+            color: var(--accent-blue);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 1rem 2rem;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .contact-email:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Stats in About */
+        .impact-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+        }
+
+        .impact-stat {
+            text-align: center;
+        }
+
+        .impact-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            display: block;
+        }
+
+        .impact-label {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body class="dark-theme">
+    <nav class="glass-nav">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <i class="fas fa-satellite-dish"></i>
+                <span>JobDetector</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-item">Jobs</a>
+                <a href="/favorites.html" class="nav-item">Favorites</a>
+                <a href="/about.html" class="nav-item active">About</a>
+                <a href="/feedback.html" class="nav-item">Feedback</a>
+            </div>
+            <div class="user-profile" id="userProfile" style="width: 100px;">
+                <!-- Auth Placeholder -->
+            </div>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <section class="about-section">
+            <div class="about-hero">
+                <h1>Job Search, <span class="gradient-text">Reimagined</span>.</h1>
+                <p style="font-size: 1.2rem; color: var(--text-dim); max-width: 600px; margin: 0 auto;">
+                    We believe finding your next role should be about the work, not the noise.
+                    No recruiters, no ghost jobs, just direct connections.
+                </p>
+
+                <div class="impact-stats">
+                    <div class="impact-stat">
+                        <span class="impact-number gradient-text">Direct</span>
+                        <span class="impact-label">Source Data</span>
+                    </div>
+                    <div class="impact-stat">
+                        <span class="impact-number gradient-text">6h</span>
+                        <span class="impact-label">Refresh Rate</span>
+                    </div>
+                    <div class="impact-stat">
+                        <span class="impact-number gradient-text">0%</span>
+                        <span class="impact-label">Noise</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mission-grid">
+                <div class="glass-card feature-card">
+                    <i class="fas fa-filter feature-icon"></i>
+                    <h3>High Signal, Low Noise</h3>
+                    <p style="color: var(--text-dim); margin-top: 0.5rem;">
+                        Conventional job boards are flooded with promoted listings and third-party recruiters.
+                        JobDetector scrapes directly from company ATS pages to ensure authenticity.
+                    </p>
+                </div>
+                <div class="glass-card feature-card">
+                    <i class="fas fa-bolt feature-icon" style="color: var(--accent-purple);"></i>
+                    <h3>Speed Matters</h3>
+                    <p style="color: var(--text-dim); margin-top: 0.5rem;">
+                        Great roles are filled effectively in days. Our engine monitors career pages continuously
+                        so you can apply the moment a role opens.
+                    </p>
+                </div>
+                <div class="glass-card feature-card">
+                    <i class="fas fa-globe feature-icon" style="color: var(--accent-green);"></i>
+                    <h3>Global Scope</h3>
+                    <p style="color: var(--text-dim); margin-top: 0.5rem;">
+                        From Silicon Valley giants to hidden gems in Europe and Asia. We track the fastest-growing
+                        companies regardless of location.
+                    </p>
+                </div>
+            </div>
+
+            <section class="invest-section">
+                <h2 class="invest-title">Invest in the <span class="gradient-text">Future of Hiring</span></h2>
+                <p
+                    style="font-size: 1.1rem; color: var(--text-dim); margin-bottom: 2rem; max-width: 700px; margin-left: auto; margin-right: auto;">
+                    We are building the most accurate real-time map of the global labor market.
+                    JobDetector is growing rapidly and we are looking for strategic partners to scale our vision.
+                </p>
+
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+                    <span style="color: white; font-weight: 500;">Interested in getting involved?</span>
+                    <a href="mailto:qlsr2024@gmail.com" class="contact-email">
+                        <i class="fas fa-envelope" style="margin-right: 8px;"></i> qlsr2024@gmail.com
+                    </a>
+                </div>
+            </section>
+
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2026 JobDetector. Directly from source.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

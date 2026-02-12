@@ -26,7 +26,7 @@ let currentUser = null;
 
 // DOM Elements
 const jobsGrid = document.getElementById('jobsGrid');
-const jobSearch = document.getElementById('jobSearch');
+const jobSearch = document.getElementById('jobSearchHero');
 const totalJobsCount = document.getElementById('totalJobsCount');
 const companyCount = document.getElementById('companyCount');
 const remoteCount = document.getElementById('remoteCount');
@@ -951,7 +951,9 @@ async function handleRegister(e) {
 
 function updateAuthUI() {
     const adminLink = document.getElementById('adminNavLink');
+    const requestLink = document.getElementById('navRequestCompany');
     if (currentUser) {
+        if (requestLink) requestLink.style.display = 'block';
         userProfile.innerHTML = `
             <div class="user-display">
                 <div class="avatar">${(currentUser.full_name || currentUser.email || '?')[0].toUpperCase()}</div>
@@ -992,10 +994,13 @@ function switchToView(view) {
     navCompanies.classList.remove('active');
     if (adminNavLink) adminNavLink.classList.remove('active');
 
+    const requestCompanySection = document.getElementById('requestCompanySection');
+
     // Hide all sections
     jobsDashboardParts.forEach(p => p.style.display = 'none');
     companySection.style.display = 'none';
     if (adminSection) adminSection.style.display = 'none';
+    if (requestCompanySection) requestCompanySection.style.display = 'none';
     if (paginationContainer) paginationContainer.style.display = 'none';
     if (adminPaginationContainer) adminPaginationContainer.style.display = 'none';
 
@@ -1007,6 +1012,10 @@ function switchToView(view) {
         navCompanies.classList.add('active');
         companySection.style.display = 'block';
         fetchCompanies();
+    } else if (view === 'request-company') {
+        if (requestCompanySection) requestCompanySection.style.display = 'block';
+        const navReq = document.getElementById('navRequestCompany');
+        if (navReq) navReq.classList.add('active');
     } else if (view === 'admin') {
         if (adminNavLink) adminNavLink.classList.add('active');
         if (adminSection) adminSection.style.display = 'block';
@@ -1062,7 +1071,7 @@ async function handleSaveSearch(e) {
     const emailAlert = document.getElementById('emailAlert').checked;
 
     // Capture current filters
-    const searchInput = document.getElementById('jobSearch');
+    const searchInput = document.getElementById('jobSearchHero');
     const criteria = {
         ...currentFilters,
         q: searchInput ? searchInput.value : ''
@@ -1172,7 +1181,7 @@ async function loadSavedSearch(criteria) {
     if (locInput) locInput.value = currentFilters.location;
 
     // Update search input
-    const searchInput = document.getElementById('jobSearch');
+    const searchInput = document.getElementById('jobSearchHero');
     if (searchInput) searchInput.value = currentFilters.q;
 
     // Reset pills
@@ -1633,6 +1642,149 @@ async function deleteFeedback(id) {
         alert('Error deleting feedback');
     }
 }
+// --- Company Request Functions ---
+
+async function handleCompanyRequest(event) {
+    event.preventDefault();
+    const name = document.getElementById('reqCompanyName').value;
+    const careers_url = document.getElementById('reqCompanyUrl').value;
+    const statusEl = document.getElementById('requestStatus');
+
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(59, 130, 246, 0.1)';
+    statusEl.style.color = 'var(--accent-blue)';
+    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch('/api/user/request-company', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, careers_url })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            statusEl.style.background = 'rgba(16, 185, 129, 0.1)';
+            statusEl.style.color = '#10b981';
+            statusEl.textContent = data.message;
+            event.target.reset();
+        } else {
+            statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+            statusEl.style.color = '#ef4444';
+            statusEl.textContent = data.detail || 'Failed to submit request';
+        }
+    } catch (e) {
+        statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        statusEl.style.color = '#ef4444';
+        statusEl.textContent = 'Error: ' + e.message;
+    }
+}
+
+function switchAdminTab(tab) {
+    const feedbackTab = document.getElementById('adminFeedbackTab');
+    const requestsTab = document.getElementById('adminRequestsTab');
+    const tabs = document.querySelectorAll('.admin-tabs .tab-btn');
+
+    tabs.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.toLowerCase().includes(tab)) btn.classList.add('active');
+    });
+
+    if (tab === 'feedback') {
+        feedbackTab.style.display = 'block';
+        requestsTab.style.display = 'none';
+    } else {
+        feedbackTab.style.display = 'none';
+        requestsTab.style.display = 'block';
+        fetchAdminRequests();
+    }
+}
+
+async function fetchAdminRequests() {
+    const list = document.getElementById('adminRequestsList');
+    list.innerHTML = '<div class="glass-card" style="padding: 2rem; text-align: center; color: var(--text-dim);">Loading requests...</div>';
+
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch('/api/admin/company-requests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const requests = await response.json();
+            renderAdminRequests(requests);
+        } else {
+            list.innerHTML = '<div class="glass-card" style="padding: 2rem; text-align: center; color: #ef4444;">Failed to load requests.</div>';
+        }
+    } catch (e) {
+        list.innerHTML = '<div class="glass-card" style="padding: 2rem; text-align: center; color: #ef4444;">Error loading requests.</div>';
+    }
+}
+
+function renderAdminRequests(requests) {
+    const list = document.getElementById('adminRequestsList');
+    const pendingRequests = requests.filter(r => r.status === 'pending');
+
+    if (pendingRequests.length === 0) {
+        list.innerHTML = '<div class="glass-card" style="padding: 3rem; text-align: center; color: var(--text-dim);">No pending requests.</div>';
+        return;
+    }
+
+    list.innerHTML = pendingRequests.map(r => `
+        <div class="feedback-card glass-card" id="request-${r._id}" style="padding: 2rem; animation: fadeIn 0.4s ease-out;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="color: var(--accent-blue); margin-bottom: 0.5rem;">${escapeHtml(r.name)}</h3>
+                    <div style="font-size: 0.85rem; color: var(--text-dim);">Requested by: ${r.user_email}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-dim);">Date: ${new Date(r.created_at).toLocaleString()}</div>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn-primary" onclick="processRequest('${r._id}', 'approve')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Approve</button>
+                    <button class="btn-secondary" onclick="processRequest('${r._id}', 'reject')" style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">Reject</button>
+                </div>
+            </div>
+            ${r.careers_url ? `
+            <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 0.9rem;">
+                <i class="fas fa-link" style="color: var(--accent-blue); margin-right: 0.5rem;"></i>
+                <a href="${r.careers_url}" target="_blank" style="color: white; text-decoration: none;">${r.careers_url}</a>
+            </div>` : ''}
+        </div>
+    `).join('');
+}
+
+async function processRequest(id, action) {
+    if (!confirm(`Are you sure you want to ${action} this request?`)) return;
+
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`/api/admin/company-requests/${id}/process`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ action })
+        });
+
+        if (response.ok) {
+            const card = document.getElementById(`request-${id}`);
+            if (card) {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => card.remove(), 300);
+            }
+        } else {
+            alert('Failed to process request');
+        }
+    } catch (e) {
+        alert('Error processing request: ' + e.message);
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
