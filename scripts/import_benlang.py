@@ -115,7 +115,10 @@ class BenLangImporter:
                 try:
                     result = await self.ats_discovery.discover_ats(domain)
                     if result and len(result) == 2:
-                        ats_type, board_identifier = result
+                        # discover_ats returns (ats_url, ats_type)
+                        ats_url_found, ats_type_found = result
+                        board_identifier = ats_url_found # Store URL in identifier or use as fallback
+                        ats_type = ats_type_found
                 except Exception as e:
                     print(f"   ⚠️  ATS discovery failed for {company_name}: {e}")
             
@@ -169,8 +172,11 @@ class BenLangImporter:
             'companies': []
         }
         
-        semaphore = asyncio.Semaphore(10) # Process 10 at a time
-        tasks = [self.import_company_async(c, semaphore) for c in companies]
+        semaphore = asyncio.Semaphore(5) # Reduce to 5 for better stability
+        tasks = []
+        
+        for i, c in enumerate(companies):
+             tasks.append(self.import_company_with_timeout(c, semaphore, i+1, len(companies)))
         
         import_results = await asyncio.gather(*tasks)
         
@@ -179,18 +185,118 @@ class BenLangImporter:
             
             if result['status'] == 'imported':
                 results['imported'] += 1
-                print(f"✅ Imported: {result['name']} -> {result.get('domain')} ({result.get('ats_type')})")
+                # print(f"✅ Imported: {result['name']} -> {result.get('domain')} ({result.get('ats_type')})") # Already printing in wrapper
             elif result['status'] == 'exists':
                 results['exists'] += 1
-                # print(f"ℹ️  Exists: {result['name']}") # Too noisy
             elif result['status'] == 'no_career_site':
                 results['failed'] += 1
-                print(f"⚠️  No Site: {result['name']}")
             else:
                 results['failed'] += 1
-                print(f"❌ Failed: {result['name']} - {result.get('error', 'Unknown')}")
         
         return results
+
+    async def import_company_with_timeout(self, company_data, semaphore, index, total):
+        async with semaphore:
+            print(f"[{index}/{total}] Processing: {company_data['name']}...")
+            try:
+                # Enforce 45s hard timeout per company
+                return await asyncio.wait_for(self.import_company_internal(company_data), timeout=45.0)
+            except asyncio.TimeoutError:
+                print(f"❌ Timeout: {company_data['name']} took too long")
+                return {
+                    'name': company_data['name'],
+                    'status': 'timeout',
+                    'error': 'Operation timed out'
+                }
+            except Exception as e:
+                print(f"❌ Error: {company_data['name']} - {e}")
+                return {
+                    'name': company_data['name'],
+                    'status': 'error',
+                    'error': str(e)
+                }
+
+    async def import_company_internal(self, company_data: Dict) -> Dict:
+        """
+        Internal logic for importing a single company.
+        """
+        company_name = company_data['name']
+        
+        # Check if already exists
+        existing = self.check_existing_company(company_name)
+        if existing:
+            # print(f"ℹ️  Skipping {company_name} (Exists)")
+            return {
+                'name': company_name,
+                'status': 'exists',
+                'domain': existing.get('domain'),
+                'ats_type': existing.get('ats_type')
+            }
+        
+        # Find career site
+        career_info = self.find_career_site(company_name)
+        if not career_info:
+            print(f"⚠️  No career site pattern for {company_name}")
+            return {
+                'name': company_name,
+                'status': 'no_career_site',
+                'error': 'Could not determine career site'
+            }
+        
+        domain = career_info['domain']
+        
+        # Discover ATS
+        ats_type = None
+        board_identifier = None
+        
+        if not self.dry_run:
+            try:
+                result = await self.ats_discovery.discover_ats(domain)
+                if result and len(result) == 2:
+                    # discover_ats returns (ats_type, identifier_or_url)
+                    ats_type, board_identifier = result
+                    if ats_type:
+                        print(f"✅ Discovered {company_name}: {ats_type} -> {board_identifier}")
+            except Exception as e:
+                print(f"⚠️  ATS discovery failed for {company_name}: {e}")
+        
+        # Prepare company document
+        company_doc = {
+            'name': company_name,
+            'domain': domain,
+            'ats_type': ats_type or 'unknown',
+            'board_identifier': board_identifier,
+            'metadata': {
+                'size': 'startup',
+                'industry': company_data.get('description', ''),
+                'location': company_data.get('location', ''),
+                'source': 'benlang',
+                'raw_name': company_data.get('raw_name', company_name)
+            },
+            'stats': {
+                'active_jobs': 0,
+                'total_jobs_found': 0
+            }
+        }
+        
+        # Insert into database
+        if not self.dry_run and self.db is not None:
+            try:
+                self.db.companies.insert_one(company_doc)
+            except Exception as e:
+                return {
+                    'name': company_name,
+                    'status': 'error',
+                    'error': str(e)
+                }
+        
+        return {
+            'name': company_name,
+            'status': 'imported',
+            'domain': domain,
+            'ats_type': ats_type or 'unknown',
+            'career_url': career_info.get('career_url')
+        }
 
 
 def main():
@@ -211,7 +317,13 @@ def main():
     print(f"📋 Parsing companies from {args.file}...")
     benlang_parser = BenLangParser()
     companies = benlang_parser.parse_file(str(file_path))
-    print(f"✅ Found {len(companies)} companies\n")
+    # Reverse the order so new companies (at the bottom of the file) are processed first
+    companies.reverse()
+    
+    # For quick testing/verification, let's process only the first 20 (newest)
+    # companies = companies[:20] 
+    # Just uncomment above line if needed, but I'll update the print to reflect
+    print(f"✅ Found {len(companies)} companies (Processing newest first)\n")
     
     import asyncio
     
@@ -234,11 +346,6 @@ def main():
     # Update Collection
     if not args.dry_run:
         db = get_db()
-        # Get all successfully imported or existing company names
-        # We want to add ALL parsed companies to the collection, assuming they are valid
-        # Filter out failed ones? Or just add all from the list since we want the collection to reflect the text file?
-        # Let's add all that were processed (imported or exists)
-        
         valid_companies = [r['name'] for r in results['companies'] if r['status'] in ('imported', 'exists')]
         
         if valid_companies:
@@ -255,6 +362,24 @@ def main():
             )
             print("✅ Collection updated")
     
+    # Generate CSV Report
+    report_path = Path(__file__).parent.parent / 'data' / 'ImportList' / 'benlang_import_report.csv'
+    import csv
+    with open(report_path, 'w', newline='') as csvfile:
+        fieldnames = ['company', 'status', 'ats_type', 'career_url', 'error']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        
+        writer.writeheader()
+        for r in results['companies']:
+            writer.writerow({
+                'company': r['name'],
+                'status': r['status'],
+                'ats_type': r.get('ats_type', ''),
+                'career_url': r.get('career_url', ''),
+                'error': r.get('error', '')
+            })
+    print(f"\n📝 Report generated: {report_path}")
+
     if args.dry_run:
         print("\n⚠️  DRY RUN MODE - No changes made to database")
     

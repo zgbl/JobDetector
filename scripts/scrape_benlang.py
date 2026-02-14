@@ -69,7 +69,10 @@ async def scrape_benlang_companies():
             # Case 2: Correct data (e.g. manually fixed or old data)
             elif raw_ats_type and not raw_ats_type.startswith('http'):
                 ats_type = raw_ats_type
+                # Prefer explicit 'ats_url', fallback to 'board_identifier' if it looks like a URL
                 ats_url = company.get('ats_url')
+                if not ats_url and raw_board_id and raw_board_id.startswith('http'):
+                    ats_url = raw_board_id
                 
             if not ats_type or ats_type == 'unknown':
                 logger.warning(f"Skip {name}: ATS type unknown (Raw: {raw_ats_type}, ID: {raw_board_id})")
@@ -87,22 +90,35 @@ async def scrape_benlang_companies():
                 company_scan_doc['ats_url'] = ats_url
             
             # Specialized token extraction helper for scrapers that might need it explicitly
-            # (Though most scrapers extract from ats_url if present)
             if ats_type == 'greenhouse' and ats_url:
-                # https://job-boards.greenhouse.io/defenseunicorns -> defenseunicorns
                 # https://boards.greenhouse.io/defenseunicorns -> defenseunicorns
-                parts = ats_url.strip('/').split('/')
-                company_scan_doc['board_token'] = parts[-1]
+                # https://boards.greenhouse.io/embed/job_board?for=defenseunicorns -> defenseunicorns
+                try:
+                    if 'for=' in ats_url:
+                        company_scan_doc['board_token'] = ats_url.split('for=')[1].split('&')[0]
+                    else:
+                        parts = ats_url.strip('/').split('/')
+                        company_scan_doc['board_token'] = parts[-1]
+                except:
+                     logger.warning(f"Could not parse GH token from {ats_url}")
+
             elif ats_type == 'lever' and ats_url:
                 # https://jobs.lever.co/waabi -> waabi
-                parts = ats_url.strip('/').split('/')
-                company_scan_doc['board_token'] = parts[-1]
-            elif ats_type == 'workable' and ats_url:
-                 # https://apply.workable.com/zipline -> zipline
-                 parts = ats_url.strip('/').split('/')
-                 if 'workable.com' in parts[-2]: # .../zipline
-                     company_scan_doc['subdomain'] = parts[-1] 
-                
+                try:
+                    parts = ats_url.strip('/').split('/')
+                    # usually the last part, unless it has extra path
+                    company_scan_doc['board_token'] = parts[-1]
+                except:
+                     logger.warning(f"Could not parse Lever token from {ats_url}")
+
+            elif ats_type == 'ashby' and ats_url:
+                # https://jobs.ashbyhq.com/company -> company
+                try:
+                    parts = ats_url.strip('/').split('/')
+                    company_scan_doc['board_token'] = parts[-1]
+                except:
+                     logger.warning(f"Could not parse Ashby token from {ats_url}")
+
             try:
                 logger.info(f"Scraping {name} ({ats_type})...")
                 jobs = await scraper.scrape(company_scan_doc)

@@ -520,7 +520,8 @@
             } else {
                 if (data.companies) data.companies.forEach(c => params.append('companies', c));
                 if (data.q) params.append('q', data.q);
-                if (data.location) params.append('location', data.location);
+                if (data.location) params.append('locations', data.location); // params must use 'locations' (plural) for main.js
+                if (data.category) params.append('category', data.category);
             }
             window.location.href = `/?${params.toString()}`;
         }

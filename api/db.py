@@ -5,6 +5,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from pathlib import Path
 
+import certifi
+
 # Load env vars from project root
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -14,5 +16,7 @@ def get_db():
     # Use environment variable or default local URI
     mongo_uri = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/')
     db_name = os.environ.get('MONGODB_DATABASE', 'job_detector')
-    client = MongoClient(mongo_uri)
+    
+    # Use certifi for SSL verification
+    client = MongoClient(mongo_uri, tlsCAFile=certifi.where())
     return client[db_name]

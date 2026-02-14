@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | JobDetector</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            padding: 25px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .log-table-container {
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--text-color);
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .ip-badge {
+            background: rgba(0, 210, 255, 0.2);
+            color: #00d2ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .ua-text {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            max-width: 250px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+
+<body class="dark-theme">
+    <nav class="glass-nav">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-radar"></i> JobDetector <span class="admin-badge">Admin</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Main Site</a>
+                <a href="favorites.html">Collections</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <h1>Analytics Dashboard</h1>
+            <p>Real-time visitor monitoring and system performance</p>
+        </header>
+
+        <div class="admin-grid">
+            <div class="glass-card stat-card">
+                <i class="fas fa-users-viewfinder fa-2x"></i>
+                <h3>Total Visits Logged</h3>
+                <div id="totalLogs" class="stat-value">...</div>
+            </div>
+            <div class="glass-card stat-card">
+                <i class="fas fa-user-secret fa-2x"></i>
+                <h3>Unique Visitors (IP)</h3>
+                <div id="uniqueVisitors" class="stat-value">...</div>
+            </div>
+        </div>
+
+        <section class="log-section">
+            <div class="glass-card log-table-container">
+                <h3>Recent Activity (Last 50)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time (UTC)</th>
+                            <th>IP Address</th>
+                            <th>Referrer</th>
+                            <th>Browser</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logItems">
+                        <tr>
+                            <td colspan="4" style="text-align:center;">Loading analytics...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/api/admin/visitor-stats')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('totalLogs').textContent = data.total_logs;
+                    document.getElementById('uniqueVisitors').textContent = data.unique_visitors;
+
+                    const logItems = document.getElementById('logItems');
+                    logItems.innerHTML = '';
+
+                    data.recent_logs.forEach(log => {
+                        const row = document.createElement('tr');
+                        const date = new Date(log.timestamp).toLocaleString();
+                        const referrer = log.referrer || 'Direct';
+
+                        row.innerHTML = `
+                            <td>${date}</td>
+                            <td><span class="ip-badge">${log.ip_address}</span></td>
+                            <td>${referrer}</td>
+                            <td class="ua-text" title="${log.user_agent}">${log.user_agent}</td>
+                        `;
+                        logItems.appendChild(row);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error fetching stats:', err);
+                    document.getElementById('logItems').innerHTML = '<tr><td colspan="4" style="color: #ff4b2b; text-align:center;">Failed to load analytics.</td></tr>';
+                });
+        });
+    </script>
+</body>
+
+</html>

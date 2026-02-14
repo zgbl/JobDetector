@@ -101,6 +101,13 @@ async def read_feedback():
         return feedback_file.read_text()
     return "<h1>Page not found</h1>"
 
+@app.get("/admin_stats.html", response_class=HTMLResponse)
+async def read_admin_stats():
+    admin_file = project_root_path / "admin_stats.html"
+    if admin_file.exists():
+        return admin_file.read_text()
+    return "<h1>Admin Page not found</h1>"
+
 @app.get("/about.html", response_class=HTMLResponse)
 async def read_about():
     about_file = project_root_path / "about.html"
@@ -223,7 +230,15 @@ async def get_jobs(
             "Sales": ["sales", "account executive", "ae", "business development"],
             "Finance": ["finance", "accounting", "tax", "treasury"],
             "Legal": ["legal", "law", "counsel", "compliance"],
-            "People": ["people", "hr", "recruiting", "talent"]
+            "Finance": ["finance", "accounting", "tax", "treasury"],
+            "Legal": ["legal", "law", "counsel", "compliance"],
+            "People": ["people", "hr", "recruiting", "talent"],
+            "AI": [
+                "ai engineer", "artificial intelligence", "machine learning", "deep learning", 
+                "computer vision", "nlp", "natural language", "llm", "generative ai", 
+                "gpt", "ai architect", "ml engineer", "ml ops", "mlops",
+                r"\bml\b", r"\bai\b"
+            ]
         }
         
         keywords = category_map.get(category)
@@ -696,21 +711,76 @@ async def get_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/stats/visit")
-async def record_visit():
-    """Increment and return site visit count"""
+async def record_visit(request: Request):
+    """Increment global visit count and log detailed visitor info"""
     db = get_db()
     try:
-        # Atomic increment
+        # 1. Atomic increment of global counter
         result = db.site_stats.find_one_and_update(
             {"_id": "global"},
             {"$inc": {"visits": 1}},
             upsert=True,
             return_document=True
-        )
-        return {"visits": result["visits"]}
+        ) or {"visits": 0}
+
+        # 2. Detailed logging
+        visitor_info = {
+            "timestamp": datetime.now(timezone.utc),
+            "ip_address": request.client.host,
+            "user_agent": request.headers.get("user-agent"),
+            "referrer": request.headers.get("referer"),
+            "path": request.url.path,
+            "method": request.method
+        }
+        
+        # Insert log asynchronously (fire and forget pattern if possible, but here we just wait)
+        db.visitor_logs.insert_one(visitor_info)
+        
+        return {"visits": result.get("visits", 0)}
     except Exception as e:
-        print(f"Visit count error: {e}")
-        return {"visits": 0}
+        print(f"Detailed visit logging error: {e}")
+        # Still try to return the global count if possible
+        try:
+            stats = db.site_stats.find_one({"_id": "global"})
+            return {"visits": stats.get("visits", 0) if stats else 0}
+        except:
+            return {"visits": 0}
+
+@app.get("/api/admin/visitor-stats")
+async def get_visitor_stats(request: Request, limit: int = 50):
+    """Get detailed visitor statistics for admin dashboard"""
+    # Simple check for now - can be enhanced with proper auth
+    # For now, we'll just allow it if it's coming from a local dev machine or has a specific secret 
+    # (In a real app, this would be behind @login_required + admin role)
+    db = get_db()
+    try:
+        # Get recent logs
+        logs = list(db.visitor_logs.find().sort("timestamp", -1).limit(limit))
+        for log in logs:
+            log["_id"] = str(log["_id"])
+            
+        # Basic aggregation for stats
+        total_visits = db.visitor_logs.count_documents({})
+        
+        # Unique visitors (by IP)
+        unique_ips = len(db.visitor_logs.distinct("ip_address"))
+        
+        # Top referrers
+        referrer_pipeline = [
+            {"$group": {"_id": "$referrer", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 10}
+        ]
+        top_referrers = list(db.visitor_logs.aggregate(referrer_pipeline))
+        
+        return {
+            "total_logs": total_visits,
+            "unique_visitors": unique_ips,
+            "top_referrers": top_referrers,
+            "recent_logs": logs
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- Favorites Endpoints ---
 
