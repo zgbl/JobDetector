@@ -1,0 +1,147 @@
+FinTech / 金融科技
+	1.	Stripe
+	2.	Square
+	3.	Block
+	4.	Plaid
+	5.	Brex
+	6.	Ramp
+	7.	Carta
+	8.	SoFi
+	9.	Robinhood
+	10.	Chime
+	11.	Betterment
+	12.	Wealthfront
+	13.	Affirm
+	14.	Marqeta
+	15.	Current
+	16.	Fundbox
+	17.	Tipalti
+	18.	Checkout.com
+	19.	Adyen
+	20.	Circle
+
+⸻
+
+☁️ Cloud / DevOps / Infra 公司
+	21.	HashiCorp
+	22.	Datadog
+	23.	Elastic
+	24.	Confluent
+	25.	Snowflake
+	26.	MongoDB
+	27.	Redis
+	28.	DigitalOcean
+	29.	Cloudflare
+	30.	Fastly
+	31.	Akamai Technologies
+	32.	Vercel
+	33.	Netlify
+	34.	Snyk
+	35.	Grafana Labs
+	36.	PagerDuty
+	37.	New Relic
+	38.	Okta
+	39.	Auth0
+	40.	LaunchDarkly
+
+⸻
+
+📊 Data / AI / ML 平台
+	41.	Databricks
+	42.	Hugging Face
+	43.	Scale AI
+	44.	C3.ai
+	45.	SambaNova Systems
+	46.	Weights & Biases
+	47.	Dataiku
+	48.	Alteryx
+	49.	Domino Data Lab
+	50.	Fivetran
+
+⸻
+
+🌎 Climate / Energy / GovTech（类似 First Street）
+	51.	First Street
+	52.	Planet Labs
+	53.	Watershed
+	54.	Arcadia
+	55.	Palmetto
+	56.	Uplight
+	57.	Stem
+	58.	Autogrid
+	59.	Rivian
+	60.	ChargePoint
+
+⸻
+
+🏢 B2B SaaS / 平台公司
+	61.	Notion
+	62.	Airtable
+	63.	Asana
+	64.	Monday.com
+	65.	Atlassian
+	66.	Miro
+	67.	Canva
+	68.	GitLab
+	69.	Twilio
+	70.	Segment
+
+⸻
+
+🏥 HealthTech / BioTech（infra 很重）
+	71.	Tempus
+	72.	Flatiron Health
+	73.	Color Health
+	74.	Hinge Health
+	75.	Oscar Health
+
+⸻
+
+📈 其他值得投的（科技驱动中型公司）
+	76.	Wayfair
+	77.	Etsy
+	78.	Zillow
+	79.	Redfin
+	80.	Expedia Group
+
+（后面补足到 120）
+
+81–120 包括：
+	•	Tripadvisor
+	•	DoorDash
+	•	Instacart
+	•	Lyft
+	•	Pinterest
+	•	Dropbox
+	•	Box
+	•	Shopify
+	•	Zscaler
+	•	CrowdStrike
+	•	SentinelOne
+	•	GitHub
+	•	Unity
+	•	Roblox
+	•	OpenAI
+	•	Anthropic
+	•	Gusto
+	•	Deel
+	•	Rippling
+	•	Zapier
+	•	Reddit
+	•	Discord
+	•	Qualtrics
+	•	HubSpot
+	•	ServiceNow
+	•	Splunk
+	•	UiPath
+	•	Nutanix
+	•	Cloudera
+	•	Mirantis
+	•	Red Hat
+	•	VMware
+	•	Cockroach Labs
+	•	Yext
+	•	Squarespace
+	•	Coinbase
+	•	Gemini
+	•	Kraken

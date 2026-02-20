@@ -102,11 +102,19 @@ python src/main.py
 
 ## Usage
 
-### Import Companies
+### Smart Ingestion Pipeline (AI-Powered)
+
+For unstructured company lists (text files, messy lists), use the Intelligent Ingestion Pipeline:
 
 ```bash
-# Import from default file
-python scripts/import_companies.py
+# Run the pipeline with AI extraction and ATS discovery
+python scripts/ingestion_pipeline.py data/ImportList/YourList.txt
+```
+
+> [!NOTE]
+> Requires `AI_PROVIDER` and `API_KEY` to be set in `.env`. See [docs/component_ingestion.md](docs/component_ingestion.md) for details.
+
+### Traditional Import
 
 # Import from custom file
 python scripts/import_companies.py --file data/my_companies.yaml
