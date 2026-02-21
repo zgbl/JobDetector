@@ -158,8 +158,8 @@ async def run_production_scrape():
         'workable': WorkableScraper(),
     }
     
-    # 1. Fetch all companies from DB
-    companies = list(db.companies.find({}))
+    # 1. Fetch only active companies from DB
+    companies = list(db.companies.find({'is_active': True}))
     if not companies:
         logger.warning("数据库中没有公司信息。请先运行 scripts/import_companies.py")
         return

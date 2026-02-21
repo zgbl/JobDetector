@@ -54,32 +54,6 @@ class ATSDiscoveryService:
                 if ats_type:
                     return start_url, ats_type
                 
-                # Check 1.5: Active Probing (Guessing)
-                # Extract slug from domain
-                domain_parts = urlparse(start_url).netloc.split('.')
-                if domain_parts[0] == 'www':
-                    domain_parts = domain_parts[1:]
-                
-                # For smarthr.co.jp, we want 'smarthr'
-                # parts: ['smarthr', 'co', 'jp']
-                # If last parts are common TLDs, ignore them
-                tlds = ['com', 'co', 'jp', 'net', 'org', 'ai', 'io', 'ne']
-                
-                filtered_parts = [p for p in domain_parts if p.lower() not in tlds]
-                if filtered_parts:
-                    slug = filtered_parts[0]
-                else:
-                    slug = domain_parts[0]
-                
-                if slug in ['www', 'careers', 'jobs']: # Bad extraction fallback
-                    slug = domain_parts[-2] if len(domain_parts) >= 2 else domain_parts[0]
-                
-                logger.info(f"🕵️  Probing ATS patterns for slug: '{slug}'")
-                probed_url, probed_type = await self._probe_known_ats_patterns(session, slug)
-                if probed_url:
-                    logger.info(f"✅ Active Probe Hit: {probed_url} ({probed_type})")
-                    return probed_url, probed_type
-                    
                 # Check 2: Fetch homepage and look for ATS links directly
                 try:
                     html_content = await self._fetch(session, start_url)
@@ -90,39 +64,57 @@ class ATSDiscoveryService:
                         html_content = await self._fetch(session, start_url)
                     else:
                         logger.warning(f"Could not fetch homepage for {start_url}: {e}")
-                        return None, None
+                        html_content = ""
 
-                # Look for direct ATS links in homepage
-                ats_link, found_type = self._find_ats_link_in_html(html_content, start_url)
-                if ats_link:
-                    logger.info(f"✅ Found direct ATS link: {ats_link} ({found_type})")
-                    return ats_link, found_type
+                if html_content:
+                    # Look for direct ATS links in homepage
+                    ats_link, found_type = self._find_ats_link_in_html(html_content, start_url)
+                    if ats_link:
+                        logger.info(f"✅ Found direct ATS link: {ats_link} ({found_type})")
+                        return ats_link, found_type
+                    
+                    # Check 3: Find "Careers" page and crawl it
+                    career_page_url = self._find_career_page_link(html_content, start_url)
+                    if career_page_url:
+                        logger.info(f"➡️  Found Careers page: {career_page_url}. Crawling...")
+                        try:
+                            async with session.get(career_page_url, allow_redirects=True, timeout=10) as resp:
+                                final_url = str(resp.url)
+                                
+                                # Did we get redirected to an ATS?
+                                ats_type = self._identify_ats_type(final_url)
+                                if ats_type:
+                                    logger.info(f"✅ Redirected to ATS: {final_url} ({ats_type})")
+                                    return final_url, ats_type
+                                    
+                                # If not, parse the career page content
+                                career_html = await resp.text()
+                                ats_link, found_type = self._find_ats_link_in_html(career_html, final_url)
+                                if ats_link:
+                                    logger.info(f"✅ Found ATS link on careers page: {ats_link} ({found_type})")
+                                    return ats_link, found_type
+                                    
+                        except Exception as e:
+                            logger.warning(f"Failed to crawl career page {career_page_url}: {e}")
+
+                # Check 4: Active Probing (Guessing) - Fallback Phase
+                # Extract slug from domain
+                domain_parts = urlparse(start_url).netloc.split('.')
+                if domain_parts[0] == 'www':
+                    domain_parts = domain_parts[1:]
                 
-                # Check 3: Find "Careers" page and crawl it
-                career_page_url = self._find_career_page_link(html_content, start_url)
-                if career_page_url:
-                    logger.info(f"➡️  Found Careers page: {career_page_url}. Crawling...")
-                    # Is the career page itself on an ATS domain? (Redirects often happen here)
-                    # We need to fetch it to see where it lands or what it contains
-                    try:
-                        async with session.get(career_page_url, allow_redirects=True, timeout=10) as resp:
-                            final_url = str(resp.url)
-                            
-                            # Did we get redirected to an ATS?
-                            ats_type = self._identify_ats_type(final_url)
-                            if ats_type:
-                                logger.info(f"✅ Redirected to ATS: {final_url} ({ats_type})")
-                                return final_url, ats_type
-                                
-                            # If not, parse the career page content
-                            career_html = await resp.text()
-                            ats_link, found_type = self._find_ats_link_in_html(career_html, final_url)
-                            if ats_link:
-                                logger.info(f"✅ Found ATS link on careers page: {ats_link} ({found_type})")
-                                return ats_link, found_type
-                                
-                    except Exception as e:
-                        logger.warning(f"Failed to crawl career page {career_page_url}: {e}")
+                tlds = ['com', 'co', 'jp', 'net', 'org', 'ai', 'io', 'ne', 'org']
+                filtered_parts = [p for p in domain_parts if p.lower() not in tlds]
+                slug = filtered_parts[0] if filtered_parts else domain_parts[0]
+                
+                if slug in ['www', 'careers', 'jobs', 'global', 'corporate']:
+                    slug = domain_parts[-2] if len(domain_parts) >= 2 else domain_parts[0]
+                
+                logger.info(f"🕵️  Fallback: Probing ATS patterns for slug: '{slug}'")
+                probed_url, probed_type = await self._probe_known_ats_patterns(session, slug)
+                if probed_url:
+                    logger.info(f"✅ Active Probe Hit: {probed_url} ({probed_type})")
+                    return probed_url, probed_type
 
         except Exception as e:
             logger.error(f"Discovery failed for {start_url}: {e}")
@@ -168,9 +160,18 @@ class ATSDiscoveryService:
                             
                             # Special check for Workable: it returns 200 for 404s
                             if type == 'workable':
-                                text = await resp.text()
-                                if 'name="account" content=""' in text:
-                                    logger.debug(f"🔍 Probe: Workable returned 200 but account is empty for {url}")
+                                try:
+                                    api_url = f"https://apply.workable.com/api/v3/accounts/{slug}/jobs"
+                                    async with session.post(api_url, json={"query": ""}, timeout=5) as api_resp:
+                                        if api_resp.status == 200:
+                                            data = await api_resp.json()
+                                            if data.get('total', 0) == 0:
+                                                logger.debug(f"🔍 Probe: Workable found but 0 jobs for {slug}")
+                                                continue
+                                        else:
+                                            continue
+                                except Exception as e:
+                                    logger.debug(f"🔍 Probe: Workable API check failed for {slug}: {e}")
                                     continue
                             
                             return final_url, type
