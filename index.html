@@ -266,8 +266,12 @@
                     </button>
                 </div>
             </div>
-            <div class="results-info">
-                Found <span id="resultsCount">0</span> opportunities
+            <div class="results-info" style="display: flex; align-items: center; justify-content: space-between;">
+                <div>Found <span id="resultsCount">0</span> opportunities</div>
+                <button class="btn-sm btn-secondary" onclick="openSaveSearchModal(true)"
+                    style="display: flex; align-items: center; gap: 0.5rem; background: rgba(102, 126, 234, 0.1); color: var(--accent-blue); border: 1px solid rgba(102, 126, 234, 0.3);">
+                    <i class="far fa-bell"></i> Create Job Alert
+                </button>
             </div>
         </section>
 

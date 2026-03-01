@@ -1056,11 +1056,28 @@ function showLoading() {
 
 // --- Saved Searches & Alerts ---
 
-function openSaveSearchModal() {
+function openSaveSearchModal(autoAlert = false) {
     if (!localStorage.getItem('token')) {
         openAuthModal();
         return;
     }
+
+    const emailAlertCheckbox = document.getElementById('emailAlert');
+    if (emailAlertCheckbox) {
+        emailAlertCheckbox.checked = autoAlert === true;
+    }
+
+    const nameInput = document.getElementById('searchName');
+    if (nameInput && !nameInput.value) {
+        let parts = [];
+        if (currentFilters.q) parts.push(currentFilters.q);
+        if (currentFilters.category) parts.push(currentFilters.category);
+        if (currentFilters.locations && currentFilters.locations.length > 0) parts.push(currentFilters.locations[0]);
+        if (parts.length > 0) {
+            nameInput.value = parts.join(' ') + ' Jobs';
+        }
+    }
+
     document.getElementById('saveSearchModal').style.display = 'flex';
 }
 
@@ -1090,6 +1107,8 @@ async function handleSaveSearch(e) {
         if (response.ok) {
             closeModal('saveSearchModal');
             alert('Search saved successfully');
+            document.getElementById('searchName').value = '';
+            document.getElementById('emailAlert').checked = false;
         } else {
             const err = await response.json();
             alert(err.detail || 'Failed to save search');
