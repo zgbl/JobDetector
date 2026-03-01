@@ -78,7 +78,12 @@ graph TB
 3.  **Performance**: Static assets are served from a CDN (Content Delivery Network) node closest to the user.
 4.  **Developer Experience**: Integrated deployment (Git Push -> Live).
 
-## 5. Directory Mapping
-- `/index.html`, `/css`, `/js`: The **Static Frontend** (served by the Edge Network).
-- `/api/index.py`: The **Dynamic Backend** (running as a Serverless Function).
-- `/src`: The **Shared Logic** (used by both the local Scrapers and the Cloud API).
+## 5. Directory Mapping & Vercel Magic
+
+In a traditional setup, you might have a dedicated `backend/` and `frontend/` folder. In a **Vercel Serverless** architecture, the structure is flattened:
+
+- **`/index.html`, `/css`, `/js`**: The **Static Frontend**. Vercel detects these files in the root and serves them instantly from its global Edge Network CDN.
+- **`/api`**: This is practically the "backend" folder. Vercel has a built-in rule: **any file placed inside an `/api` folder is automatically converted into a scalable Serverless Function**. 
+  - Specifically, our `api/index.py` contains the entire FastAPI application.
+- **`vercel.json`**: The router. When a user requests `/api/jobs`, Vercel intercepts it. Our `vercel.json` contains a rewrite rule: `"source": "/api/(.*)", "destination": "/api/index.py"`. This tells Vercel to forward *all* API traffic to our single FastAPI app, which then handles the routing internally.
+- **`/src`**: The **Shared Logic**. This contains database models and scrapers used by both the local scheduled tasks and the cloud API.
