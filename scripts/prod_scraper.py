@@ -20,6 +20,7 @@ from src.scrapers.lever import LeverScraper
 from src.scrapers.workday import WorkdayScraper
 from src.scrapers.ashby import AshbyScraper
 from src.scrapers.workable import WorkableScraper
+from src.scrapers.wellfound import WellfoundScraper
 from src.services.language_filter import LanguageFilterService
 
 # Ensure logs directory exists BEFORE logging configuration
@@ -55,6 +56,8 @@ async def scrape_company(company, scrapers, db, semaphore):
                 ats_type = 'ashby'
             elif 'workable.com' in ats_url:
                 ats_type = 'workable'
+            elif 'wellfound.com' in ats_url:
+                ats_type = 'wellfound'
                 
         # 2. Fallback to configured type
         if not ats_type:
@@ -156,6 +159,7 @@ async def run_production_scrape():
         'workday': WorkdayScraper(),
         'ashby': AshbyScraper(),
         'workable': WorkableScraper(),
+        'wellfound': WellfoundScraper(),
     }
     
     # 1. Fetch only active companies from DB

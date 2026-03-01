@@ -272,3 +272,12 @@ companies:
     domain: datadoghq.com
     ats_type: greenhouse
     tags: [Monitoring, Observability, SaaS]
+
+  # Wellfound / Aggregators
+  - name: Wellfound
+    domain: wellfound.com
+    ats_url: https://wellfound.com/jobs
+    ats_system:
+      type: wellfound
+    is_active: true
+    tags: [Job Board, Startups]

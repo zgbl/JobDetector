@@ -1,0 +1,31 @@
+companies:
+  - name: Giga
+    domain: giga.ai
+    ats_type: custom
+    size: Startup
+    tags: [AI, Infrastructure]
+  - name: First Street
+    domain: firststreet.org
+    ats_type: custom
+    size: Startup
+    tags: [Environment, Data]
+  - name: CoStar Group
+    domain: costargroup.com
+    ats_type: custom
+    size: Mid-size
+    tags: [Real Estate, Data]
+  - name: Applied Medical
+    domain: appliedmedical.com
+    ats_type: custom
+    size: Mid-size
+    tags: [Medical, Manufacturing]
+  - name: Venmo
+    domain: venmo.com
+    ats_type: eightfold
+    size: Mid-size
+    tags: [Fintech, Payments]
+  - name: xAI
+    domain: x.ai
+    ats_type: custom
+    size: Startup
+    tags: [AI, Research]
