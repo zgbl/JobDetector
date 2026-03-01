@@ -100,6 +100,12 @@ python scripts/test_connection.py
 python src/main.py
 ```
 
+For more detailed setup and development information, see:
+- [Quick Start Guide](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/QUICKSTART.md)
+- [Development Guide](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/DEVELOPMENT.md)
+- [Database Setup](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/DATABASE_SETUP.md)
+- [Data Sources Summary](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/data_sources.md)
+
 ## Usage
 
 ### Smart Ingestion Pipeline (AI-Powered)
@@ -112,7 +118,7 @@ python scripts/ingestion_pipeline.py data/ImportList/YourList.txt
 ```
 
 > [!NOTE]
-> Requires `AI_PROVIDER` and `API_KEY` to be set in `.env`. See [docs/component_ingestion.md](docs/component_ingestion.md) for details.
+> Requires `AI_PROVIDER` and `API_KEY` to be set in `.env`. See [docs/component_ingestion.md](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/component_ingestion.md) and [docs/data_sources.md](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/data_sources.md) for details.
 
 ### Traditional Import
 
@@ -188,5 +194,6 @@ For questions or suggestions, please open an issue.
 
 ---
 
-**Status**: 🚧 In Development (Phase 1)  
-**Last Updated**: 2026-02-04
+**Status**: 🚧 In Development (Scrapers Phase)  
+**Last Updated**: 2026-02-23
+
