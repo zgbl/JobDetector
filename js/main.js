@@ -1185,11 +1185,13 @@ async function loadSavedSearch(criteria) {
         q: criteria.q || '',
         job_type: criteria.job_type || '',
         remote_only: criteria.remote_only || false,
-        location: criteria.location || '',
         category: criteria.category || '',
-        location: criteria.location || '',
-        category: criteria.category || '',
-        days: criteria.days || ''
+        locations: criteria.locations || (criteria.location ? [criteria.location] : []),
+        keywords: criteria.keywords || [],
+        days: criteria.days || '',
+        company: criteria.company || '',
+        companies: criteria.companies || [],
+        favorites_only: criteria.favorites_only || false
     };
 
     // Update new inputs
@@ -1197,7 +1199,10 @@ async function loadSavedSearch(criteria) {
     if (keywordInput) keywordInput.value = currentFilters.q;
 
     const locInput = document.getElementById('locationFilter');
-    if (locInput) locInput.value = currentFilters.location;
+    if (locInput) locInput.value = '';
+
+    renderLocationTags();
+    renderKeywordTags();
 
     // Update search input
     const searchInput = document.getElementById('jobSearchHero');
