@@ -6,6 +6,89 @@
 
 ---
 
+## 0.2 🎯 个人求职 AI Digest 系统 (Personal Career Digest) — NEW
+
+> **目标**：从每天自动爬取的新职位中，用 AI（Gemini / MiniMax）自动筛选最符合自己赛道的岗位，生成精美 HTML 邮件推送给自己。
+
+### 功能概述
+
+| 组件 | 文件 | 说明 |
+|------|------|------|
+| AI 筛选引擎 | `scripts/personal_digest.py` | 核心脚本，从 MongoDB 查新职位，调用 AI 打分，发送邮件 |
+| 控制台页面 | `my_digest.html` | 个人专属管理页面，可手动触发、查看运行历史 |
+| API 端点 | `POST /api/digest/run` | 从页面触发 Digest 运行（Admin Only） |
+| API 端点 | `GET /api/digest/log` | 查看最近 Digest 运行日志（Admin Only） |
+| 自动调度 | `.github/workflows/daily_digest.yml` | 每天 8:00 AM ET 自动运行 |
+
+### 架构流程
+
+```
+MongoDB (jobs, is_active=True, posted_date >= cutoff)
+    │
+    ▼
+[personal_digest.py]
+    ├── Gemini API  ─────► AI Score 0-10 per job
+    ├── MiniMax API ─────► (fallback)
+    └── Keyword     ─────► (offline fallback)
+    │
+    ▼ Filter score >= min_score, sort desc, top N
+    │
+    ▼
+Premium HTML Email ──► smtp.gmail.com ──► RECIPIENT_EMAIL
+    │
+    ▼
+digest_log (MongoDB collection) ← run history
+```
+
+### 个人赛道配置 (硬编码在脚本中)
+
+**目标职位 (Tier 1)**：AI Platform Engineer · GenAI Platform Engineer · Cloud Solution Architect · Enterprise Solution Engineer
+
+**目标公司**：Morgan Stanley · JPMorgan · Goldman Sachs · AWS · Azure · Google Cloud · Databricks · Snowflake · OpenAI · Anthropic
+
+**核心技能匹配**：Kubernetes · Terraform · LLM Orchestration · RAG · Python/Go · FastAPI · Distributed Systems
+
+**排除规则**：CUDA / NCCL / GPU Kernel roles · Data Scientist · Junior / Entry-level · PhD required
+
+### 环境变量配置 (.env / GitHub Secrets)
+
+```bash
+RECIPIENT_EMAIL=your_personal_email@gmail.com   # 接收邮件地址
+AI_PROVIDER=gemini                               # gemini | minimax | keyword
+GEMINI_API_KEY=your_key_here                     # Google AI Studio 获取
+MINIMAX_API_KEY=your_key_here                    # MiniMax 备选
+ADMIN_EMAIL=your_admin_email@gmail.com           # 与注册账户一致
+```
+
+### CLI 用法
+
+```bash
+# 发送今日 digest
+python scripts/personal_digest.py
+
+# 过去 3 天，最多 20 条，最低分 6
+python scripts/personal_digest.py --days 3 --top 20 --min-score 6
+
+# 预览不发送
+python scripts/personal_digest.py --dry-run
+
+# 强制使用 keyword 模式（无需 API Key）
+python scripts/personal_digest.py --provider keyword
+```
+
+### GitHub Actions 自动化
+
+```yaml
+# .github/workflows/daily_digest.yml
+# 触发时间：每天 12:00 UTC = 8:00 AM ET
+# 需要设置的 GitHub Secrets：
+#   MONGODB_URI, MONGODB_DATABASE
+#   EMAIL_USERNAME, EMAIL_APP_PASSWORD
+#   RECIPIENT_EMAIL, GEMINI_API_KEY, AI_PROVIDER
+```
+
+---
+
 ## 0.1 🚀 公开测试上线路线图 (Launch Roadmap)
 
 为了将项目从开发状态转为可公开访问的测试版本，需要完成以下增强：

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Career Digest | JobDetector</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .digest-header { text-align:center; padding: 3rem 0 2rem; }
+        .digest-header h1 { font-size:2.8rem; margin-bottom:.5rem; }
+        .profile-box { background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.15); border-radius:12px; padding:1.5rem; margin-bottom:2rem; }
+        .profile-box h3 { color:var(--accent-blue); font-size:.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem; }
+        .target-tags { display:flex; flex-wrap:wrap; gap:.5rem; }
+        .target-tag { font-size:.8rem; padding:.3rem .8rem; border-radius:20px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2); color:var(--accent-blue); }
+        .target-tag.company { background:rgba(129,140,248,0.1); border-color:rgba(129,140,248,0.2); color:var(--accent-purple); }
+        .controls-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:2rem; }
+        .control-card { background:var(--card-bg); border:1px solid var(--glass-border); border-radius:12px; padding:1.2rem; }
+        .control-card label { display:block; font-size:.8rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; margin-bottom:.5rem; }
+        .control-card select, .control-card input { width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); border-radius:8px; padding:.6rem .8rem; color:white; font-family:inherit; font-size:.9rem; }
+        .btn-run { width:100%; padding:1.1rem; font-size:1rem; font-weight:700; background:linear-gradient(135deg,#38bdf8,#818cf8); border:none; border-radius:12px; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:.7rem; transition:all .3s; }
+        .btn-run:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(56,189,248,.4); }
+        .btn-run:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+        .log-entry { background:var(--card-bg); border:1px solid var(--glass-border); border-radius:10px; padding:1rem 1.4rem; display:flex; align-items:center; gap:1rem; }
+        .log-entry .log-time { font-size:.8rem; color:var(--text-dim); min-width:140px; }
+        .log-entry .log-badge { font-size:.75rem; padding:.25rem .7rem; border-radius:20px; font-weight:600; }
+        .log-badge.success { background:rgba(34,197,94,.1); color:#22c55e; border:1px solid rgba(34,197,94,.2); }
+        .log-badge.failed { background:rgba(239,68,68,.1); color:#ef4444; border:1px solid rgba(239,68,68,.2); }
+        .console-box { background:#0a0f1a; border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:1.2rem; font-family:monospace; font-size:.82rem; color:#94a3b8; white-space:pre-wrap; max-height:320px; overflow-y:auto; line-height:1.7; display:none; }
+        .console-box.visible { display:block; }
+        .section-title { font-size:1.1rem; font-weight:700; color:var(--text-main); margin:2rem 0 1rem; display:flex; align-items:center; gap:.6rem; }
+        .auth-gate { display:none; text-align:center; padding:3rem; }
+        .main-content { display:none; }
+        .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+        .status-dot.running { background:#f59e0b; animation:pulse 1s infinite; }
+        .status-dot.idle { background:#22c55e; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    </style>
+</head>
+<body class="dark-theme">
+<nav class="glass-nav">
+    <div class="nav-container">
+        <a href="/" class="logo"><i class="fas fa-satellite-dish"></i><span>JobDetector</span></a>
+        <div class="nav-links">
+            <a href="/" class="nav-item">Jobs</a>
+            <a href="/favorites.html" class="nav-item">Favorites</a>
+            <a href="/my_digest.html" class="nav-item active">My Digest</a>
+            <a href="/admin_stats.html" class="nav-item">Admin</a>
+        </div>
+        <div class="user-profile" id="userProfile">
+            <button class="btn-signin" id="showLogin">Sign In</button>
+        </div>
+    </div>
+</nav>
+
+<main class="dashboard">
+    <!-- Auth Gate -->
+    <div class="auth-gate" id="authGate">
+        <i class="fas fa-lock" style="font-size:3rem;color:var(--text-dim);margin-bottom:1rem;display:block;"></i>
+        <h2>Admin Access Required</h2>
+        <p style="color:var(--text-dim);margin-top:.5rem;">Sign in with your admin account to access the Career Digest.</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <div class="digest-header">
+            <h1>🎯 My <span class="gradient-text">Career Digest</span></h1>
+            <p style="color:var(--text-dim);font-size:1.1rem;">AI-powered daily job matching engine for your target track.</p>
+        </div>
+
+        <!-- Career Profile Summary -->
+        <div class="profile-box">
+            <h3><i class="fas fa-user-tie"></i> &nbsp; Active Career Profile</h3>
+            <div style="margin-bottom:1rem;">
+                <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">TARGET ROLES</div>
+                <div class="target-tags">
+                    <span class="target-tag">AI Platform Engineer</span>
+                    <span class="target-tag">GenAI Platform Engineer</span>
+                    <span class="target-tag">Cloud Solution Architect</span>
+                    <span class="target-tag">Enterprise Solution Engineer</span>
+                    <span class="target-tag">Staff / Principal Platform Engineer</span>
+                </div>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">TARGET COMPANIES</div>
+                <div class="target-tags">
+                    <span class="target-tag company">Morgan Stanley</span>
+                    <span class="target-tag company">JPMorgan</span>
+                    <span class="target-tag company">Goldman Sachs</span>
+                    <span class="target-tag company">AWS</span>
+                    <span class="target-tag company">Azure</span>
+                    <span class="target-tag company">Google Cloud</span>
+                    <span class="target-tag company">Databricks</span>
+                    <span class="target-tag company">Snowflake</span>
+                    <span class="target-tag company">OpenAI</span>
+                    <span class="target-tag company">Anthropic</span>
+                </div>
+            </div>
+            <div>
+                <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">CORE SKILLS</div>
+                <div class="target-tags">
+                    <span class="target-tag">Kubernetes</span><span class="target-tag">Terraform</span>
+                    <span class="target-tag">LLM Orchestration</span><span class="target-tag">RAG Pipelines</span>
+                    <span class="target-tag">Python / Go</span><span class="target-tag">AWS / Azure / GCP</span>
+                    <span class="target-tag">Distributed Systems</span><span class="target-tag">FastAPI</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Run Controls -->
+        <div class="section-title"><i class="fas fa-sliders-h" style="color:var(--accent-blue);"></i> Run Configuration</div>
+        <div class="controls-grid">
+            <div class="control-card">
+                <label><i class="fas fa-calendar-alt"></i> &nbsp; Lookback (days)</label>
+                <input type="number" id="ctrlDays" value="1" min="1" max="7">
+            </div>
+            <div class="control-card">
+                <label><i class="fas fa-list-ol"></i> &nbsp; Max Jobs</label>
+                <input type="number" id="ctrlTop" value="15" min="5" max="30">
+            </div>
+            <div class="control-card">
+                <label><i class="fas fa-star-half-alt"></i> &nbsp; Min Score (0-10)</label>
+                <input type="number" id="ctrlMinScore" value="5" min="0" max="10" step="0.5">
+            </div>
+            <div class="control-card">
+                <label><i class="fas fa-robot"></i> &nbsp; AI Provider</label>
+                <select id="ctrlProvider">
+                    <option value="gemini">Gemini (Google)</option>
+                    <option value="minimax">MiniMax</option>
+                    <option value="keyword">Keyword (No API)</option>
+                </select>
+            </div>
+            <div class="control-card">
+                <label><i class="fas fa-flask"></i> &nbsp; Mode</label>
+                <select id="ctrlDryRun">
+                    <option value="false">Send Email</option>
+                    <option value="true">Dry Run (Preview Only)</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn-run" id="btnRun" onclick="runDigest()">
+            <i class="fas fa-paper-plane"></i> Run Digest Now
+        </button>
+
+        <!-- Console Output -->
+        <div class="section-title" id="consoleTitle" style="display:none;">
+            <span class="status-dot" id="statusDot"></span>
+            Console Output
+        </div>
+        <div class="console-box" id="consoleBox"></div>
+
+        <!-- Run History -->
+        <div class="section-title"><i class="fas fa-history" style="color:var(--accent-purple);"></i> Run History</div>
+        <div id="logList" style="display:flex;flex-direction:column;gap:.7rem;">
+            <div style="color:var(--text-dim);font-size:.9rem;text-align:center;padding:2rem;">Loading history...</div>
+        </div>
+
+        <!-- GitHub Actions Info -->
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:1.4rem;margin-top:2.5rem;">
+            <div style="font-size:.85rem;color:var(--text-dim);display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
+                <i class="fab fa-github"></i> <strong style="color:var(--text-main);">Auto-Schedule</strong>
+            </div>
+            <p style="font-size:.82rem;color:var(--text-dim);margin:0;">
+                GitHub Actions runs <code style="color:var(--accent-blue);">daily_digest.yml</code> every day at <strong style="color:var(--text-main);">8:00 AM ET</strong>.
+                Required secrets: <code>RECIPIENT_EMAIL</code>, <code>GEMINI_API_KEY</code> (or <code>MINIMAX_API_KEY</code>), <code>AI_PROVIDER</code>.
+            </p>
+        </div>
+    </div>
+</main>
+
+<!-- Auth Modal (shared) -->
+<div id="authModal" class="modal">
+    <div class="modal-content auth-card glass-card">
+        <span class="close-modal auth-close">&times;</span>
+        <div id="loginForm">
+            <h2 class="auth-title">Welcome Back</h2>
+            <p class="auth-subtitle">Admin login required</p>
+            <form id="loginFormElement" onsubmit="return false;">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="name@company.com" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button type="button" class="btn-primary full-width" id="loginBtn">Login</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('jd_token') || '';
+
+async function init() {
+    if (!token) { showAuthGate(); return; }
+    const me = await fetchMe();
+    if (!me || !me.is_admin) { showAuthGate('Admin access required.'); return; }
+    showMainContent(me);
+    loadLog();
+}
+
+async function fetchMe() {
+    try {
+        const r = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) return null;
+        return await r.json();
+    } catch { return null; }
+}
+
+function showAuthGate(msg) {
+    document.getElementById('authGate').style.display = 'block';
+    document.getElementById('mainContent').style.display = 'none';
+    if (msg) document.getElementById('authGate').querySelector('p').textContent = msg;
+}
+
+function showMainContent(me) {
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    const up = document.getElementById('userProfile');
+    up.innerHTML = `<div class="user-display">
+        <div class="avatar">${me.email[0].toUpperCase()}</div>
+        <span style="font-size:.9rem;">${me.email}</span>
+        <button class="btn-signin" onclick="logout()" style="margin-left:.5rem;font-size:.8rem;padding:.3rem .9rem;">Logout</button>
+    </div>`;
+}
+
+function logout() {
+    localStorage.removeItem('jd_token');
+    token = '';
+    location.reload();
+}
+
+async function runDigest() {
+    const btn = document.getElementById('btnRun');
+    const box = document.getElementById('consoleBox');
+    const dot = document.getElementById('statusDot');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+    box.classList.add('visible');
+    box.textContent = '⏳ Starting digest engine...\n';
+    document.getElementById('consoleTitle').style.display = 'flex';
+    dot.className = 'status-dot running';
+
+    const payload = {
+        days: parseInt(document.getElementById('ctrlDays').value),
+        top: parseInt(document.getElementById('ctrlTop').value),
+        min_score: parseFloat(document.getElementById('ctrlMinScore').value),
+        provider: document.getElementById('ctrlProvider').value,
+        dry_run: document.getElementById('ctrlDryRun').value === 'true',
+    };
+
+    try {
+        const r = await fetch(`${API}/api/digest/run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
+        const data = await r.json();
+        box.textContent = (data.stdout || '') + (data.stderr ? '\n--- STDERR ---\n' + data.stderr : '');
+        dot.className = 'status-dot idle';
+        box.scrollTop = box.scrollHeight;
+        loadLog();
+    } catch (e) {
+        box.textContent = '❌ Request failed: ' + e.message;
+        dot.className = 'status-dot failed';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Run Digest Now';
+    }
+}
+
+async function loadLog() {
+    const list = document.getElementById('logList');
+    try {
+        const r = await fetch(`${API}/api/digest/log?limit=10`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) { list.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:1rem;">No history yet.</div>'; return; }
+        const logs = await r.json();
+        if (!logs.length) { list.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:1rem;">No digest runs yet. Click "Run Digest Now" to start.</div>'; return; }
+        list.innerHTML = logs.map(l => `
+            <div class="log-entry">
+                <span class="log-time"><i class="fas fa-clock"></i> &nbsp;${new Date(l.run_at).toLocaleString()}</span>
+                <span class="log-badge ${l.success ? 'success' : 'failed'}">${l.success ? '✅ Sent' : '❌ Failed'}</span>
+                <span style="color:var(--text-dim);font-size:.82rem;">
+                    ${l.matched_count} matched / ${l.total_scanned} scanned &nbsp;·&nbsp;
+                    ${l.days_lookback}d lookback &nbsp;·&nbsp;
+                    <span style="color:var(--accent-blue);">${l.provider}</span> &nbsp;→&nbsp;
+                    <span style="color:var(--text-dim);">${l.sent_to || ''}</span>
+                </span>
+            </div>`).join('');
+    } catch { list.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:1rem;">Could not load history.</div>'; }
+}
+
+// Login modal logic
+document.getElementById('showLogin').onclick = () => document.getElementById('authModal').style.display = 'block';
+document.querySelector('.auth-close').onclick = () => document.getElementById('authModal').style.display = 'none';
+document.getElementById('loginBtn').onclick = async () => {
+    const email = document.getElementById('loginEmail').value;
+    const pass = document.getElementById('loginPassword').value;
+    const r = await fetch(`${API}/api/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password:pass}) });
+    if (r.ok) {
+        const d = await r.json();
+        token = d.access_token;
+        localStorage.setItem('jd_token', token);
+        document.getElementById('authModal').style.display = 'none';
+        init();
+    } else {
+        alert('Login failed. Check credentials.');
+    }
+};
+
+init();
+</script>
+</body>
+</html>

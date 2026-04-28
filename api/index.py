@@ -1206,6 +1206,100 @@ async def remove_favorite(company_name: str, request: Request):
     
     return {"message": "Removed from favorites"}
 
+# ── Personal Digest Endpoints ─────────────────────────────────────────────────
+
+def _get_admin_email_from_request(request: Request) -> str:
+    """Extract and validate admin email from Bearer token. Returns email or raises 403."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    email = payload.get("sub", "")
+    admin_email = os.getenv("ADMIN_EMAIL", "")
+    if not admin_email or email.lower() != admin_email.lower():
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return email
+
+
+@app.get("/my_digest.html", response_class=HTMLResponse)
+async def read_digest_page():
+    digest_file = project_root_path / "my_digest.html"
+    if digest_file.exists():
+        return digest_file.read_text()
+    return "<h1>Digest page not found</h1>"
+
+
+@app.post("/api/digest/run")
+async def run_personal_digest(request: Request):
+    """
+    Trigger the personal AI digest. Admin only.
+    Body (optional JSON): { "days": 1, "top": 15, "min_score": 5, "dry_run": false, "provider": "gemini" }
+    """
+    _get_admin_email_from_request(request)
+
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    days      = int(data.get("days", 1))
+    top_n     = int(data.get("top", 15))
+    min_score = float(data.get("min_score", 5.0))
+    dry_run   = bool(data.get("dry_run", False))
+    provider  = data.get("provider", None)
+
+    # Import and run digest (runs in same process — fast enough for manual trigger)
+    import subprocess, sys
+    args = [
+        sys.executable,
+        str(project_root_path / "scripts" / "personal_digest.py"),
+        "--days", str(days),
+        "--top", str(top_n),
+        "--min-score", str(min_score),
+    ]
+    if provider:
+        args += ["--provider", provider]
+    if dry_run:
+        args.append("--dry-run")
+
+    try:
+        result = subprocess.run(
+            args,
+            capture_output=True, text=True, timeout=120,
+            cwd=str(project_root_path),
+        )
+        return {
+            "status": "ok" if result.returncode == 0 else "error",
+            "stdout": result.stdout[-3000:],   # last 3000 chars to avoid huge payloads
+            "stderr": result.stderr[-1000:],
+            "returncode": result.returncode,
+        }
+    except subprocess.TimeoutExpired:
+        return {"status": "timeout", "message": "Digest took too long (>120s). Check GitHub Actions logs."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/digest/log")
+async def get_digest_log(request: Request, limit: int = 20):
+    """Return recent digest run history. Admin only."""
+    _get_admin_email_from_request(request)
+
+    db = get_db()
+    try:
+        logs = list(db.digest_log.find().sort("run_at", -1).limit(limit))
+        for log in logs:
+            log["_id"] = str(log["_id"])
+            if log.get("run_at") and hasattr(log["run_at"], "isoformat"):
+                log["run_at"] = log["run_at"].isoformat()
+        return logs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     port = 8123

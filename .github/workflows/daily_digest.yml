@@ -1,0 +1,40 @@
+name: Daily Personal Career Digest
+
+on:
+  schedule:
+    # Every day at 8:00 AM ET (12:00 UTC)
+    - cron: '0 12 * * *'
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
+
+jobs:
+  send_digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Install AI provider SDK
+          pip install google-generativeai || true
+
+      - name: Run Personal Digest
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          AI_PROVIDER: ${{ secrets.AI_PROVIDER || 'gemini' }}
+        run: |
+          python scripts/personal_digest.py --days 1 --top 15 --min-score 5
