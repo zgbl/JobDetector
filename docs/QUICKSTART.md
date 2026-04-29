@@ -32,7 +32,7 @@ Before you begin, make sure you have:
 ### Step 3: Install Dependencies
 
 ```bash
-cd /Users/tuxy/Codes/TestProjects/JobDetector
+cd /Users/tuxy/Codes/Github2/JobDetector
 
 # Create virtual environment
 python3 -m venv venv

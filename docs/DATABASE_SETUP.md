@@ -117,7 +117,7 @@
 ### 步骤1: 激活虚拟环境
 
 ```bash
-cd /Users/tuxy/Codes/TestProjects/JobDetector
+cd /Users/tuxy/Codes/Github2/JobDetector
 source venv/bin/activate
 ```
 

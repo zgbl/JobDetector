@@ -58,8 +58,8 @@
     <!-- Auth Gate -->
     <div class="auth-gate" id="authGate">
         <i class="fas fa-lock" style="font-size:3rem;color:var(--text-dim);margin-bottom:1rem;display:block;"></i>
-        <h2>Admin Access Required</h2>
-        <p style="color:var(--text-dim);margin-top:.5rem;">Sign in with your admin account to access the Career Digest.</p>
+        <h2>Login Required</h2>
+        <p style="color:var(--text-dim);margin-top:.5rem;">Sign in to access your personalized Career Digest.</p>
     </div>
 
     <!-- Main Content -->
@@ -126,8 +126,10 @@
             <div class="control-card">
                 <label><i class="fas fa-robot"></i> &nbsp; AI Provider</label>
                 <select id="ctrlProvider">
+                    <option value="openrouter">OpenRouter (Minimax/M2.5)</option>
+                    <option value="deepseek">DeepSeek</option>
                     <option value="gemini">Gemini (Google)</option>
-                    <option value="minimax">MiniMax</option>
+                    <option value="minimax">MiniMax (Official API)</option>
                     <option value="keyword">Keyword (No API)</option>
                 </select>
             </div>
@@ -137,6 +139,23 @@
                     <option value="false">Send Email</option>
                     <option value="true">Dry Run (Preview Only)</option>
                 </select>
+            </div>
+        </div>
+
+        <!-- Automation Subscription -->
+        <div class="section-title"><i class="fas fa-bell" style="color:var(--accent-blue);"></i> Automation Subscription</div>
+        <div class="control-card" style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
+            <div style="flex: 1;">
+                <label style="margin-bottom: 0.2rem;">Email Frequency</label>
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin: 0;">How often should we send your AI-matched jobs?</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <select id="subFrequency" style="width: 150px; margin: 0;">
+                    <option value="off">Off (Disabled)</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                </select>
+                <button class="btn-signin" onclick="saveSubscription()" id="btnSaveSub" style="padding: 0.6rem 1.2rem; background: var(--accent-blue); border: none; color: white;">Save Changes</button>
             </div>
         </div>
 
@@ -199,9 +218,10 @@ let token = localStorage.getItem('jd_token') || '';
 async function init() {
     if (!token) { showAuthGate(); return; }
     const me = await fetchMe();
-    if (!me || !me.is_admin) { showAuthGate('Admin access required.'); return; }
+    if (!me) { showAuthGate('Login session expired. Please sign in again.'); return; }
     showMainContent(me);
     loadLog();
+    loadSubscription();
 }
 
 async function fetchMe() {
@@ -261,7 +281,10 @@ async function runDigest() {
             body: JSON.stringify(payload),
         });
         const data = await r.json();
-        box.textContent = (data.stdout || '') + (data.stderr ? '\n--- STDERR ---\n' + data.stderr : '');
+        let consoleText = '';
+        if (data.message) consoleText += `ℹ️ ${data.message}\n\n`;
+        consoleText += (data.stdout || '') + (data.stderr ? '\n--- STDERR ---\n' + data.stderr : '');
+        box.textContent = consoleText;
         dot.className = 'status-dot idle';
         box.scrollTop = box.scrollHeight;
         loadLog();

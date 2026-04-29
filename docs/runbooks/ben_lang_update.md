@@ -3,7 +3,7 @@
 Use this guide to manually update the "Ben Lang's $100M+ Raises" collection on your local machine when Ben posts a new list on LinkedIn.
 
 ## Prerequisites
-- Terminal open at project root (`/Users/tuxy/Codes/TestProjects/JobDetector`)
+- Terminal open at project root (`/Users/tuxy/Codes/Github2/JobDetector`)
 - Python environment active (ensure dependencies are installed: `pip install -r requirements.txt`)
 
 ## Step-by-Step Guide

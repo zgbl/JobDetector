@@ -8,12 +8,12 @@ The project currently supports direct crawling from several major Applicant Trac
 
 | ATS System | Scraper File | Status |
 |------------|--------------|--------|
-| **Greenhouse** | [greenhouse.py](file:///Users/tuxy/Codes/TestProjects/JobDetector/src/scrapers/greenhouse.py) | ✅ Supported |
-| **Lever** | [lever.py](file:///Users/tuxy/Codes/TestProjects/JobDetector/src/scrapers/lever.py) | ✅ Supported |
-| **Workday** | [workday.py](file:///Users/tuxy/Codes/TestProjects/JobDetector/src/scrapers/workday.py) | ✅ Supported |
-| **Ashby** | [ashby.py](file:///Users/tuxy/Codes/TestProjects/JobDetector/src/scrapers/ashby.py) | ✅ Supported |
-| **Workable** | [workable.py](file:///Users/tuxy/Codes/TestProjects/JobDetector/src/scrapers/workable.py) | ✅ Supported |
-| **Wellfound** | [wellfound.py](file:///Users/tuxy/Codes/TestProjects/JobDetector/src/scrapers/wellfound.py) | ✅ Supported |
+| **Greenhouse** | [greenhouse.py](file:///Users/tuxy/Codes/Github2/JobDetector/src/scrapers/greenhouse.py) | ✅ Supported |
+| **Lever** | [lever.py](file:///Users/tuxy/Codes/Github2/JobDetector/src/scrapers/lever.py) | ✅ Supported |
+| **Workday** | [workday.py](file:///Users/tuxy/Codes/Github2/JobDetector/src/scrapers/workday.py) | ✅ Supported |
+| **Ashby** | [ashby.py](file:///Users/tuxy/Codes/Github2/JobDetector/src/scrapers/ashby.py) | ✅ Supported |
+| **Workable** | [workable.py](file:///Users/tuxy/Codes/Github2/JobDetector/src/scrapers/workable.py) | ✅ Supported |
+| **Wellfound** | [wellfound.py](file:///Users/tuxy/Codes/Github2/JobDetector/src/scrapers/wellfound.py) | ✅ Supported |
 
 ## Company Lists (Crawl List)
 
@@ -21,11 +21,11 @@ Company lists are stored as YAML files in the `data/` directory. These are impor
 
 | List Name | File Path | Description |
 |-----------|-----------|-------------|
-| **Initial List** | [companies_initial.yaml](file:///Users/tuxy/Codes/TestProjects/JobDetector/data/companies_initial.yaml) | Seed list of companies. |
-| **Japan Companies** | [companies_japan.yaml](file:///Users/tuxy/Codes/TestProjects/JobDetector/data/companies_japan.yaml) | Companies operating in Japan. |
-| **Startups** | [companies_startups.yaml](file:///Users/tuxy/Codes/TestProjects/JobDetector/data/companies_startups.yaml) | Various startup companies. |
-| **Medium Companies** | [companies_medium.yaml](file:///Users/tuxy/Codes/TestProjects/JobDetector/data/companies_medium.yaml) | Mid-sized companies. |
-| **US IT Expansion** | [companies_expansion_us_it.yaml](file:///Users/tuxy/Codes/TestProjects/JobDetector/data/companies_expansion_us_it.yaml) | Larger list of US IT companies. |
+| **Initial List** | [companies_initial.yaml](file:///Users/tuxy/Codes/Github2/JobDetector/data/companies_initial.yaml) | Seed list of companies. |
+| **Japan Companies** | [companies_japan.yaml](file:///Users/tuxy/Codes/Github2/JobDetector/data/companies_japan.yaml) | Companies operating in Japan. |
+| **Startups** | [companies_startups.yaml](file:///Users/tuxy/Codes/Github2/JobDetector/data/companies_startups.yaml) | Various startup companies. |
+| **Medium Companies** | [companies_medium.yaml](file:///Users/tuxy/Codes/Github2/JobDetector/data/companies_medium.yaml) | Mid-sized companies. |
+| **US IT Expansion** | [companies_expansion_us_it.yaml](file:///Users/tuxy/Codes/Github2/JobDetector/data/companies_expansion_us_it.yaml) | Larger list of US IT companies. |
 
 ## Pending / Potential Sources
 

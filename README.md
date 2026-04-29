@@ -52,7 +52,7 @@ JobDetector/
 
 ```bash
 # Clone the repository
-cd /Users/tuxy/Codes/TestProjects/JobDetector
+cd /Users/tuxy/Codes/Github2/JobDetector
 
 # Create virtual environment
 python -m venv venv
@@ -101,10 +101,10 @@ python src/main.py
 ```
 
 For more detailed setup and development information, see:
-- [Quick Start Guide](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/QUICKSTART.md)
-- [Development Guide](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/DEVELOPMENT.md)
-- [Database Setup](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/DATABASE_SETUP.md)
-- [Data Sources Summary](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/data_sources.md)
+- [Quick Start Guide](file:///Users/tuxy/Codes/Github2/JobDetector/docs/QUICKSTART.md)
+- [Development Guide](file:///Users/tuxy/Codes/Github2/JobDetector/docs/DEVELOPMENT.md)
+- [Database Setup](file:///Users/tuxy/Codes/Github2/JobDetector/docs/DATABASE_SETUP.md)
+- [Data Sources Summary](file:///Users/tuxy/Codes/Github2/JobDetector/docs/data_sources.md)
 
 ## Usage
 
@@ -118,7 +118,7 @@ python scripts/ingestion_pipeline.py data/ImportList/YourList.txt
 ```
 
 > [!NOTE]
-> Requires `AI_PROVIDER` and `API_KEY` to be set in `.env`. See [docs/component_ingestion.md](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/component_ingestion.md) and [docs/data_sources.md](file:///Users/tuxy/Codes/TestProjects/JobDetector/docs/data_sources.md) for details.
+> Requires `AI_PROVIDER` and `API_KEY` to be set in `.env`. See [docs/component_ingestion.md](file:///Users/tuxy/Codes/Github2/JobDetector/docs/component_ingestion.md) and [docs/data_sources.md](file:///Users/tuxy/Codes/Github2/JobDetector/docs/data_sources.md) for details.
 
 ### Traditional Import
 

@@ -952,8 +952,11 @@ async function handleRegister(e) {
 function updateAuthUI() {
     const adminLink = document.getElementById('adminNavLink');
     const requestLink = document.getElementById('navRequestCompany');
+    const digestLink = document.getElementById('navMyDigest');
     if (currentUser) {
         if (requestLink) requestLink.style.display = 'block';
+        // Show My Digest for ALL logged-in users
+        if (digestLink) digestLink.style.display = 'inline-block';
         userProfile.innerHTML = `
             <div class="user-display">
                 <div class="avatar">${(currentUser.full_name || currentUser.email || '?')[0].toUpperCase()}</div>
@@ -963,17 +966,17 @@ function updateAuthUI() {
                 </div>
             </div>
         `;
-        // Show Admin link if user is admin
+        // Show Admin link only for admins
         if (currentUser.is_admin && adminLink) {
             adminLink.style.display = 'inline-block';
         }
     } else {
         userProfile.innerHTML = `<button class="btn-signin" id="showLogin">Sign In</button>`;
-        // Re-attach listener if switched back
         document.getElementById('showLogin').onclick = () => {
             authModal.style.display = "block";
         };
         if (adminLink) adminLink.style.display = 'none';
+        if (digestLink) digestLink.style.display = 'none';
     }
 }
 

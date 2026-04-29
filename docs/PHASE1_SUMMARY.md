@@ -61,7 +61,7 @@ Created complete project structure with:
 ### Step 1: Setup Environment
 
 ```bash
-cd /Users/tuxy/Codes/TestProjects/JobDetector
+cd /Users/tuxy/Codes/Github2/JobDetector
 
 # Create and activate virtual environment
 python3 -m venv venv

@@ -80,6 +80,12 @@ async def favicon():
     from fastapi.responses import Response
     return Response(status_code=204)
 
+@app.get("/.well-known/appspecific/com.chrome.devtools.json")
+async def chrome_devtools_json():
+    """Silence Chrome DevTools internal requests"""
+    from fastapi.responses import Response
+    return Response(status_code=204)
+
 @app.get("/favorites.html", response_class=HTMLResponse)
 async def read_favorites():
     favorites_file = project_root_path / "favorites.html"
@@ -1208,8 +1214,8 @@ async def remove_favorite(company_name: str, request: Request):
 
 # ── Personal Digest Endpoints ─────────────────────────────────────────────────
 
-def _get_admin_email_from_request(request: Request) -> str:
-    """Extract and validate admin email from Bearer token. Returns email or raises 403."""
+def _get_user_email_from_request(request: Request) -> str:
+    """Extract and validate any logged-in user email from Bearer token."""
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing token")
@@ -1218,9 +1224,8 @@ def _get_admin_email_from_request(request: Request) -> str:
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
     email = payload.get("sub", "")
-    admin_email = os.getenv("ADMIN_EMAIL", "")
-    if not admin_email or email.lower() != admin_email.lower():
-        raise HTTPException(status_code=403, detail="Admin access required")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
     return email
 
 
@@ -1238,12 +1243,14 @@ async def run_personal_digest(request: Request):
     Trigger the personal AI digest. Admin only.
     Body (optional JSON): { "days": 1, "top": 15, "min_score": 5, "dry_run": false, "provider": "gemini" }
     """
-    _get_admin_email_from_request(request)
-
+    user_email = _get_user_email_from_request(request)
+    
     try:
         data = await request.json()
     except Exception:
         data = {}
+
+    recipient = data.get("recipient", user_email) # Default to logged-in user
 
     days      = int(data.get("days", 1))
     top_n     = int(data.get("top", 15))
@@ -1259,6 +1266,7 @@ async def run_personal_digest(request: Request):
         "--days", str(days),
         "--top", str(top_n),
         "--min-score", str(min_score),
+        "--recipient", recipient
     ]
     if provider:
         args += ["--provider", provider]
@@ -1268,25 +1276,77 @@ async def run_personal_digest(request: Request):
     try:
         result = subprocess.run(
             args,
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, text=True, timeout=180,
             cwd=str(project_root_path),
         )
         return {
             "status": "ok" if result.returncode == 0 else "error",
-            "stdout": result.stdout[-3000:],   # last 3000 chars to avoid huge payloads
-            "stderr": result.stderr[-1000:],
+            "stdout": result.stdout[-5000:],   # more chars
+            "stderr": result.stderr[-2000:],
             "returncode": result.returncode,
         }
-    except subprocess.TimeoutExpired:
-        return {"status": "timeout", "message": "Digest took too long (>120s). Check GitHub Actions logs."}
+    except subprocess.TimeoutExpired as e:
+        return {
+            "status": "timeout", 
+            "message": "Digest took too long (>180s).",
+            "stdout": (e.stdout.decode() if e.stdout else "") + "\n... [TIMEOUT] ...",
+            "stderr": (e.stderr.decode() if e.stderr else "")
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/digest/settings")
+async def get_digest_settings(request: Request):
+    """Get current user's digest subscription settings."""
+    email = _get_user_email_from_request(request)
+    db = get_db()
+    
+    settings = db.user_digest_settings.find_one({"user_email": email})
+    if not settings:
+        # Default settings for new users
+        return {
+            "user_email": email,
+            "frequency": "off",
+            "is_active": False,
+            "last_sent_at": None
+        }
+    
+    return {
+        "frequency": settings.get("frequency", "off"),
+        "is_active": settings.get("is_active", False),
+        "last_sent_at": settings.get("last_sent_at").isoformat() if settings.get("last_sent_at") else None
+    }
+
+@app.post("/api/digest/settings")
+async def update_digest_settings(request: Request):
+    """Update current user's digest subscription settings."""
+    email = _get_user_email_from_request(request)
+    data = await request.json()
+    
+    frequency = data.get("frequency", "off") # daily, weekly, off
+    is_active = data.get("is_active", frequency != "off")
+    
+    db = get_db()
+    db.user_digest_settings.update_one(
+        {"user_email": email},
+        {
+            "$set": {
+                "frequency": frequency,
+                "is_active": is_active,
+                "updated_at": datetime.now(timezone.utc).replace(tzinfo=None)
+            }
+        },
+        upsert=True
+    )
+    
+    return {"status": "success", "message": "Subscription settings updated"}
 
 
 @app.get("/api/digest/log")
 async def get_digest_log(request: Request, limit: int = 20):
     """Return recent digest run history. Admin only."""
-    _get_admin_email_from_request(request)
+    _get_user_email_from_request(request)
 
     db = get_db()
     try:
