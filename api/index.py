@@ -1296,6 +1296,52 @@ async def run_personal_digest(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/user/profile")
+async def get_user_profile(request: Request):
+    """Get current user's career profile."""
+    email = _get_user_email_from_request(request)
+    db = get_db()
+    
+    profile = db.user_profiles.find_one({"user_email": email})
+    if not profile:
+        # Default profile based on your existing hardcoded goals
+        return {
+            "target_roles": "AI Platform Engineer, GenAI Platform Engineer, Cloud Solution Architect",
+            "skills": "Python, Cloud Architecture, Distributed Systems, AI Infrastructure",
+            "target_companies": "Morgan Stanley, JPMC, AWS, GCP, Databricks, Snowflake, OpenAI, Jane Street",
+            "min_experience": 15,
+            "exclusion_keywords": "Web Developer, Frontend only, Java"
+        }
+    
+    # Remove MongoDB internal IDs
+    profile.pop("_id", None)
+    return profile
+
+@app.post("/api/user/profile")
+async def update_user_profile(request: Request):
+    """Update current user's career profile."""
+    email = _get_user_email_from_request(request)
+    data = await request.json()
+    
+    db = get_db()
+    db.user_profiles.update_one(
+        {"user_email": email},
+        {
+            "$set": {
+                "target_roles": data.get("target_roles"),
+                "skills": data.get("skills"),
+                "target_companies": data.get("target_companies"),
+                "min_experience": int(data.get("min_experience", 0)),
+                "exclusion_keywords": data.get("exclusion_keywords"),
+                "updated_at": datetime.now(timezone.utc).replace(tzinfo=None)
+            }
+        },
+        upsert=True
+    )
+    
+    return {"status": "success", "message": "Career profile updated"}
+
+
 @app.get("/api/digest/settings")
 async def get_digest_settings(request: Request):
     """Get current user's digest subscription settings."""
@@ -1360,8 +1406,99 @@ async def get_digest_log(request: Request, limit: int = 20):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── User Keyword Alert Settings ───────────────────────────────────────────────
+
+@app.get("/api/user/alert-settings")
+async def get_alert_settings(request: Request):
+    """
+    Get the current user's keyword job alert configuration.
+    Returns keywords list, alert_email, frequency, is_active, last_sent_at.
+    """
+    email = _get_user_email_from_request(request)
+    db = get_db()
+
+    settings = db.user_alert_settings.find_one({"user_email": email})
+    if not settings:
+        return {
+            "user_email": email,
+            "keywords": [],
+            "alert_email": email,
+            "frequency": "daily",
+            "is_active": False,
+            "last_sent_at": None,
+            "total_emails_sent": 0,
+        }
+
+    return {
+        "user_email": email,
+        "keywords": settings.get("keywords", []),
+        "alert_email": settings.get("alert_email", email),
+        "frequency": settings.get("frequency", "daily"),
+        "is_active": settings.get("is_active", False),
+        "last_sent_at": settings["last_sent_at"].isoformat() if settings.get("last_sent_at") else None,
+        "total_emails_sent": settings.get("total_emails_sent", 0),
+        "last_matched_count": settings.get("last_matched_count", 0),
+    }
+
+
+@app.post("/api/user/alert-settings")
+async def update_alert_settings(request: Request):
+    """
+    Save the current user's keyword job alert configuration.
+
+    Body (JSON):
+      {
+        "keywords":    ["Python", "Kubernetes", "LLM"],  // list of skill keywords
+        "alert_email": "me@example.com",                 // delivery address (defaults to account email)
+        "frequency":   "daily" | "weekly" | "off",
+        "is_active":   true | false
+      }
+    Setting is_active=false or frequency="off" opts the user out.
+    """
+    email = _get_user_email_from_request(request)
+    data  = await request.json()
+
+    keywords     = data.get("keywords", [])
+    alert_email  = (data.get("alert_email") or email).strip()
+    frequency    = data.get("frequency", "daily")
+    is_active    = data.get("is_active", True)
+
+    # Normalize
+    if frequency not in ("daily", "weekly", "off"):
+        raise HTTPException(status_code=400, detail="frequency must be 'daily', 'weekly', or 'off'")
+    if frequency == "off":
+        is_active = False
+
+    # Sanitize keyword list
+    keywords = [k.strip() for k in keywords if k.strip()][:30]  # max 30 keywords
+
+    db = get_db()
+    db.user_alert_settings.update_one(
+        {"user_email": email},
+        {
+            "$set": {
+                "keywords":    keywords,
+                "alert_email": alert_email,
+                "frequency":   frequency,
+                "is_active":   is_active,
+                "updated_at":  datetime.now(timezone.utc).replace(tzinfo=None),
+            },
+            "$setOnInsert": {
+                "created_at":        datetime.now(timezone.utc).replace(tzinfo=None),
+                "last_sent_at":      None,
+                "total_emails_sent": 0,
+            }
+        },
+        upsert=True,
+    )
+
+    status_msg = "Alert enabled" if is_active else "Alert disabled (opted out)"
+    return {"status": "success", "message": status_msg, "keywords_count": len(keywords)}
+
+
 if __name__ == "__main__":
     import uvicorn
     port = 8123
     print(f"🚀 Starting Dashboard on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)
+

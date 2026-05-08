@@ -36,7 +36,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Configuration ────────────────────────────────────────────────────────────
-RECIPIENT_EMAIL   = os.getenv("RECIPIENT_EMAIL", os.getenv("EMAIL_USERNAME", ""))
+RECIPIENT_EMAIL   = os.getenv("RECIPIENT_EMAIL") or os.getenv("EMAIL_USERNAME", "")
 EMAIL_USER        = os.getenv("EMAIL_USERNAME", "")
 EMAIL_PASS        = os.getenv("EMAIL_APP_PASSWORD", "")
 GEMINI_API_KEY    = os.getenv("GEMINI_API_KEY", "")
@@ -106,13 +106,36 @@ TARGET_COMPANIES = [
     "databricks", "snowflake", "openai", "anthropic",
 ]
 
+# ── Default profile dict (used when no DB profile exists for the user) ───────
+# Must be defined BEFORE any function that uses it as a default argument.
+DEFAULT_PROFILE = {
+    "target_roles": "AI Platform Engineer, GenAI Platform Engineer, Cloud Solution Architect, Enterprise Solution Engineer, Staff Platform Engineer",
+    "skills": "Python, Go, Kubernetes, Terraform, AWS, Azure, GCP, LLM Orchestration, RAG Pipelines, Distributed Systems, Kafka, Microservices",
+    "target_companies": "Morgan Stanley, JPMorgan Chase, Goldman Sachs, AWS, Microsoft Azure, Google Cloud, Databricks, Snowflake, OpenAI, Anthropic",
+    "exclusion_keywords": "CUDA, GPU Kernel, NCCL, RDMA, Data Scientist, Data Analyst, Junior, Entry Level, QA Engineer, Test Engineer, PhD Required",
+    "min_experience": 15,
+}
+
 
 # ═══════════════════════════════════════════════════════════════════════════
-# AI Scoring Functions
+# AI Scoring Functions & Profile Support
 # ═══════════════════════════════════════════════════════════════════════════
 
-def score_with_gemini(jobs: list) -> list:
+def get_user_profile(email: str):
+    """Fetch profile from DB or return default."""
+    try:
+        db = get_db()
+        profile = db.user_profiles.find_one({"user_email": email})
+        if profile:
+            return profile
+    except Exception:
+        pass
+    return DEFAULT_PROFILE
+
+def score_with_gemini(jobs: list, profile: dict = None) -> list:
     """Score a batch of jobs using Gemini Flash API."""
+    profile = profile or DEFAULT_PROFILE
+    if not GEMINI_API_KEY: return jobs
     try:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
@@ -124,32 +147,27 @@ def score_with_gemini(jobs: list) -> list:
         print(f"  ⚠️  Gemini init failed: {e}. Falling back to keyword scoring.")
         return score_with_keywords(jobs)
 
+    prompt_context = f"""
+    Target Roles: {profile.get('target_roles')}
+    Core Skills: {profile.get('skills')}
+    Exclude: {profile.get('exclusion_keywords')}
+    Min Experience: {profile.get('min_experience', 10)} years
+    """
+
     scored = []
     # Batch jobs to avoid token limits: 10 at a time
     batch_size = 10
     for i in range(0, len(jobs), batch_size):
         batch = jobs[i:i + batch_size]
-        job_list_text = "\n".join([
-            f"ID:{j['_id']} | Title:{j.get('title','')} | Company:{j.get('company','')} | "
-            f"Location:{j.get('location','')} | Skills:{', '.join(j.get('skills',[])[:8])}"
-            for j in batch
-        ])
-
-        prompt = f"""You are a job relevance scorer. I will give you a career profile and a list of jobs.
-For each job, return a JSON array with objects: {{"id": <ID>, "score": <0-10>, "reason": "<1 sentence>"}}
-
-Score 8-10: Excellent fit (AI Platform Engineer, Cloud Solution Architect, GenAI Infrastructure at top companies)
-Score 5-7: Good fit (Platform Engineering with cloud+AI overlap, Solution Engineering at target companies)
-Score 1-4: Weak fit (Generic SWE, unrelated to cloud/AI architecture)
-Score 0: Exclude immediately (GPU hardware, CUDA, NCCL, data analyst, junior, PhD required)
-
-## CAREER PROFILE
-{CAREER_PROFILE}
-
-## JOBS TO SCORE
-{job_list_text}
-
-Return ONLY a valid JSON array, no markdown, no explanation outside JSON."""
+        
+        prompt = f"""You are an expert technical recruiter. Score these {len(batch)} job postings from 0 to 10 based on how well they match this profile:
+        {prompt_context}
+        
+        Return ONLY a JSON array of objects: {{"id": "...", "score": 8.5, "reason": "short explanation"}}
+        
+        Jobs to score:
+        {[{'id': j['_id'], 'title': j.get('title'), 'company': j.get('company'), 'desc': j.get('description', '')[:500]} for j in batch]}
+        """
 
         try:
             response = model.generate_content(prompt)
@@ -198,7 +216,7 @@ def score_with_minimax(jobs: list) -> list:
             "model": "abab6.5s-chat",
             "messages": [
                 {"role": "system", "content": "You are a job relevance scorer. Return only valid JSON arrays."},
-                {"role": "user", "content": f"Score these jobs 0-10 for this career profile:\n{CAREER_PROFILE}\n\nJOBS:\n{job_list_text}\n\nReturn JSON array: [{{\"id\": <ID>, \"score\": <0-10>, \"reason\": \"<1 sentence>\"}}]"}
+                {"role": "user", "content": f"Score these jobs 0-10 for this career profile:\n{DEFAULT_PROFILE}\n\nJOBS:\n{job_list_text}\n\nReturn JSON array: [{{\"id\": <ID>, \"score\": <0-10>, \"reason\": \"<1 sentence>\"}}]"}
             ],
             "max_tokens": 2000,
         }
@@ -227,12 +245,18 @@ def score_with_minimax(jobs: list) -> list:
     return scored
 
 
-def score_with_openrouter(jobs: list) -> list:
+def score_with_openrouter(jobs: list, profile: dict = None) -> list:
     """Score jobs using OpenRouter API."""
-    if not OPENROUTER_API_KEY:
-        print("  ⚠️  OPENROUTER_API_KEY missing.")
-        return score_with_keywords(jobs)
-        
+    profile = profile or DEFAULT_PROFILE
+    if not OPENROUTER_API_KEY: return jobs
+    
+    prompt_context = f"""
+    Target Roles: {profile.get('target_roles')}
+    Core Skills: {profile.get('skills')}
+    Exclude: {profile.get('exclusion_keywords')}
+    Min Experience: {profile.get('min_experience', 10)} years
+    """
+
     try:
         import requests
         headers = {
@@ -248,17 +272,14 @@ def score_with_openrouter(jobs: list) -> list:
     batch_size = 10
     for i in range(0, len(jobs), batch_size):
         batch = jobs[i:i + batch_size]
-        job_list_text = "\n".join([
-            f"ID:{j['_id']} | Title:{j.get('title','')} | Company:{j.get('company','')}"
-            for j in batch
-        ])
 
         payload = {
             "model": OPENROUTER_MODEL,
             "messages": [
-                {"role": "system", "content": "You are a job relevance scorer. Return only valid JSON arrays."},
-                {"role": "user", "content": f"Score these jobs 0-10 for this career profile:\n{CAREER_PROFILE}\n\nJOBS:\n{job_list_text}\n\nReturn JSON array: [{{\"id\": <ID>, \"score\": <0-10>, \"reason\": \"<1 sentence>\"}}]"}
+                {"role": "system", "content": f"You are a career agent. Score jobs 0-10 based on this profile: {prompt_context}. Return JSON only."},
+                {"role": "user", "content": str([{'id': j['_id'], 'title': j.get('title'), 'company': j.get('company'), 'desc': j.get('description', '')[:500]} for j in batch])}
             ],
+            "response_format": { "type": "json_object" }
         }
         try:
             resp = requests.post(
@@ -277,6 +298,8 @@ def score_with_openrouter(jobs: list) -> list:
             raw = re.sub(r'^```[a-z]*\n?', '', raw)
             raw = re.sub(r'\n?```$', '', raw)
             results = json.loads(raw)
+            # Support both top-level list and wrapped dict
+            results = results.get("results", results) if isinstance(results, dict) else results
             id_to_score = {str(r['id']): r for r in results}
             for job in batch:
                 jid = str(job['_id'])
@@ -291,8 +314,9 @@ def score_with_openrouter(jobs: list) -> list:
     return scored
 
 
-def score_with_deepseek(jobs: list) -> list:
+def score_with_deepseek(jobs: list, profile: dict = None) -> list:
     """Score jobs using DeepSeek API."""
+    profile = profile or DEFAULT_PROFILE
     if not DEEPSEEK_API_KEY:
         return score_with_keywords(jobs)
         
@@ -318,7 +342,7 @@ def score_with_deepseek(jobs: list) -> list:
             "model": "deepseek-chat",
             "messages": [
                 {"role": "system", "content": "You are a job relevance scorer. Return only valid JSON arrays."},
-                {"role": "user", "content": f"Score these jobs 0-10 for this career profile:\n{CAREER_PROFILE}\n\nJOBS:\n{job_list_text}\n\nReturn JSON array: [{{\"id\": <ID>, \"score\": <0-10>, \"reason\": \"<1 sentence>\"}}]"}
+                {"role": "user", "content": f"Score these jobs 0-10 for this career profile:\n{DEFAULT_PROFILE}\n\nJOBS:\n{job_list_text}\n\nReturn JSON array: [{{\"id\": <ID>, \"score\": <0-10>, \"reason\": \"<1 sentence>\"}}]"}
             ],
         }
         try:
@@ -608,8 +632,12 @@ def run_digest(days: int = 1, top_n: int = 15, dry_run: bool = False,
     Can be called from CLI or from the API endpoint.
     """
     provider = (provider_override or AI_PROVIDER).lower()
+    recipient = recipient_override or RECIPIENT_EMAIL
+
     print(f"\n🚀 Personal Digest Engine Starting")
     print(f"   Provider: {provider.upper()} | Lookback: {days}d | Top: {top_n} | Min Score: {min_score}")
+    print(f"   Recipient: {recipient or '⚠️  NOT SET — check RECIPIENT_EMAIL secret!'}")
+
 
     db = get_db()
     cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
@@ -634,23 +662,25 @@ def run_digest(days: int = 1, top_n: int = 15, dry_run: bool = False,
         print("   ℹ️  No new jobs. Digest skipped.")
         return {"status": "skipped", "reason": "No new jobs", "matched": 0, "jobs": []}
 
+    # Fetch User Profile
+    profile = get_user_profile(recipient)
+    print(f"   👤 Profile Loaded for {recipient}")
+
     # Score jobs
     print(f"   🤖 Scoring with {provider.upper()}...")
     if provider == "gemini" and GEMINI_API_KEY:
-        scored_jobs = score_with_gemini(recent_jobs)
+        scored_jobs = score_with_gemini(recent_jobs, profile)
     elif provider == "minimax" and MINIMAX_API_KEY:
-        # Check if the key looks like an OpenRouter key
         if MINIMAX_API_KEY.startswith("sk-or-"):
-            print("   ℹ️  Detected OpenRouter key in MINIMAX_API_KEY, switching to OpenRouter provider.")
-            scored_jobs = score_with_openrouter(recent_jobs)
+            scored_jobs = score_with_openrouter(recent_jobs, profile)
         else:
             scored_jobs = score_with_minimax(recent_jobs)
     elif provider == "openrouter":
-        scored_jobs = score_with_openrouter(recent_jobs)
+        scored_jobs = score_with_openrouter(recent_jobs, profile)
     elif provider == "deepseek":
-        scored_jobs = score_with_deepseek(recent_jobs)
+        scored_jobs = score_with_deepseek(recent_jobs, profile)
     else:
-        print(f"   ⚠️  Unsupported provider or API key missing for '{provider}'. Using keyword scoring.")
+        print(f"   ⚠️ Unsupported provider or API key missing for '{provider}'. Using keyword scoring.")
         scored_jobs = score_with_keywords(recent_jobs)
 
     # Filter & sort
@@ -668,8 +698,8 @@ def run_digest(days: int = 1, top_n: int = 15, dry_run: bool = False,
 
     # Build and send email
     html = build_email_html(top_jobs, days, provider, total_scanned)
-    recipient = recipient_override or RECIPIENT_EMAIL
     sent = send_digest_email(recipient, html, len(top_jobs))
+
 
     # Log digest run to DB
     try:

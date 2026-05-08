@@ -36,6 +36,26 @@
         .status-dot.running { background:#f59e0b; animation:pulse 1s infinite; }
         .status-dot.idle { background:#22c55e; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        /* ── Keyword Alert Styles ── */
+        .alert-card { background:rgba(56,189,248,0.03); border:1px solid rgba(56,189,248,0.18); border-radius:14px; padding:1.6rem; margin-bottom:2rem; position:relative; }
+        .alert-badge { display:inline-flex; align-items:center; gap:.4rem; font-size:.72rem; font-weight:700; letter-spacing:.5px; padding:.3rem .8rem; border-radius:20px; text-transform:uppercase; }
+        .alert-badge.active  { background:rgba(34,197,94,.12); color:#22c55e; border:1px solid rgba(34,197,94,.25); }
+        .alert-badge.inactive{ background:rgba(100,116,139,.12); color:#64748b; border:1px solid rgba(100,116,139,.2); }
+        .kw-input-row { display:flex; gap:.5rem; align-items:center; margin-bottom:.8rem; }
+        .kw-input-row input { flex:1; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:.55rem .9rem; font-size:.88rem; font-family:inherit; }
+        .kw-input-row input:focus { outline:none; border-color:rgba(56,189,248,.5); }
+        .kw-add-btn { background:rgba(56,189,248,.15); border:1px solid rgba(56,189,248,.3); color:#38bdf8; border-radius:8px; padding:.55rem 1rem; font-size:.85rem; cursor:pointer; white-space:nowrap; transition:background .2s; }
+        .kw-add-btn:hover { background:rgba(56,189,248,.28); }
+        .kw-pill-area { display:flex; flex-wrap:wrap; gap:.45rem; min-height:36px; margin-bottom:1rem; }
+        .kw-pill { display:inline-flex; align-items:center; gap:.35rem; background:rgba(56,189,248,.12); border:1px solid rgba(56,189,248,.25); color:#7dd3fc; font-size:.78rem; padding:.28rem .75rem; border-radius:20px; }
+        .kw-pill .kw-remove { cursor:pointer; color:#475569; font-size:.8rem; line-height:1; transition:color .15s; }
+        .kw-pill .kw-remove:hover { color:#ef4444; }
+        .kw-pill-empty { font-size:.82rem; color:var(--text-dim); padding:.4rem 0; }
+        .alert-freq-row { display:grid; grid-template-columns:1fr 1fr auto; gap:1rem; align-items:end; margin-top:.8rem; }
+        @media(max-width:600px){ .alert-freq-row { grid-template-columns:1fr; } }
+        .kw-stats-row { display:flex; gap:1.5rem; font-size:.8rem; color:var(--text-dim); margin-top:.8rem; padding-top:.8rem; border-top:1px solid rgba(255,255,255,.05); }
+        .kw-stats-row span strong { color:var(--text-main); }
     </style>
 </head>
 <body class="dark-theme">
@@ -108,8 +128,31 @@
             </div>
         </div>
 
-        <!-- Run Controls -->
-        <div class="section-title"><i class="fas fa-sliders-h" style="color:var(--accent-blue);"></i> Run Configuration</div>
+        <!-- Career Profile Section -->
+        <div class="section-title"><i class="fas fa-user-tie" style="color:var(--accent-blue);"></i> My Career Profile (AI Focus)</div>
+        <div class="control-card" style="margin-bottom: 2rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.2rem;">
+                <div>
+                    <label>Target Roles</label>
+                    <textarea id="profRoles" placeholder="e.g. AI Platform Engineer, Solution Architect" style="width:100%; height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:0.5rem; font-size:0.85rem;"></textarea>
+                </div>
+                <div>
+                    <label>Core Skills</label>
+                    <textarea id="profSkills" placeholder="e.g. Python, Cloud, LLM" style="width:100%; height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:0.5rem; font-size:0.85rem;"></textarea>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+                <div>
+                    <label>Exclusion Keywords (Avoid)</label>
+                    <input type="text" id="profExclude" placeholder="e.g. Web Developer, Java, Frontend" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:0.5rem; font-size:0.85rem;">
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button class="btn-signin" onclick="saveProfile()" id="btnSaveProf" style="width:100%; padding:0.6rem; background:var(--accent-blue); border:none; color:white; border-radius:8px; font-weight:600;">Update AI Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title"><i class="fas fa-cog" style="color:var(--accent-blue);"></i> Run Configuration</div>
         <div class="controls-grid">
             <div class="control-card">
                 <label><i class="fas fa-calendar-alt"></i> &nbsp; Lookback (days)</label>
@@ -156,6 +199,65 @@
                     <option value="weekly">Weekly</option>
                 </select>
                 <button class="btn-signin" onclick="saveSubscription()" id="btnSaveSub" style="padding: 0.6rem 1.2rem; background: var(--accent-blue); border: none; color: white;">Save Changes</button>
+            </div>
+        </div>
+
+        <!-- ── Keyword Email Alert ───────────────────────────── -->
+        <div class="section-title">
+            <i class="fas fa-envelope-open-text" style="color:#f59e0b;"></i>
+            Keyword Email Alert
+            <span id="alertStatusBadge" class="alert-badge inactive" style="margin-left:.5rem;">Off</span>
+        </div>
+        <div class="alert-card">
+            <p style="font-size:.85rem;color:var(--text-dim);margin:0 0 1.2rem;">
+                Get an email whenever new jobs matching <em>any</em> of your skill keywords are posted.
+                Works independently of the AI digest — no API key needed.
+            </p>
+
+            <!-- Keyword tag input -->
+            <div style="font-size:.78rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;">Your Keywords <span style="color:#475569;">(press Enter or click Add)</span></div>
+            <div class="kw-input-row">
+                <input type="text" id="kwInput" placeholder="e.g. Kubernetes, LLM, Go, Platform Engineer" maxlength="60"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();addKeyword();}">
+                <button class="kw-add-btn" onclick="addKeyword()"><i class="fas fa-plus"></i> Add</button>
+            </div>
+            <div class="kw-pill-area" id="kwPillArea">
+                <span class="kw-pill-empty" id="kwEmptyHint">No keywords yet — add some above.</span>
+            </div>
+
+            <!-- Delivery email + frequency -->
+            <div class="alert-freq-row">
+                <div>
+                    <label style="font-size:.78rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;">Delivery Email</label>
+                    <input type="email" id="alertEmail" placeholder="Leave blank to use account email"
+                           style="width:100%;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:white;padding:.55rem .9rem;font-size:.88rem;margin-top:.4rem;">
+                </div>
+                <div>
+                    <label style="font-size:.78rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;">Frequency</label>
+                    <select id="alertFrequency" style="width:100%;margin-top:.4rem;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:white;padding:.55rem .9rem;font-size:.88rem;">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="off">Off (Disabled)</option>
+                    </select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:.5rem;">
+                    <button class="btn-run" onclick="saveAlertSettings()" id="btnSaveAlert"
+                            style="padding:.65rem 1.4rem;font-size:.88rem;">
+                        <i class="fas fa-save"></i> Save Alert
+                    </button>
+                    <button onclick="disableAlert()" id="btnDisableAlert"
+                            style="padding:.45rem 1rem;font-size:.78rem;background:transparent;border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:8px;cursor:pointer;transition:all .2s;"
+                            onmouseover="this.style.background='rgba(239,68,68,.1)'" onmouseout="this.style.background='transparent'">
+                        <i class="fas fa-ban"></i> Opt Out
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats row -->
+            <div class="kw-stats-row" id="alertStatsRow" style="display:none;">
+                <span>Last sent: <strong id="alertLastSent">—</strong></span>
+                <span>Total sent: <strong id="alertTotalSent">0</strong></span>
+                <span>Last match: <strong id="alertLastMatch">—</strong></span>
             </div>
         </div>
 
@@ -220,8 +322,9 @@ async function init() {
     const me = await fetchMe();
     if (!me) { showAuthGate('Login session expired. Please sign in again.'); return; }
     showMainContent(me);
-    loadLog();
     loadSubscription();
+    loadProfile();
+    loadAlertSettings();
 }
 
 async function fetchMe() {
@@ -297,7 +400,197 @@ async function runDigest() {
     }
 }
 
-async function loadLog() {
+async function loadProfile() {
+    try {
+        const r = await fetch(`${API}/api/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
+        if (r.ok) {
+            const data = await r.json();
+            document.getElementById('profRoles').value = data.target_roles || '';
+            document.getElementById('profSkills').value = data.skills || '';
+            document.getElementById('profExclude').value = data.exclusion_keywords || '';
+        }
+    } catch (e) { console.error('Failed to load profile', e); }
+}
+
+// ── Keyword Alert Logic ──────────────────────────────────────────────────────
+
+let alertKeywords = [];
+
+function renderKeywordPills() {
+    const area = document.getElementById('kwPillArea');
+    const hint = document.getElementById('kwEmptyHint');
+    if (alertKeywords.length === 0) {
+        area.innerHTML = '<span class="kw-pill-empty" id="kwEmptyHint">No keywords yet — add some above.</span>';
+        return;
+    }
+    area.innerHTML = alertKeywords.map((kw, i) => `
+        <span class="kw-pill">
+            ${kw}
+            <span class="kw-remove" onclick="removeKeyword(${i})" title="Remove">✕</span>
+        </span>`).join('');
+}
+
+function addKeyword() {
+    const input = document.getElementById('kwInput');
+    const raw = input.value.trim();
+    if (!raw) return;
+    // Support comma-separated bulk add
+    const tokens = raw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    for (const t of tokens) {
+        if (!alertKeywords.includes(t) && alertKeywords.length < 30) {
+            alertKeywords.push(t);
+        }
+    }
+    input.value = '';
+    renderKeywordPills();
+}
+
+function removeKeyword(idx) {
+    alertKeywords.splice(idx, 1);
+    renderKeywordPills();
+}
+
+async function loadAlertSettings() {
+    try {
+        const r = await fetch(`${API}/api/user/alert-settings`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) return;
+        const data = await r.json();
+
+        alertKeywords = data.keywords || [];
+        renderKeywordPills();
+
+        document.getElementById('alertEmail').value = data.alert_email || '';
+        document.getElementById('alertFrequency').value = data.frequency || 'daily';
+
+        // Status badge
+        const badge = document.getElementById('alertStatusBadge');
+        if (data.is_active) {
+            badge.textContent = data.frequency === 'weekly' ? '● Weekly' : '● Daily';
+            badge.className = 'alert-badge active';
+        } else {
+            badge.textContent = 'Off';
+            badge.className = 'alert-badge inactive';
+        }
+
+        // Stats
+        const statsRow = document.getElementById('alertStatsRow');
+        if (data.total_emails_sent > 0 || data.last_sent_at) {
+            statsRow.style.display = 'flex';
+            document.getElementById('alertTotalSent').textContent = data.total_emails_sent || 0;
+            document.getElementById('alertLastSent').textContent = data.last_sent_at
+                ? new Date(data.last_sent_at).toLocaleDateString()
+                : 'Never';
+            document.getElementById('alertLastMatch').textContent =
+                data.last_matched_count != null ? `${data.last_matched_count} jobs` : '—';
+        }
+    } catch (e) { console.error('Failed to load alert settings', e); }
+}
+
+async function saveAlertSettings() {
+    const btn = document.getElementById('btnSaveAlert');
+    const freq = document.getElementById('alertFrequency').value;
+    const alertEmail = document.getElementById('alertEmail').value.trim();
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    const payload = {
+        keywords:    alertKeywords,
+        alert_email: alertEmail,
+        frequency:   freq,
+        is_active:   freq !== 'off',
+    };
+
+    try {
+        const r = await fetch(`${API}/api/user/alert-settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
+        if (r.ok) {
+            const d = await r.json();
+            // Re-load to refresh badge + stats
+            await loadAlertSettings();
+            showToast(d.message || 'Alert settings saved!', 'success');
+        } else {
+            const err = await r.json();
+            showToast(err.detail || 'Failed to save.', 'error');
+        }
+    } catch (e) {
+        showToast('Network error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Save Alert';
+    }
+}
+
+async function disableAlert() {
+    if (!confirm('Disable keyword email alerts?')) return;
+    document.getElementById('alertFrequency').value = 'off';
+    alertKeywords = [...alertKeywords]; // keep keywords, just turn off
+    const payload = {
+        keywords:    alertKeywords,
+        alert_email: document.getElementById('alertEmail').value.trim(),
+        frequency:   'off',
+        is_active:   false,
+    };
+    try {
+        const r = await fetch(`${API}/api/user/alert-settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
+        if (r.ok) {
+            await loadAlertSettings();
+            showToast('Keyword alerts disabled. You can re-enable anytime.', 'success');
+        }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+// Lightweight toast notification
+function showToast(msg, type = 'success') {
+    const el = document.createElement('div');
+    el.textContent = msg;
+    el.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;
+        border-radius:10px;font-size:.88rem;font-weight:600;color:white;
+        background:${ type === 'success' ? '#166534' : '#7f1d1d' };
+        border:1px solid ${ type === 'success' ? '#22c55e' : '#ef4444' };
+        box-shadow:0 8px 24px rgba(0,0,0,.5);animation:fadeIn .25s ease;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+}
+
+async function saveProfile() {
+    const btn = document.getElementById('btnSaveProf');
+    const payload = {
+        target_roles: document.getElementById('profRoles').value,
+        skills: document.getElementById('profSkills').value,
+        exclusion_keywords: document.getElementById('profExclude').value,
+        min_experience: 15
+    };
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    
+    try {
+        const r = await fetch(`${API}/api/user/profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
+        if (r.ok) {
+            alert('AI Career Profile updated!');
+        } else {
+            alert('Failed to update profile.');
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Update AI Profile';
+    }
+}
+
+async function loadSubscription() {
     const list = document.getElementById('logList');
     try {
         const r = await fetch(`${API}/api/digest/log?limit=10`, { headers: { Authorization: `Bearer ${token}` } });
@@ -335,6 +628,9 @@ document.getElementById('loginBtn').onclick = async () => {
         alert('Login failed. Check credentials.');
     }
 };
+
+// loadLog is an alias for loadSubscription (run history)
+const loadLog = loadSubscription;
 
 init();
 </script>
