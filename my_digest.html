@@ -36,6 +36,34 @@
         .status-dot.running { background:#f59e0b; animation:pulse 1s infinite; }
         .status-dot.idle { background:#22c55e; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .resume-setup-card { background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.28); border-radius:14px; padding:1.6rem; margin-bottom:2rem; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+        .resume-setup-head { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom:1.2rem; }
+        .resume-setup-head h2 { margin:0 0 .35rem; font-size:1.45rem; }
+        .resume-setup-head p { margin:0; color:var(--text-dim); }
+        .setup-badge { font-size:.75rem; padding:.35rem .75rem; border-radius:20px; background:rgba(34,197,94,.12); color:#22c55e; border:1px solid rgba(34,197,94,.25); white-space:nowrap; }
+        .setup-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+        .setup-grid label { display:grid; gap:.45rem; color:var(--text-dim); font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
+        .setup-grid input, .setup-grid textarea { width:100%; background:rgba(0,0,0,0.24); border:1px solid rgba(255,255,255,0.11); border-radius:8px; color:white; padding:.75rem .85rem; font-family:inherit; font-size:.9rem; text-transform:none; letter-spacing:0; }
+        .setup-grid textarea { min-height:72px; resize:vertical; }
+        .setup-grid .wide { grid-column:1 / -1; }
+        .setup-grid .resume-textarea { min-height:170px; }
+        .setup-check { display:flex !important; grid-template-columns:none !important; align-items:center; gap:.6rem !important; text-transform:none !important; letter-spacing:0 !important; color:var(--text-main) !important; }
+        .setup-check input { width:auto; }
+        .setup-actions { display:flex; align-items:center; justify-content:flex-end; gap:1rem; margin-top:1rem; }
+        .setup-actions span { margin-right:auto; color:var(--text-dim); font-size:.85rem; }
+        .digest-preview { display:grid; gap:.8rem; margin:1rem 0 2rem; }
+        .digest-job-card { display:grid; grid-template-columns:72px 1fr auto; gap:1rem; align-items:start; background:var(--card-bg); border:1px solid var(--glass-border); border-radius:10px; padding:1rem; }
+        .digest-score { text-align:center; border:1px solid rgba(56,189,248,.25); border-radius:8px; padding:.7rem .4rem; color:var(--accent-blue); font-weight:800; }
+        .digest-score span { display:block; color:var(--text-dim); font-size:.72rem; font-weight:600; margin-top:.2rem; }
+        .digest-job-card h3 { margin:0 0 .35rem; font-size:1rem; }
+        .digest-job-card p { margin:.25rem 0; color:var(--text-dim); font-size:.86rem; }
+        .digest-job-card a { color:var(--accent-blue); text-decoration:none; font-weight:700; white-space:nowrap; }
+        .digest-empty { border:1px dashed rgba(56,189,248,.28); border-radius:10px; padding:1.2rem; color:var(--text-dim); }
+        .shortcut-grid { display:flex; flex-wrap:wrap; gap:.65rem; margin-bottom:2rem; }
+        .search-shortcut { border:1px solid rgba(56,189,248,.25); background:rgba(56,189,248,.08); color:#7dd3fc; border-radius:12px; padding:.7rem .9rem; cursor:pointer; display:flex; align-items:center; gap:.5rem; font-weight:700; }
+        .search-shortcut:hover { background:rgba(56,189,248,.16); border-color:rgba(56,189,248,.45); }
+        .search-shortcut small { color:var(--text-dim); font-weight:600; }
+        @media(max-width:760px){ .setup-grid { grid-template-columns:1fr; } .resume-setup-head, .setup-actions { flex-direction:column; align-items:stretch; } }
 
         /* ── Keyword Alert Styles ── */
         .alert-card { background:rgba(56,189,248,0.03); border:1px solid rgba(56,189,248,0.18); border-radius:14px; padding:1.6rem; margin-bottom:2rem; position:relative; }
@@ -89,66 +117,65 @@
             <p style="color:var(--text-dim);font-size:1.1rem;">AI-powered daily job matching engine for your target track.</p>
         </div>
 
-        <!-- Career Profile Summary -->
-        <div class="profile-box">
-            <h3><i class="fas fa-user-tie"></i> &nbsp; Active Career Profile</h3>
-            <div style="margin-bottom:1rem;">
-                <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">TARGET ROLES</div>
-                <div class="target-tags">
-                    <span class="target-tag">AI Platform Engineer</span>
-                    <span class="target-tag">GenAI Platform Engineer</span>
-                    <span class="target-tag">Cloud Solution Architect</span>
-                    <span class="target-tag">Enterprise Solution Engineer</span>
-                    <span class="target-tag">Staff / Principal Platform Engineer</span>
-                </div>
-            </div>
-            <div style="margin-bottom:1rem;">
-                <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">TARGET COMPANIES</div>
-                <div class="target-tags">
-                    <span class="target-tag company">Morgan Stanley</span>
-                    <span class="target-tag company">JPMorgan</span>
-                    <span class="target-tag company">Goldman Sachs</span>
-                    <span class="target-tag company">AWS</span>
-                    <span class="target-tag company">Azure</span>
-                    <span class="target-tag company">Google Cloud</span>
-                    <span class="target-tag company">Databricks</span>
-                    <span class="target-tag company">Snowflake</span>
-                    <span class="target-tag company">OpenAI</span>
-                    <span class="target-tag company">Anthropic</span>
-                </div>
-            </div>
-            <div>
-                <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">CORE SKILLS</div>
-                <div class="target-tags">
-                    <span class="target-tag">Kubernetes</span><span class="target-tag">Terraform</span>
-                    <span class="target-tag">LLM Orchestration</span><span class="target-tag">RAG Pipelines</span>
-                    <span class="target-tag">Python / Go</span><span class="target-tag">AWS / Azure / GCP</span>
-                    <span class="target-tag">Distributed Systems</span><span class="target-tag">FastAPI</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Career Profile Section -->
-        <div class="section-title"><i class="fas fa-user-tie" style="color:var(--accent-blue);"></i> My Career Profile (AI Focus)</div>
-        <div class="control-card" style="margin-bottom: 2rem;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.2rem;">
+        <div class="resume-setup-card">
+            <div class="resume-setup-head">
                 <div>
-                    <label>Target Roles</label>
-                    <textarea id="profRoles" placeholder="e.g. AI Platform Engineer, Solution Architect" style="width:100%; height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:0.5rem; font-size:0.85rem;"></textarea>
+                    <div class="radar-kicker" style="color:var(--accent-blue);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem;">Resume setup</div>
+                    <h2>Upload resume and create a career direction</h2>
+                    <p>Your digest and homepage recommendations are generated from this saved profile. You can keep up to three directions.</p>
                 </div>
-                <div>
-                    <label>Core Skills</label>
-                    <textarea id="profSkills" placeholder="e.g. Python, Cloud, LLM" style="width:100%; height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:0.5rem; font-size:0.85rem;"></textarea>
-                </div>
+                <span class="setup-badge" id="setupProfileCount">0 / 3 directions</span>
             </div>
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
-                <div>
-                    <label>Exclusion Keywords (Avoid)</label>
-                    <input type="text" id="profExclude" placeholder="e.g. Web Developer, Java, Frontend" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:0.5rem; font-size:0.85rem;">
-                </div>
-                <div style="display:flex; align-items:flex-end;">
-                    <button class="btn-signin" onclick="saveProfile()" id="btnSaveProf" style="width:100%; padding:0.6rem; background:var(--accent-blue); border:none; color:white; border-radius:8px; font-weight:600;">Update AI Profile</button>
-                </div>
+            <div class="setup-grid">
+                <label>
+                    Career direction name
+                    <input id="profName" placeholder="e.g. AI Platform, Cloud Architect, FinTech AI">
+                </label>
+                <label>
+                    Minimum score
+                    <input id="profMinScore" type="number" min="0" max="10" step="0.5" value="5">
+                </label>
+                <label class="wide">
+                    Upload resume text file
+                    <input id="profResumeFile" type="file" accept=".pdf,.docx,.txt,.md,.text,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                </label>
+                <label class="wide">
+                    Resume text
+                    <textarea id="profResumeText" class="resume-textarea" placeholder="Paste resume text here, or upload a PDF, DOCX, TXT, or MD resume above."></textarea>
+                </label>
+                <label class="wide">
+                    Target roles
+                    <textarea id="profRoles" placeholder="e.g. AI Platform Engineer, Cloud Solution Architect, Staff Platform Engineer"></textarea>
+                </label>
+                <label class="wide">
+                    Core skills
+                    <textarea id="profSkills" placeholder="e.g. Python, Go, Kubernetes, Terraform, AWS, Azure, LLM, RAG"></textarea>
+                </label>
+                <label class="wide">
+                    Target companies
+                    <textarea id="profCompanies" placeholder="Optional: OpenAI, Anthropic, Databricks, Morgan Stanley"></textarea>
+                </label>
+                <label class="wide">
+                    Preferred areas
+                    <input id="profPreferredAreas" placeholder="e.g. New York, New Jersey, Seattle">
+                </label>
+                <label class="wide">
+                    Acceptable areas
+                    <input id="profAcceptableAreas" placeholder="e.g. Remote, Japan, China, Canada">
+                </label>
+                <label class="setup-check wide">
+                    <input id="profStrictLocation" type="checkbox" checked>
+                    Filter out jobs outside preferred or acceptable areas
+                </label>
+                <label class="wide">
+                    Exclusion keywords
+                    <input id="profExclude" placeholder="e.g. Junior, Intern, QA, Data Analyst, CUDA">
+                </label>
+            </div>
+            <div class="setup-actions">
+                <span id="profileSetupStatus">No resume saved yet.</span>
+                <button class="btn-signin" onclick="newProfile()" id="btnNewProf" style="padding:.75rem 1rem;background:transparent;border:1px solid rgba(255,255,255,.18);color:white;border-radius:8px;font-weight:600;">New direction</button>
+                <button class="btn-signin" onclick="saveProfile()" id="btnSaveProf" style="padding:.75rem 1.4rem;background:var(--accent-blue);border:none;color:white;border-radius:8px;font-weight:700;">Save Resume Direction</button>
             </div>
         </div>
 
@@ -156,7 +183,7 @@
         <div class="controls-grid">
             <div class="control-card">
                 <label><i class="fas fa-calendar-alt"></i> &nbsp; Lookback (days)</label>
-                <input type="number" id="ctrlDays" value="1" min="1" max="7">
+                <input type="number" id="ctrlDays" value="7" min="1" max="30">
             </div>
             <div class="control-card">
                 <label><i class="fas fa-list-ol"></i> &nbsp; Max Jobs</label>
@@ -261,9 +288,22 @@
             </div>
         </div>
 
+        <div class="section-title">
+            <i class="fas fa-note-sticky" style="color:var(--accent-blue);"></i>
+            Saved Search Shortcuts
+        </div>
+        <div class="shortcut-grid" id="savedSearchShortcuts">
+            <div style="color:var(--text-dim);font-size:.9rem;">Loading saved searches...</div>
+        </div>
+
         <button class="btn-run" id="btnRun" onclick="runDigest()">
             <i class="fas fa-paper-plane"></i> Run Digest Now
         </button>
+
+        <div class="section-title" id="previewTitle" style="display:none;">
+            <i class="fas fa-list-check" style="color:var(--accent-blue);"></i> Matched Jobs Preview
+        </div>
+        <div class="digest-preview" id="digestPreview"></div>
 
         <!-- Console Output -->
         <div class="section-title" id="consoleTitle" style="display:none;">
@@ -316,6 +356,8 @@
 <script>
 const API = '';
 let token = localStorage.getItem('jd_token') || '';
+let activeProfileId = '';
+let activeProfileName = '';
 
 async function init() {
     if (!token) { showAuthGate(); return; }
@@ -323,8 +365,10 @@ async function init() {
     if (!me) { showAuthGate('Login session expired. Please sign in again.'); return; }
     showMainContent(me);
     loadSubscription();
+    loadDigestSettings();
     loadProfile();
     loadAlertSettings();
+    loadSavedSearchShortcuts();
 }
 
 async function fetchMe() {
@@ -367,6 +411,8 @@ async function runDigest() {
     box.classList.add('visible');
     box.textContent = '⏳ Starting digest engine...\n';
     document.getElementById('consoleTitle').style.display = 'flex';
+    document.getElementById('previewTitle').style.display = 'none';
+    document.getElementById('digestPreview').innerHTML = '';
     dot.className = 'status-dot running';
 
     const payload = {
@@ -390,6 +436,7 @@ async function runDigest() {
         box.textContent = consoleText;
         dot.className = 'status-dot idle';
         box.scrollTop = box.scrollHeight;
+        await loadDigestPreview(payload.days, payload.top, payload.min_score);
         loadLog();
     } catch (e) {
         box.textContent = '❌ Request failed: ' + e.message;
@@ -400,16 +447,133 @@ async function runDigest() {
     }
 }
 
+async function loadDigestPreview(days, top, minScore) {
+    const preview = document.getElementById('digestPreview');
+    const title = document.getElementById('previewTitle');
+    try {
+        const params = new URLSearchParams({
+            days: String(Math.max(days || 7, 7)),
+            limit: String(top || 15),
+            min_score: String(minScore || 5)
+        });
+        const r = await fetch(`${API}/api/recommendations?${params.toString()}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await r.json();
+        title.style.display = 'flex';
+        const jobs = data.jobs || [];
+        if (!jobs.length) {
+            preview.innerHTML = `<div class="digest-empty">No matched jobs for this run. Try a longer lookback, lower minimum score, or broaden acceptable areas.</div>`;
+            return;
+        }
+        preview.innerHTML = jobs.map(job => `
+            <div class="digest-job-card">
+                <div class="digest-score">${job.radar_score || '-'}<span>/10</span></div>
+                <div>
+                    <h3>${job.title || 'Untitled role'}</h3>
+                    <p><i class="fas fa-building"></i> ${job.company || ''} &nbsp; <i class="fas fa-location-dot"></i> ${job.location || ''}</p>
+                    <p>${(job.radar_reasons || []).slice(0, 2).join(' · ')}</p>
+                </div>
+                <a href="${job.source_url || '#'}" target="_blank">Open job</a>
+            </div>
+        `).join('');
+    } catch (e) {
+        title.style.display = 'flex';
+        preview.innerHTML = `<div class="digest-empty">Could not load matched jobs preview: ${e.message}</div>`;
+    }
+}
+
+async function saveSubscription() {
+    const btn = document.getElementById('btnSaveSub');
+    const frequency = document.getElementById('subFrequency').value;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    try {
+        const r = await fetch(`${API}/api/digest/settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ frequency, is_active: frequency !== 'off' }),
+        });
+        const data = await r.json();
+        showToast(data.message || 'Subscription saved.', r.ok ? 'success' : 'error');
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    }
+}
+
+async function loadDigestSettings() {
+    try {
+        const r = await fetch(`${API}/api/digest/settings`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) return;
+        const data = await r.json();
+        document.getElementById('subFrequency').value = data.frequency || 'off';
+    } catch (e) { console.error('Failed to load digest settings', e); }
+}
+
 async function loadProfile() {
     try {
-        const r = await fetch(`${API}/api/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
-        if (r.ok) {
-            const data = await r.json();
-            document.getElementById('profRoles').value = data.target_roles || '';
-            document.getElementById('profSkills').value = data.skills || '';
-            document.getElementById('profExclude').value = data.exclusion_keywords || '';
+        const r = await fetch(`${API}/api/profiles`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) return;
+        const profiles = await r.json();
+        document.getElementById('setupProfileCount').textContent = `${profiles.length} / 3 directions`;
+        if (!profiles.length) {
+            newProfile();
+            document.getElementById('profileSetupStatus').textContent = 'Start by uploading or pasting your resume.';
+            return;
         }
+        const data = profiles.find(p => p.is_default) || profiles[0];
+        activeProfileId = data.id || '';
+        activeProfileName = data.name || '';
+        document.getElementById('profName').value = data.name || '';
+        document.getElementById('profRoles').value = (data.target_roles || []).join(', ');
+        document.getElementById('profSkills').value = (data.core_skills || []).join(', ');
+        document.getElementById('profCompanies').value = (data.target_companies || []).join(', ');
+        const geo = data.geo_preferences || {};
+        document.getElementById('profPreferredAreas').value = (geo.preferred_areas || data.locations || []).join(', ');
+        document.getElementById('profAcceptableAreas').value = (geo.acceptable_areas || []).join(', ');
+        document.getElementById('profStrictLocation').checked = data.strict_location !== false;
+        document.getElementById('profExclude').value = (data.exclusions || []).join(', ');
+        document.getElementById('profResumeText').value = data.resume_text || '';
+        document.getElementById('profMinScore').value = data.min_score || 5;
+        const signals = data.resume_signals?.extracted_skills || [];
+        document.getElementById('profileSetupStatus').textContent = signals.length
+            ? `Resume saved. Signals: ${signals.slice(0, 8).join(', ')}`
+            : 'Profile saved. Add resume text for better matching.';
     } catch (e) { console.error('Failed to load profile', e); }
+}
+
+function fillIfEmpty(id, value) {
+    const el = document.getElementById(id);
+    if (!el || el.value.trim()) return;
+    el.value = Array.isArray(value) ? value.join(', ') : (value || '');
+}
+
+function applyResumeSuggestions(suggestions) {
+    if (!suggestions) return;
+    fillIfEmpty('profRoles', suggestions.target_roles || []);
+    fillIfEmpty('profSkills', suggestions.core_skills || []);
+    fillIfEmpty('profPreferredAreas', suggestions.preferred_areas || suggestions.locations || []);
+    fillIfEmpty('profAcceptableAreas', suggestions.acceptable_areas || []);
+    fillIfEmpty('profExclude', suggestions.exclusions || []);
+}
+
+function newProfile() {
+    activeProfileId = '';
+    activeProfileName = '';
+    document.getElementById('profName').value = '';
+    document.getElementById('profRoles').value = '';
+    document.getElementById('profSkills').value = '';
+    document.getElementById('profCompanies').value = '';
+    document.getElementById('profPreferredAreas').value = '';
+    document.getElementById('profAcceptableAreas').value = '';
+    document.getElementById('profStrictLocation').checked = true;
+    document.getElementById('profExclude').value = 'Junior, Intern, QA';
+    document.getElementById('profResumeText').value = '';
+    document.getElementById('profMinScore').value = '5';
+    document.getElementById('profileSetupStatus').textContent = 'Creating a new direction.';
 }
 
 // ── Keyword Alert Logic ──────────────────────────────────────────────────────
@@ -458,6 +622,7 @@ async function loadAlertSettings() {
 
         alertKeywords = data.keywords || [];
         renderKeywordPills();
+        renderSavedSearchShortcuts(window.__savedSearches || []);
 
         document.getElementById('alertEmail').value = data.alert_email || '';
         document.getElementById('alertFrequency').value = data.frequency || 'daily';
@@ -486,6 +651,56 @@ async function loadAlertSettings() {
     } catch (e) { console.error('Failed to load alert settings', e); }
 }
 
+async function loadSavedSearchShortcuts() {
+    try {
+        const r = await fetch(`${API}/api/user/searches`, { headers: { Authorization: `Bearer ${token}` } });
+        window.__savedSearches = r.ok ? await r.json() : [];
+        renderSavedSearchShortcuts(window.__savedSearches);
+    } catch (e) {
+        console.error('Failed to load saved searches', e);
+        renderSavedSearchShortcuts([]);
+    }
+}
+
+function criteriaToUrl(criteria = {}) {
+    const params = new URLSearchParams();
+    if (criteria.q) params.set('q', criteria.q);
+    if (criteria.category) params.set('category', criteria.category);
+    if (criteria.days) params.set('days', criteria.days);
+    if (criteria.job_type) params.set('job_type', criteria.job_type);
+    if (criteria.remote_only) params.set('remote_only', 'true');
+    const locations = criteria.locations || (criteria.location ? [criteria.location] : []);
+    if (locations.length) params.set('locations', locations.join(','));
+    const keywords = criteria.keywords || [];
+    if (keywords.length) params.set('keywords', keywords.join(','));
+    if (criteria.company) params.set('company', criteria.company);
+    return `/?${params.toString()}`;
+}
+
+function openKeywordShortcut(keyword) {
+    window.location.href = `/?q=${encodeURIComponent(keyword)}`;
+}
+
+function renderSavedSearchShortcuts(searches = []) {
+    const el = document.getElementById('savedSearchShortcuts');
+    if (!el) return;
+    const saved = (searches || []).map(s => `
+        <button class="search-shortcut" onclick='window.location.href="${criteriaToUrl(s.criteria || {})}"'>
+            <i class="fas fa-bookmark"></i>
+            <span>${s.name || 'Saved Search'}</span>
+            ${s.email_alert ? '<small>Email on</small>' : ''}
+        </button>
+    `).join('');
+    const keywordShortcuts = (alertKeywords || []).map(kw => `
+        <button class="search-shortcut" onclick='openKeywordShortcut(${JSON.stringify(kw)})'>
+            <i class="fas fa-bell"></i>
+            <span>${kw}</span>
+            <small>keyword alert</small>
+        </button>
+    `).join('');
+    el.innerHTML = saved + keywordShortcuts || '<div style="color:var(--text-dim);font-size:.9rem;">No saved searches or keyword alerts yet.</div>';
+}
+
 async function saveAlertSettings() {
     const btn = document.getElementById('btnSaveAlert');
     const freq = document.getElementById('alertFrequency').value;
@@ -511,6 +726,7 @@ async function saveAlertSettings() {
             const d = await r.json();
             // Re-load to refresh badge + stats
             await loadAlertSettings();
+            await loadSavedSearchShortcuts();
             showToast(d.message || 'Alert settings saved!', 'success');
         } else {
             const err = await r.json();
@@ -563,32 +779,78 @@ function showToast(msg, type = 'success') {
 async function saveProfile() {
     const btn = document.getElementById('btnSaveProf');
     const payload = {
+        id: activeProfileId,
+        name: document.getElementById('profName').value.trim(),
         target_roles: document.getElementById('profRoles').value,
-        skills: document.getElementById('profSkills').value,
-        exclusion_keywords: document.getElementById('profExclude').value,
-        min_experience: 15
+        core_skills: document.getElementById('profSkills').value,
+        target_companies: document.getElementById('profCompanies').value,
+        preferred_areas: document.getElementById('profPreferredAreas').value,
+        acceptable_areas: document.getElementById('profAcceptableAreas').value,
+        strict_location: document.getElementById('profStrictLocation').checked,
+        exclusions: document.getElementById('profExclude').value,
+        resume_text: document.getElementById('profResumeText').value,
+        resume_filename: document.getElementById('profResumeFile').files?.[0]?.name || '',
+        min_score: parseFloat(document.getElementById('profMinScore').value || '5'),
+        is_default: true
     };
+    if (!payload.name) {
+        document.getElementById('profileSetupStatus').textContent = 'Career direction name is required.';
+        return;
+    }
+    if (!payload.resume_text.trim()) {
+        document.getElementById('profileSetupStatus').textContent = 'Resume text is required for personalized matching.';
+        return;
+    }
     btn.disabled = true;
-    btn.textContent = 'Updating...';
+    btn.textContent = 'Saving...';
     
     try {
-        const r = await fetch(`${API}/api/user/profile`, {
+        const r = await fetch(`${API}/api/profiles`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(payload),
         });
         if (r.ok) {
-            alert('AI Career Profile updated!');
+            document.getElementById('profileSetupStatus').textContent = 'Saved. Your digest and homepage radar will use this resume direction.';
+            await loadProfile();
         } else {
-            alert('Failed to update profile.');
+            const err = await r.json();
+            document.getElementById('profileSetupStatus').textContent = err.detail || 'Failed to save resume direction.';
         }
     } catch (e) {
-        alert('Error: ' + e.message);
+        document.getElementById('profileSetupStatus').textContent = 'Error: ' + e.message;
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Update AI Profile';
+        btn.textContent = 'Save Resume Direction';
     }
 }
+
+document.getElementById('profResumeFile').onchange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!/\.(pdf|docx|txt|md|text)$/i.test(file.name)) {
+        document.getElementById('profileSetupStatus').textContent = 'Supported formats: PDF, DOCX, TXT, MD.';
+        e.target.value = '';
+        return;
+    }
+    document.getElementById('profileSetupStatus').textContent = `Reading ${file.name}...`;
+    try {
+        const form = new FormData();
+        form.append('file', file);
+        const r = await fetch(`${API}/api/profiles/parse-resume`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: form,
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'Could not parse resume');
+        document.getElementById('profResumeText').value = data.text || '';
+        applyResumeSuggestions(data.profile_suggestions);
+        document.getElementById('profileSetupStatus').textContent = `Loaded ${file.name}. Click Save Resume Direction.`;
+    } catch (err) {
+        document.getElementById('profileSetupStatus').textContent = err.message;
+    }
+};
 
 async function loadSubscription() {
     const list = document.getElementById('logList');

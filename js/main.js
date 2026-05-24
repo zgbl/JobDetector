@@ -48,6 +48,29 @@ const clearFiltersBtn = document.getElementById('clearFilters');
 const locationTagsContainer = document.getElementById('locationTags');
 const keywordTagsContainer = document.getElementById('keywordTags');
 const filterPills = document.querySelectorAll('.filter-pill');
+const radarSection = document.getElementById('radarSection');
+const radarList = document.getElementById('radarList');
+const radarProfileSelect = document.getElementById('radarProfileSelect');
+const refreshRadarBtn = document.getElementById('refreshRadarBtn');
+const radarSummary = document.getElementById('radarSummary');
+const radarStrongCount = document.getElementById('radarStrongCount');
+const radarRankedCount = document.getElementById('radarRankedCount');
+const radarProfileName = document.getElementById('radarProfileName');
+const profileNameInput = document.getElementById('profileNameInput');
+const profileMinScoreInput = document.getElementById('profileMinScoreInput');
+const profileRolesInput = document.getElementById('profileRolesInput');
+const profileSkillsInput = document.getElementById('profileSkillsInput');
+const profileCompaniesInput = document.getElementById('profileCompaniesInput');
+const profilePreferredAreasInput = document.getElementById('profilePreferredAreasInput');
+const profileAcceptableAreasInput = document.getElementById('profileAcceptableAreasInput');
+const profileStrictLocationInput = document.getElementById('profileStrictLocationInput');
+const profileExclusionsInput = document.getElementById('profileExclusionsInput');
+const profileResumeInput = document.getElementById('profileResumeInput');
+const profileResumeFileInput = document.getElementById('profileResumeFileInput');
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+const newProfileBtn = document.getElementById('newProfileBtn');
+const profileSaveStatus = document.getElementById('profileSaveStatus');
+let activeRadarProfile = null;
 
 // Pagination State
 let currentPage = 1;
@@ -88,10 +111,14 @@ async function init() {
 
     // Then fetch data in parallel or sequence, wrapped in try/catch
     try {
-        checkAuth();
+        await checkAuth();
         updateVisitCount(); // Fire and forget
     } catch (e) {
         console.error('Auth check or visit count failed:', e);
+    }
+
+    if (currentUser) {
+        loadPersonalRadar();
     }
 
     try {
@@ -303,12 +330,12 @@ function renderJobs() {
     }
 
     jobsGrid.innerHTML = filteredJobs.map(job => `
-        <div class="job-card glass-card">
+        <div class="job-card glass-card" onclick="openJobInNewTab('${job.source_url || ''}')" style="cursor: pointer;">
             <div class="job-header">
                 <div class="company-logo-type" onclick="event.stopPropagation(); showCompanyDetailsByName('${job.company}')" style="cursor: pointer;">${job.company[0]}</div>
                 <div class="job-posted">${formatDate(job.posted_date)}</div>
             </div>
-            <div onclick="showJobDetails('${job._id}')">
+            <div>
                 <h3 class="job-title">${highlightText(job.title, currentSearchQuery)}</h3>
                 <div class="job-company" onclick="event.stopPropagation(); showCompanyDetailsByName('${job.company}')">
                     <i class="fas fa-building"></i> ${highlightText(job.company, currentSearchQuery)}
@@ -324,6 +351,257 @@ function renderJobs() {
             </div>
         </div>
     `).join('');
+}
+
+function openJobInNewTab(url) {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+async function loadPersonalRadar(profileName = '') {
+    if (!radarSection || !radarList) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    radarSection.style.display = 'block';
+    radarList.innerHTML = `
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Ranking opportunities...</span>
+        </div>
+    `;
+
+    try {
+        const params = new URLSearchParams({ days: '21', limit: '24', min_score: '4.5' });
+        if (profileName) params.append('profile', profileName);
+
+        const response = await fetch(`/api/recommendations?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) radarSection.style.display = 'none';
+            throw new Error('Failed to load recommendations');
+        }
+
+        const data = await response.json();
+        activeRadarProfile = data.profile_detail || null;
+        renderRadarProfiles(data.profiles || [], data.profile);
+        if (data.setup_required) {
+            renderRadarSetup(data.message);
+        } else {
+            populateProfileEditor(activeRadarProfile);
+            renderRadarJobs(data);
+        }
+    } catch (error) {
+        console.error('Radar load failed:', error);
+        radarList.innerHTML = '<div class="no-results">Could not load your recommendations yet.</div>';
+    }
+}
+
+function listToText(value) {
+    return Array.isArray(value) ? value.join(', ') : (value || '');
+}
+
+function populateProfileEditor(profile) {
+    if (!profile || !profileNameInput) return;
+    profileNameInput.value = profile.name || '';
+    profileMinScoreInput.value = profile.min_score || 5;
+    profileRolesInput.value = listToText(profile.target_roles);
+    profileSkillsInput.value = listToText(profile.core_skills);
+    profileCompaniesInput.value = listToText(profile.target_companies);
+    const geo = profile.geo_preferences || {};
+    profilePreferredAreasInput.value = listToText(geo.preferred_areas || profile.locations);
+    profileAcceptableAreasInput.value = listToText(geo.acceptable_areas || []);
+    profileStrictLocationInput.checked = profile.strict_location !== false;
+    profileExclusionsInput.value = listToText(profile.exclusions);
+    profileResumeInput.value = profile.resume_text || '';
+    if (profileSaveStatus) {
+        const skills = profile.resume_signals?.extracted_skills || [];
+        profileSaveStatus.textContent = skills.length ? `Resume signals: ${skills.slice(0, 6).join(', ')}` : 'No resume saved for this direction yet.';
+    }
+}
+
+function clearProfileEditor() {
+    activeRadarProfile = null;
+    if (!profileNameInput) return;
+    profileNameInput.value = '';
+    profileMinScoreInput.value = '5';
+    profileRolesInput.value = '';
+    profileSkillsInput.value = '';
+    profileCompaniesInput.value = '';
+    profilePreferredAreasInput.value = '';
+    profileAcceptableAreasInput.value = '';
+    profileStrictLocationInput.checked = true;
+    profileExclusionsInput.value = 'Junior, Intern, QA';
+    profileResumeInput.value = '';
+    if (profileSaveStatus) profileSaveStatus.textContent = 'Creating a new direction. You can keep up to three.';
+}
+
+function fillProfileFieldIfEmpty(element, value) {
+    if (!element || element.value.trim()) return;
+    element.value = Array.isArray(value) ? value.join(', ') : (value || '');
+}
+
+function applyResumeSuggestionsToRadar(suggestions) {
+    if (!suggestions) return;
+    fillProfileFieldIfEmpty(profileRolesInput, suggestions.target_roles || []);
+    fillProfileFieldIfEmpty(profileSkillsInput, suggestions.core_skills || []);
+    fillProfileFieldIfEmpty(profilePreferredAreasInput, suggestions.preferred_areas || suggestions.locations || []);
+    fillProfileFieldIfEmpty(profileAcceptableAreasInput, suggestions.acceptable_areas || []);
+    fillProfileFieldIfEmpty(profileExclusionsInput, suggestions.exclusions || []);
+}
+
+async function saveRadarProfile() {
+    const token = localStorage.getItem('token');
+    if (!token || !profileNameInput) return;
+
+    const payload = {
+        id: activeRadarProfile?.id || '',
+        name: profileNameInput.value.trim(),
+        target_roles: profileRolesInput.value,
+        core_skills: profileSkillsInput.value,
+        target_companies: profileCompaniesInput.value,
+        preferred_areas: profilePreferredAreasInput.value,
+        acceptable_areas: profileAcceptableAreasInput.value,
+        strict_location: profileStrictLocationInput.checked,
+        exclusions: profileExclusionsInput.value,
+        resume_text: profileResumeInput.value,
+        resume_filename: profileResumeFileInput?.files?.[0]?.name || activeRadarProfile?.resume_filename || '',
+        min_score: parseFloat(profileMinScoreInput.value || '5'),
+        is_default: activeRadarProfile?.is_default || false
+    };
+
+    if (!payload.name) {
+        if (profileSaveStatus) profileSaveStatus.textContent = 'Direction name is required.';
+        return;
+    }
+
+    if (profileSaveStatus) profileSaveStatus.textContent = 'Saving...';
+    try {
+        const response = await fetch('/api/profiles', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Failed to save profile');
+        if (profileSaveStatus) profileSaveStatus.textContent = 'Saved. Re-ranking jobs...';
+        await loadPersonalRadar(payload.name);
+    } catch (error) {
+        if (profileSaveStatus) profileSaveStatus.textContent = error.message;
+    }
+}
+
+function renderRadarProfiles(profiles, activeName) {
+    if (!radarProfileSelect) return;
+    if (!profiles.length) {
+        radarProfileSelect.innerHTML = '<option value="">Add resume first</option>';
+        return;
+    }
+    radarProfileSelect.innerHTML = profiles.map(profile => `
+        <option value="${profile.name}" ${profile.name === activeName ? 'selected' : ''}>${profile.name}</option>
+    `).join('');
+}
+
+function renderRadarSetup(message) {
+    if (radarSummary) radarSummary.textContent = message || 'Add your resume to start personalized recommendations.';
+    if (radarStrongCount) radarStrongCount.textContent = '0';
+    if (radarRankedCount) radarRankedCount.textContent = '0';
+    if (radarProfileName) radarProfileName.textContent = 'Setup';
+    clearProfileEditor();
+    const editor = document.getElementById('radarProfileEditor');
+    if (editor) editor.open = true;
+    radarList.innerHTML = `
+        <div class="radar-empty-setup">
+            <h3>Add your first career direction</h3>
+            <p>Paste your resume text, set target roles and geography, then save. Recommendations will be generated from your profile instead of a hardcoded template.</p>
+        </div>
+    `;
+}
+
+function renderRadarJobs(data) {
+    const recommendedJobs = data.jobs || [];
+    if (radarSummary) {
+        radarSummary.textContent = `${recommendedJobs.length} recommendations from ${data.candidate_count || 0} recent jobs.`;
+    }
+    if (radarStrongCount) radarStrongCount.textContent = data.strong_count || 0;
+    if (radarRankedCount) radarRankedCount.textContent = data.total_ranked || 0;
+    if (radarProfileName) radarProfileName.textContent = data.profile || 'Profile';
+
+    if (!recommendedJobs.length) {
+        radarList.innerHTML = '<div class="no-results">No strong matches yet. Try another track or broaden your profile.</div>';
+        return;
+    }
+
+    radarList.innerHTML = recommendedJobs.map(job => {
+        const score = job.radar_score || 0;
+        const scoreClass = score >= 8 ? 'strong' : score >= 6 ? 'good' : 'possible';
+        const reasons = (job.radar_reasons || []).map(reason => `<li>${reason}</li>`).join('');
+        const concerns = (job.radar_concerns || []).map(concern => `<span>${concern}</span>`).join('');
+        const skills = (job.matched_skills || []).slice(0, 5).map(skill => `<span class="radar-skill">${skill}</span>`).join('');
+
+        return `
+            <article class="radar-job">
+                <div class="radar-score ${scoreClass}">
+                    <strong>${score}</strong>
+                    <span>/10</span>
+                </div>
+                <div class="radar-job-main" onclick="openJobInNewTab('${job.source_url || ''}')">
+                    <div class="radar-job-topline">
+                        <h3>${job.title}</h3>
+                        <span>${formatDate(job.posted_date)}</span>
+                    </div>
+                    <div class="radar-company">
+                        <i class="fas fa-building"></i> ${job.company}
+                        <i class="fas fa-map-marker-alt"></i> ${job.location || 'Location unknown'}
+                    </div>
+                    <ul class="radar-reasons">${reasons}</ul>
+                    <div class="radar-skills">${skills}</div>
+                    ${concerns ? `<div class="radar-concerns">${concerns}</div>` : ''}
+                </div>
+                <div class="radar-feedback">
+                    <button title="Good fit" onclick="sendRadarFeedback(event, '${job._id}', 'good_fit')"><i class="fas fa-thumbs-up"></i></button>
+                    <button title="Not for me" onclick="sendRadarFeedback(event, '${job._id}', 'not_for_me')"><i class="fas fa-thumbs-down"></i></button>
+                    <button title="Save" onclick="sendRadarFeedback(event, '${job._id}', 'save')"><i class="far fa-bookmark"></i></button>
+                    <a title="Apply" href="${job.source_url}" target="_blank" onclick="sendRadarFeedback(event, '${job._id}', 'applied', true)"><i class="fas fa-arrow-up-right-from-square"></i></a>
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+async function sendRadarFeedback(event, jobId, action, allowDefault = false) {
+    if (event) {
+        event.stopPropagation();
+        if (!allowDefault) event.preventDefault();
+    }
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        await fetch(`/api/jobs/${jobId}/feedback`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action,
+                profile_name: radarProfileSelect ? radarProfileSelect.value : 'default'
+            })
+        });
+
+        const card = event?.target?.closest('.radar-job');
+        if (card && ['not_for_me', 'hide'].includes(action)) {
+            card.style.opacity = '0.45';
+        }
+    } catch (error) {
+        console.error('Feedback save failed:', error);
+    }
 }
 
 function renderPagination() {
@@ -444,8 +722,10 @@ function showJobDetails(jobId, jobData = null) {
     const job = jobData || jobs.find(j => j._id === jobId);
     if (!job) return;
 
-    // Update URL with job ID
-    const newUrl = `${window.location.pathname}?jobId=${jobId}`;
+    // Preserve existing filters/search params when opening an internal detail modal.
+    const params = new URLSearchParams(window.location.search);
+    params.set('jobId', jobId);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.pushState({ jobId }, '', newUrl);
 
     modalBody.innerHTML = `
@@ -644,7 +924,7 @@ function setupEventListeners() {
                     if (params.has('jobId')) {
                         params.delete('jobId');
                         const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-                        window.history.pushState({}, '', newUrl);
+                        window.history.replaceState({}, '', newUrl);
                     }
                 }
             }
@@ -662,11 +942,19 @@ function setupEventListeners() {
                 if (params.has('jobId')) {
                     params.delete('jobId');
                     const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-                    window.history.pushState({}, '', newUrl);
+                    window.history.replaceState({}, '', newUrl);
                 }
             }
         }
     };
+
+    window.addEventListener('popstate', () => {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has('jobId') && jobModal && jobModal.style.display === 'block') {
+            jobModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
 
     // Navigation Switching
     navJobs.onclick = (e) => {
@@ -873,6 +1161,51 @@ function setupEventListeners() {
             fetchJobs();
         }, 500);
     };
+
+    if (radarProfileSelect) {
+        radarProfileSelect.onchange = (e) => loadPersonalRadar(e.target.value);
+    }
+
+    if (refreshRadarBtn) {
+        refreshRadarBtn.onclick = () => loadPersonalRadar(radarProfileSelect ? radarProfileSelect.value : '');
+    }
+
+    if (saveProfileBtn) {
+        saveProfileBtn.onclick = saveRadarProfile;
+    }
+
+    if (newProfileBtn) {
+        newProfileBtn.onclick = clearProfileEditor;
+    }
+
+    if (profileResumeFileInput) {
+        profileResumeFileInput.onchange = async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            if (!/\.(pdf|docx|txt|md|text)$/i.test(file.name)) {
+                if (profileSaveStatus) profileSaveStatus.textContent = 'Supported formats: PDF, DOCX, TXT, MD.';
+                e.target.value = '';
+                return;
+            }
+            if (profileSaveStatus) profileSaveStatus.textContent = `Reading ${file.name}...`;
+            try {
+                const form = new FormData();
+                form.append('file', file);
+                const response = await fetch('/api/profiles/parse-resume', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                    body: form
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Could not parse resume');
+                profileResumeInput.value = data.text || '';
+                applyResumeSuggestionsToRadar(data.profile_suggestions);
+                if (profileSaveStatus) profileSaveStatus.textContent = `Loaded ${file.name}. Click Save direction to store it.`;
+            } catch (error) {
+                if (profileSaveStatus) profileSaveStatus.textContent = error.message;
+            }
+        };
+    }
 }
 
 // Auth Functions
@@ -913,6 +1246,7 @@ async function handleLogin(e) {
             currentUser = data.user;
             authModal.style.display = "none";
             updateAuthUI();
+            loadPersonalRadar();
             alert(`Welcome back, ${currentUser.full_name || currentUser.email}!`);
         } else {
             const err = await response.json();

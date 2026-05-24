@@ -997,6 +997,356 @@ mark {
     color: var(--accent-blue);
 }
 
+/* Personal Job Radar */
+.radar-section {
+    margin: 0 auto 2rem;
+    padding: 1.5rem;
+}
+
+.radar-header,
+.radar-actions,
+.radar-metrics,
+.radar-job,
+.radar-job-topline,
+.radar-company,
+.radar-feedback,
+.radar-skills,
+.radar-concerns {
+    display: flex;
+}
+
+.radar-header {
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.radar-kicker {
+    color: var(--accent-blue);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+}
+
+.radar-header h2 {
+    font-size: 1.7rem;
+    margin: 0 0 0.35rem;
+}
+
+.radar-header p {
+    color: var(--text-dim);
+    margin: 0;
+}
+
+.radar-actions {
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.radar-actions select {
+    min-width: 180px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-main);
+    padding: 0.7rem 0.9rem;
+    font-family: inherit;
+}
+
+.radar-metrics {
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.radar-metrics div {
+    min-width: 140px;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.radar-metrics strong {
+    display: block;
+    color: var(--text-main);
+    font-size: 1.35rem;
+}
+
+.radar-metrics span {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+}
+
+.radar-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.radar-job {
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.38);
+}
+
+.radar-score {
+    width: 62px;
+    min-width: 62px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.radar-score strong {
+    font-size: 1.35rem;
+}
+
+.radar-score span {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+}
+
+.radar-score.strong strong { color: var(--accent-green); }
+.radar-score.good strong { color: var(--accent-blue); }
+.radar-score.possible strong { color: var(--text-dim); }
+
+.radar-job-main {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.radar-job-topline {
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.radar-job-topline h3 {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.35;
+}
+
+.radar-job-topline span,
+.radar-company {
+    color: var(--text-dim);
+    font-size: 0.82rem;
+}
+
+.radar-company {
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0.35rem 0 0.5rem;
+    flex-wrap: wrap;
+}
+
+.radar-reasons {
+    margin: 0.35rem 0 0.55rem;
+    padding-left: 1.1rem;
+    color: var(--text-main);
+    font-size: 0.86rem;
+}
+
+.radar-reasons li {
+    margin: 0.18rem 0;
+}
+
+.radar-skills,
+.radar-concerns {
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.radar-skill,
+.radar-concerns span {
+    border-radius: 6px;
+    padding: 0.22rem 0.5rem;
+    font-size: 0.72rem;
+}
+
+.radar-skill {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent-blue);
+}
+
+.radar-concerns {
+    margin-top: 0.45rem;
+}
+
+.radar-concerns span {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+}
+
+.radar-feedback {
+    width: 44px;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.radar-feedback button,
+.radar-feedback a {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.radar-feedback button:hover,
+.radar-feedback a:hover {
+    color: var(--accent-blue);
+    border-color: rgba(56, 189, 248, 0.35);
+    background: rgba(56, 189, 248, 0.1);
+}
+
+.radar-profile-editor {
+    margin: 1rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.radar-profile-editor summary {
+    padding: 0.9rem 1rem;
+    cursor: pointer;
+    color: var(--accent-blue);
+    font-weight: 700;
+}
+
+.radar-editor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    padding: 0 1rem 1rem;
+}
+
+.radar-editor-grid label {
+    display: grid;
+    gap: 0.4rem;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.radar-editor-wide,
+.radar-check {
+    grid-column: 1 / -1;
+}
+
+.radar-editor-grid input,
+.radar-editor-grid textarea {
+    width: 100%;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--text-main);
+    padding: 0.7rem 0.8rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.radar-editor-grid textarea {
+    min-height: 70px;
+    resize: vertical;
+}
+
+.radar-editor-grid .resume-textarea {
+    min-height: 150px;
+}
+
+.radar-check {
+    display: flex !important;
+    grid-template-columns: none !important;
+    align-items: center;
+    gap: 0.65rem !important;
+    color: var(--text-main) !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+
+.radar-check input {
+    width: auto;
+}
+
+.radar-editor-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 0 1rem 1rem;
+}
+
+.radar-editor-actions span {
+    margin-right: auto;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+}
+
+.radar-empty-setup {
+    padding: 1.4rem;
+    border: 1px dashed rgba(56, 189, 248, 0.35);
+    border-radius: 8px;
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.radar-empty-setup h3 {
+    margin: 0 0 0.45rem;
+}
+
+.radar-empty-setup p {
+    margin: 0;
+    color: var(--text-dim);
+    line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+    .radar-header,
+    .radar-job {
+        flex-direction: column;
+    }
+
+    .radar-actions,
+    .radar-actions select {
+        width: 100%;
+    }
+
+    .radar-feedback {
+        width: 100%;
+        flex-direction: row;
+    }
+
+    .radar-editor-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .radar-editor-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
 /* Pagination System */
 .pagination-container {
     display: flex;

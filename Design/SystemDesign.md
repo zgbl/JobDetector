@@ -40,15 +40,9 @@ Premium HTML Email ──► smtp.gmail.com ──► RECIPIENT_EMAIL
 digest_log (MongoDB collection) ← run history
 ```
 
-### 个人赛道配置 (硬编码在脚本中)
+### 个人赛道配置
 
-**目标职位 (Tier 1)**：AI Platform Engineer · GenAI Platform Engineer · Cloud Solution Architect · Enterprise Solution Engineer
-
-**目标公司**：Morgan Stanley · JPMorgan · Goldman Sachs · AWS · Azure · Google Cloud · Databricks · Snowflake · OpenAI · Anthropic
-
-**核心技能匹配**：Kubernetes · Terraform · LLM Orchestration · RAG · Python/Go · FastAPI · Distributed Systems
-
-**排除规则**：CUDA / NCCL / GPU Kernel roles · Data Scientist · Junior / Entry-level · PhD required
+个人赛道不得硬编码。用户必须通过 `career_profiles` 创建最多三条职业方向，每条方向包含目标岗位、核心技能、目标公司、地理偏好、排除项和简历文本。推荐系统只能使用用户保存的 profile/resume；没有 profile/resume 时，首页显示 setup 状态，不生成推荐。
 
 ### 环境变量配置 (.env / GitHub Secrets)
 
@@ -86,6 +80,189 @@ python scripts/personal_digest.py --provider keyword
 #   EMAIL_USERNAME, EMAIL_APP_PASSWORD
 #   RECIPIENT_EMAIL, GEMINI_API_KEY, AI_PROVIDER
 ```
+
+---
+
+## 0.3 Personal Job Radar — Current Target Architecture
+
+> **目标**：把 JobDetector 从“49,000 个职位的搜索站”升级为个人每日机会工作台。用户每天打开首页时，系统默认展示最适合当前简历和职业路线的工作，而不是要求用户重新输入 keyword。
+
+### Product Principle
+
+| Old Job Board | Personal Job Radar |
+|---|---|
+| 用户主动搜索 keyword | 系统按 career profile 自动推荐 |
+| 默认按发布时间排序 | 默认按个人匹配度排序 |
+| 一个搜索框服务所有目标 | 多条职业路线分别维护 |
+| 职位卡只显示基础信息 | 显示分数、推荐理由、风险点、适配简历 |
+| Email 是核心输出 | Web dashboard 是核心体验，Email 是附加渠道 |
+
+### Primary User Flow
+
+1. 用户登录后打开 `/`。
+2. 首页默认展示 `Recommended for You`，而不是空白搜索状态。
+3. 用户选择职业路线：`AI Platform`、`Cloud Architect`、`Staff Platform`、`FinTech AI` 等。
+4. 系统返回按分数排序的职位，并解释推荐原因。
+5. 用户对职位做反馈：`Good fit`、`Not for me`、`Save`、`Applied`、`Hide company`。
+6. 后台用反馈更新下一次排序。
+
+### Recommended UI Layout
+
+```text
+┌────────────────────────────────────────────────────────────────────┐
+│ Good morning, tuxy                                                  │
+│ 23 strong matches today · 7 new since yesterday · 4 worth applying  │
+├───────────────┬──────────────────────────────────────┬─────────────┤
+│ Career Tracks │ Recommended Jobs                     │ Profile     │
+│ - AI Platform │ [92] AI Platform Engineer @ ...      │ Resume: AI  │
+│ - Cloud Arch  │      Why: K8s + LLM + Azure          │ Location    │
+│ - Staff Eng   │      Actions: Save / Not for me      │ Exclusions  │
+│ - FinTech AI  │                                      │ Re-run      │
+└───────────────┴──────────────────────────────────────┴─────────────┘
+```
+
+### Data Model V2
+
+#### `career_profiles`
+
+Multiple routes per user. One route can map to one resume and one scoring strategy.
+
+```javascript
+{
+  user_email: "user@example.com",
+  name: "AI Platform",
+  target_roles: ["AI Platform Engineer", "GenAI Infrastructure Engineer"],
+  core_skills: ["Python", "Go", "Kubernetes", "Terraform", "RAG"],
+  target_companies: ["OpenAI", "Anthropic", "Databricks", "Morgan Stanley"],
+  locations: ["New York", "Remote", "Japan"],
+  exclusions: ["CUDA", "Data Scientist", "Junior", "QA"],
+  resume_id: ObjectId("..."),
+  min_score: 6.0,
+  is_default: true,
+  created_at: ISODate("..."),
+  updated_at: ISODate("...")
+}
+```
+
+#### `resumes`
+
+Stores multiple resume variants and extracted profile signals. In the current implementation, resume text is stored inside each `career_profiles` document to keep the first version simple. The separate `resumes` collection remains the target design once PDF/DOCX parsing and reusable resume variants are added.
+
+```javascript
+{
+  user_email: "user@example.com",
+  name: "AI Platform Resume",
+  raw_text: "...",
+  extracted_skills: ["Kubernetes", "Azure", "LLM Gateway"],
+  domains: ["Cloud", "AI Infrastructure", "Financial Services"],
+  seniority: "Staff/Principal",
+  updated_at: ISODate("...")
+}
+```
+
+#### Resume Storage Policy
+
+- Store parsed plain text and structured signals in MongoDB.
+- Do not store binary resume files in MongoDB for the first version.
+- Browser uploads read `.txt` / `.md` files locally and submit text via JSON.
+- PDF and DOCX uploads are sent to `POST /api/profiles/parse-resume`, parsed into text, and then saved as text in `career_profiles.resume_text`.
+- The first implementation supports PDF, DOCX, TXT, and MD. Original binary files are not stored.
+- Keep one resume per career direction in Phase B, with a maximum of three directions per user.
+
+#### Geography Policy
+
+Location matching is a first-class filter, not only a weak scoring signal.
+
+- A career profile stores two levels: `preferred_areas` and `acceptable_areas`.
+- Examples: preferred `New York, New Jersey, Seattle`; acceptable `Remote, Japan, China`.
+- If `strict_location` is true, jobs outside both preferred and acceptable areas are excluded from recommendations.
+- Preferred-area jobs receive a ranking boost; acceptable-area jobs are allowed but ranked lower.
+- Country aliases are normalized for common markets, e.g. `US` / `USA` / `United States`, `UK` / `United Kingdom`, and city aliases such as `NYC` / `New York`.
+- Jobs that match skills but not either area should appear only in manual search, not in the personal radar.
+
+#### `job_scores`
+
+Cached recommendation results. The homepage should read from this collection when available.
+
+```javascript
+{
+  user_email: "user@example.com",
+  profile_id: ObjectId("..."),
+  job_id: ObjectId("..."),
+  score: 8.7,
+  route: "AI Platform",
+  reasons: ["Title matches GenAI platform", "Kubernetes + Terraform found"],
+  concerns: ["Location is hybrid"],
+  matched_skills: ["Kubernetes", "Terraform", "RAG"],
+  model: "rules-v1",
+  scored_at: ISODate("..."),
+  feedback_adjusted_score: 8.2
+}
+```
+
+#### `job_feedback`
+
+Captures the learning signal from the user.
+
+```javascript
+{
+  user_email: "user@example.com",
+  profile_name: "AI Platform",
+  job_id: ObjectId("..."),
+  action: "good_fit", // good_fit | not_for_me | save | applied | hide_company
+  reason: "Too frontend-heavy",
+  created_at: ISODate("...")
+}
+```
+
+### API V2
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/recommendations` | Return ranked jobs for the logged-in user and selected profile |
+| `POST /api/recommendations/refresh` | Recompute scores for recent jobs |
+| `POST /api/jobs/{job_id}/feedback` | Store user feedback and adjust future ranking |
+| `GET /api/profiles` | List career profiles |
+| `POST /api/profiles` | Create or update career profile |
+| `GET /api/resumes` | List resume variants |
+| `POST /api/resumes` | Add or update resume text |
+
+### Scoring Strategy
+
+Use a three-stage ranking pipeline:
+
+1. **Candidate filter**: MongoDB filters by active jobs, date, target locations, and hard exclusions.
+2. **Rules score**: Fast deterministic scoring using title, company, skills, description, location, seniority, and user feedback.
+3. **AI rerank**: LLM scores only the top candidate set and writes results into `job_scores`.
+
+The homepage must not wait on live LLM calls. It should read cached scores or fall back to rules scoring.
+
+### Implementation Phases
+
+#### Phase A — Homepage Recommendation Workbench
+
+- Add `GET /api/recommendations` with rules scoring fallback.
+- Add a first-screen `Recommended for You` dashboard.
+- Show track tabs, match score, match reasons, and quick feedback actions.
+- Keep existing search as secondary/manual discovery.
+
+#### Phase B — Career Tracks and Resumes
+
+- Replace single `user_profiles` document with multi-profile `career_profiles`.
+- Add resume upload/paste flow.
+- Allow each track to use a different resume and scoring weights.
+
+#### Phase C — Cached AI Reranking
+
+- Add scheduled recompute job for each active profile.
+- Store AI scores in `job_scores`.
+- Keep `personal_digest.py` as email renderer, fed by cached recommendations.
+
+#### Phase D — Learning Loop
+
+- Add explicit feedback buttons.
+- Penalize hidden companies and repeated bad-fit role families.
+- Promote companies/skills/routes that receive positive feedback or applications.
 
 ---
 

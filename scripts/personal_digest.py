@@ -125,12 +125,21 @@ def get_user_profile(email: str):
     """Fetch profile from DB or return default."""
     try:
         db = get_db()
-        profile = db.user_profiles.find_one({"user_email": email})
+        profile = db.career_profiles.find_one({"user_email": email, "is_default": True}) or db.career_profiles.find_one({"user_email": email})
         if profile:
-            return profile
+            return {
+                "target_roles": ", ".join(profile.get("target_roles", [])),
+                "skills": ", ".join((profile.get("core_skills", []) or []) + profile.get("resume_signals", {}).get("extracted_skills", [])),
+                "target_companies": ", ".join(profile.get("target_companies", [])),
+                "exclusion_keywords": ", ".join(profile.get("exclusions", [])),
+                "locations": profile.get("locations", []),
+                "geo_preferences": profile.get("geo_preferences", {}),
+                "min_experience": profile.get("min_experience", 0),
+                "name": profile.get("name", "Career Profile"),
+            }
     except Exception:
         pass
-    return DEFAULT_PROFILE
+    return {}
 
 def score_with_gemini(jobs: list, profile: dict = None) -> list:
     """Score a batch of jobs using Gemini Flash API."""
@@ -371,15 +380,19 @@ def score_with_deepseek(jobs: list, profile: dict = None) -> list:
     return scored
 
 
-def score_with_keywords(jobs: list) -> list:
+def score_with_keywords(jobs: list, profile: dict = None) -> list:
     """Keyword-based scoring fallback (no API required)."""
+    profile = profile or {}
+    high_signal = [kw.lower() for kw in _profile_terms(profile.get("target_roles")) + _profile_terms(profile.get("skills"))] or HIGH_SIGNAL_KEYWORDS
+    exclusions = [kw.lower() for kw in _profile_terms(profile.get("exclusion_keywords"))] or EXCLUSION_KEYWORDS
+    target_companies = [kw.lower() for kw in _profile_terms(profile.get("target_companies"))] or TARGET_COMPANIES
     for job in jobs:
         text = f"{job.get('title','')} {job.get('company','')} {' '.join(job.get('skills',[]))}".lower()
         score = 3  # baseline
         reason_parts = []
 
         # Exclusions first
-        for kw in EXCLUSION_KEYWORDS:
+        for kw in exclusions:
             if kw in text:
                 score = 0
                 reason_parts.append(f"Excluded: contains '{kw}'")
@@ -387,13 +400,13 @@ def score_with_keywords(jobs: list) -> list:
 
         if score > 0:
             # Boost for high-signal keywords
-            for kw in HIGH_SIGNAL_KEYWORDS:
+            for kw in high_signal:
                 if kw in text:
-                    score = min(10, score + 1.5)
+                    score = min(10, score + 0.8)
                     reason_parts.append(kw)
 
             # Boost for target companies
-            for co in TARGET_COMPANIES:
+            for co in target_companies:
                 if co in text:
                     score = min(10, score + 1.5)
                     reason_parts.append(f"target co: {co}")
@@ -405,14 +418,24 @@ def score_with_keywords(jobs: list) -> list:
     return jobs
 
 
+def _profile_terms(value) -> list:
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    return [v.strip() for v in re.split(r"[,;\n]+", str(value or "")) if v.strip()]
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Email Generation
 # ═══════════════════════════════════════════════════════════════════════════
 
-def build_email_html(jobs: list, days: int, ai_provider: str, total_scanned: int) -> str:
+def build_email_html(jobs: list, days: int, ai_provider: str, total_scanned: int, profile: dict = None) -> str:
     """Build a premium HTML email for the personal digest."""
+    profile = profile or {}
     today = datetime.now().strftime("%B %d, %Y")
     job_cards = ""
+    target_summary = " · ".join(_profile_terms(profile.get("target_roles"))[:4] + _profile_terms(profile.get("target_companies"))[:4])
+    if not target_summary:
+        target_summary = "No saved career profile found. Add a resume direction in JobDetector."
 
     for i, job in enumerate(jobs, 1):
         score = job.get('ai_score', 0)
@@ -513,8 +536,7 @@ def build_email_html(jobs: list, days: int, ai_provider: str, total_scanned: int
             🎯 Your Targets
         </p>
         <p style="color:#94a3b8;font-size:12px;margin:0;">
-            AI Platform Engineer · GenAI Platform Engineer · Cloud Solution Architect ·
-            Enterprise Solution Engineer @ Morgan Stanley · JPMC · AWS · GCP · Databricks · Snowflake · OpenAI
+            {target_summary}
         </p>
     </div>
 
@@ -664,6 +686,9 @@ def run_digest(days: int = 1, top_n: int = 15, dry_run: bool = False,
 
     # Fetch User Profile
     profile = get_user_profile(recipient)
+    if not profile:
+        print("   ⚠️ No career profile found. Add a resume direction before running digest.")
+        return {"status": "skipped", "reason": "No career profile", "matched": 0, "jobs": []}
     print(f"   👤 Profile Loaded for {recipient}")
 
     # Score jobs
@@ -681,7 +706,7 @@ def run_digest(days: int = 1, top_n: int = 15, dry_run: bool = False,
         scored_jobs = score_with_deepseek(recent_jobs, profile)
     else:
         print(f"   ⚠️ Unsupported provider or API key missing for '{provider}'. Using keyword scoring.")
-        scored_jobs = score_with_keywords(recent_jobs)
+        scored_jobs = score_with_keywords(recent_jobs, profile)
 
     # Filter & sort
     matched = [j for j in scored_jobs if j.get("ai_score", 0) >= min_score]
@@ -697,7 +722,7 @@ def run_digest(days: int = 1, top_n: int = 15, dry_run: bool = False,
         return {"status": "dry_run", "matched": len(top_jobs), "jobs": top_jobs}
 
     # Build and send email
-    html = build_email_html(top_jobs, days, provider, total_scanned)
+    html = build_email_html(top_jobs, days, provider, total_scanned, profile)
     sent = send_digest_email(recipient, html, len(top_jobs))
 
 

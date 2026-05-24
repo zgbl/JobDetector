@@ -1,7 +1,7 @@
 import os
 import sys
-from typing import List, Optional
-from fastapi import FastAPI, Request, HTTPException, Query
+from typing import Any, Dict, List, Optional
+from fastapi import FastAPI, File, Request, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from dotenv import load_dotenv
@@ -76,8 +76,11 @@ async def read_index():
 
 @app.get("/favicon.ico")
 async def favicon():
-    """Return 204 No Content for favicon to prevent 404 errors"""
+    """Serve the local SVG favicon through the classic favicon path."""
     from fastapi.responses import Response
+    favicon_file = project_root_path / "assets" / "favicon.svg"
+    if favicon_file.exists():
+        return Response(content=favicon_file.read_text(), media_type="image/svg+xml")
     return Response(status_code=204)
 
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
@@ -131,6 +134,7 @@ async def health_check():
 # Mount static folders if they exist
 css_path = project_root_path / "css"
 js_path = project_root_path / "js"
+assets_path = project_root_path / "assets"
 
 if css_path.exists():
     app.mount("/css", StaticFiles(directory=str(css_path)), name="css")
@@ -141,6 +145,11 @@ if js_path.exists():
     app.mount("/js", StaticFiles(directory=str(js_path)), name="js")
 else:
     print(f"WARNING: JS path not found at {js_path}")
+
+if assets_path.exists():
+    app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
+else:
+    print(f"WARNING: assets path not found at {assets_path}")
 
 @app.get("/api/jobs")
 async def get_jobs(
@@ -1229,6 +1238,546 @@ def _get_user_email_from_request(request: Request) -> str:
     return email
 
 
+def _split_profile_terms(value: Any) -> List[str]:
+    """Normalize comma/newline separated profile text into search terms."""
+    if isinstance(value, list):
+        raw_terms = value
+    else:
+        raw_terms = re.split(r"[,;\n]+", str(value or ""))
+    return [term.strip() for term in raw_terms if term and term.strip()]
+
+
+def _profile_from_legacy_doc(profile: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    if not profile:
+        return {}
+    return {
+        "name": profile.get("name") or "My Profile",
+        "target_roles": _split_profile_terms(profile.get("target_roles")),
+        "core_skills": _split_profile_terms(profile.get("skills") or profile.get("core_skills")),
+        "target_companies": _split_profile_terms(profile.get("target_companies")),
+        "locations": _split_profile_terms(profile.get("locations")),
+        "strict_location": profile.get("strict_location", True),
+        "resume_text": profile.get("resume_text", ""),
+        "resume_filename": profile.get("resume_filename", ""),
+        "exclusions": _split_profile_terms(profile.get("exclusion_keywords") or profile.get("exclusions")),
+        "min_score": float(profile.get("min_score", 5.0) or 5.0),
+        "is_default": True,
+    }
+
+
+def _extract_resume_signals(resume_text: str) -> Dict[str, Any]:
+    """Cheap resume parsing for first-pass matching. Stores no binary files."""
+    text = (resume_text or "")[:50000]
+    text_l = text.lower()
+    known_skills = [
+        "python", "go", "java", "javascript", "typescript", "kubernetes", "terraform",
+        "aws", "azure", "gcp", "docker", "istio", "kafka", "grpc", "fastapi",
+        "react", "llm", "rag", "langchain", "vector", "postgres", "mongodb",
+        "snowflake", "databricks", "distributed systems", "microservices",
+        "observability", "sre", "security", "machine learning", "mlops"
+    ]
+    extracted = []
+    for skill in known_skills:
+        if skill in text_l:
+            extracted.append(" ".join(part.upper() if part in {"aws", "gcp", "llm", "rag", "sre"} else part.capitalize() for part in skill.split()))
+
+    domains = []
+    for domain in ["financial services", "banking", "cloud", "ai infrastructure", "enterprise", "platform", "devops"]:
+        if domain in text_l:
+            domains.append(domain.title())
+
+    seniority = "Staff/Principal" if re.search(r"\b(staff|principal|vp|director|lead|architect)\b", text_l) else "Senior"
+    return {
+        "extracted_skills": list(dict.fromkeys(extracted))[:40],
+        "domains": list(dict.fromkeys(domains))[:12],
+        "seniority": seniority,
+    }
+
+
+def _infer_profile_from_resume(resume_text: str) -> Dict[str, Any]:
+    """Infer editable profile defaults from resume text."""
+    text = (resume_text or "")[:50000]
+    text_l = text.lower()
+    signals = _extract_resume_signals(text)
+
+    role_rules = [
+        ("Platform Engineer", ["platform engineer", "platform engineering", "kubernetes", "terraform", "infrastructure"]),
+        ("Cloud Solution Architect", ["solution architect", "cloud architect", "aws certified solutions architect", "azure architect"]),
+        ("DevOps Engineer", ["devops", "sre", "site reliability", "ci/cd", "observability"]),
+        ("Backend Engineer", ["backend", "api", "microservices", "grpc", "fastapi", "java", "go"]),
+        ("AI Platform Engineer", ["llm", "rag", "genai", "ai platform", "mlops", "vector"]),
+        ("Staff Software Engineer", ["staff", "principal", "lead engineer", "architecture"]),
+        ("Engineering Manager", ["manager", "managed", "team lead", "director"]),
+    ]
+    roles = []
+    for role, needles in role_rules:
+        if any(n in text_l for n in needles):
+            roles.append(role)
+
+    if not roles:
+        roles = [signals.get("seniority", "Senior") + " Software Engineer"]
+
+    location_rules = [
+        ("Remote", ["remote"]),
+        ("United States", ["united states", " usa", " u.s.", " seattle", " new york", " california", " texas"]),
+        ("Seattle", ["seattle"]),
+        ("New York", ["new york", "nyc"]),
+        ("New Jersey", ["new jersey"]),
+        ("California", ["california", "san francisco", "bay area", "los angeles"]),
+        ("Japan", ["japan", "tokyo", "osaka"]),
+        ("Canada", ["canada", "toronto", "vancouver"]),
+        ("United Kingdom", ["united kingdom", "london", " uk"]),
+        ("China", ["china", "beijing", "shanghai", "shenzhen"]),
+    ]
+    locations = []
+    for loc, needles in location_rules:
+        if any(n in text_l for n in needles):
+            locations.append(loc)
+    if not locations:
+        locations = ["Remote", "United States"]
+    preferred_areas = [loc for loc in locations if loc not in {"Remote", "United States"}]
+    acceptable_areas = [loc for loc in locations if loc in {"Remote", "United States"}]
+
+    exclusions = ["Junior", "Intern", "QA"]
+    if "data scientist" not in text_l:
+        exclusions.append("Data Scientist")
+    if "frontend" not in text_l and "react" not in text_l:
+        exclusions.append("Frontend only")
+
+    return {
+        "target_roles": list(dict.fromkeys(roles))[:6],
+        "core_skills": signals.get("extracted_skills", [])[:18],
+        "locations": list(dict.fromkeys(locations))[:8],
+        "preferred_areas": list(dict.fromkeys(preferred_areas))[:6],
+        "acceptable_areas": list(dict.fromkeys(acceptable_areas))[:6],
+        "exclusions": exclusions,
+        "seniority": signals.get("seniority", "Senior"),
+    }
+
+
+async def _extract_resume_text_from_upload(file: UploadFile) -> str:
+    """Extract text from common resume formats. Original file bytes are not stored."""
+    filename = (file.filename or "").lower()
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Resume file must be 5MB or smaller")
+
+    if filename.endswith((".txt", ".md", ".text")):
+        return content.decode("utf-8", errors="ignore").strip()
+
+    if filename.endswith(".pdf"):
+        try:
+            from io import BytesIO
+            from pypdf import PdfReader
+            reader = PdfReader(BytesIO(content))
+            parts = [page.extract_text() or "" for page in reader.pages[:12]]
+            return "\n".join(parts).strip()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not extract text from PDF: {e}")
+
+    if filename.endswith(".docx"):
+        try:
+            from io import BytesIO
+            from docx import Document
+            doc = Document(BytesIO(content))
+            paragraphs = [p.text for p in doc.paragraphs if p.text and p.text.strip()]
+            return "\n".join(paragraphs).strip()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not extract text from DOCX: {e}")
+
+    raise HTTPException(status_code=400, detail="Supported resume formats: PDF, DOCX, TXT, MD")
+
+
+def _location_aliases(location: str) -> List[str]:
+    loc = location.strip().lower()
+    aliases = {
+        "usa": ["united states", "usa", "u.s.", "america"],
+        "us": ["united states", "usa", "u.s.", "america"],
+        "united states": ["united states", "usa", "u.s.", "america"],
+        "japan": ["japan", "tokyo", "osaka", "kyoto"],
+        "canada": ["canada", "toronto", "vancouver", "montreal"],
+        "uk": ["united kingdom", "uk", "london", "england"],
+        "united kingdom": ["united kingdom", "uk", "london", "england"],
+        "germany": ["germany", "berlin", "munich"],
+        "france": ["france", "paris"],
+        "australia": ["australia", "sydney", "melbourne"],
+        "new york": ["new york", "nyc"],
+        "new jersey": ["new jersey"],
+        "california": ["california", "san francisco", "bay area", "los angeles"],
+        "washington": ["washington", "seattle"],
+        "texas": ["texas", "austin", "dallas", "houston"],
+        "remote": ["remote", "anywhere"],
+    }
+    return aliases.get(loc, [loc])
+
+
+def _location_matches(job: Dict[str, Any], preferred_locations: List[str]) -> bool:
+    if not preferred_locations:
+        return True
+    job_location = str(job.get("location") or "")
+    remote_type = str(job.get("remote_type") or "")
+    company_location = str(job.get("company_location") or "")
+    haystack = f"{job_location} {remote_type} {company_location}".lower()
+
+    for preferred in preferred_locations:
+        aliases = _location_aliases(preferred)
+        if "remote" in aliases and ("remote" in haystack or remote_type.lower() == "remote"):
+            return True
+        if any(alias and alias in haystack for alias in aliases):
+            return True
+    return False
+
+
+def _normalize_geo_preferences(profile: Dict[str, Any]) -> Dict[str, Any]:
+    geo = profile.get("geo_preferences") or {}
+    preferred_areas = _split_profile_terms(geo.get("preferred_areas", []))
+    acceptable_areas = _split_profile_terms(geo.get("acceptable_areas", []))
+
+    if not geo:
+        preferred_areas = _split_profile_terms(profile.get("locations", []))
+
+    return {
+        "preferred_areas": list(dict.fromkeys(preferred_areas)),
+        "acceptable_areas": list(dict.fromkeys(acceptable_areas)),
+    }
+
+
+def _geo_match_level(job: Dict[str, Any], profile: Dict[str, Any]) -> str:
+    geo = _normalize_geo_preferences(profile)
+    if _location_matches(job, geo["preferred_areas"]):
+        return "preferred"
+    if _location_matches(job, geo["acceptable_areas"]):
+        return "acceptable"
+    if not geo["preferred_areas"] and not geo["acceptable_areas"]:
+        return "unspecified"
+    return "none"
+
+
+def _score_job_for_profile(job: Dict[str, Any], profile: Dict[str, Any], feedback: Dict[str, Any]) -> Dict[str, Any]:
+    title = str(job.get("title") or "")
+    company = str(job.get("company") or "")
+    location = str(job.get("location") or "")
+    skills = [str(s) for s in job.get("skills", [])]
+    description = str(job.get("description") or "")
+    resume_text = str(profile.get("resume_text") or "")
+    resume_signals = profile.get("resume_signals") or {}
+    resume_skills = resume_signals.get("extracted_skills", [])
+    text = f"{title} {company} {location} {' '.join(skills)} {description}".lower()
+
+    score = 2.0
+    reasons: List[str] = []
+    concerns: List[str] = []
+    matched_skills: List[str] = []
+
+    for term in profile.get("exclusions", []):
+        if term and term.lower() in text:
+            score -= 5.0
+            concerns.append(f"Excluded signal: {term}")
+
+    for role in profile.get("target_roles", []):
+        role_l = role.lower()
+        if role_l and role_l in title.lower():
+            score += 2.7
+            reasons.append(f"Title matches {role}")
+        elif role_l and role_l in text:
+            score += 1.2
+            reasons.append(f"Description mentions {role}")
+
+    for skill in profile.get("core_skills", []):
+        skill_l = skill.lower()
+        if not skill_l:
+            continue
+        if skill_l in " ".join(skills).lower():
+            score += 0.9
+            matched_skills.append(skill)
+        elif skill_l in text:
+            score += 0.45
+            matched_skills.append(skill)
+
+    for skill in resume_skills:
+        skill_l = str(skill).lower()
+        if skill_l and skill_l in text:
+            score += 0.35
+            matched_skills.append(skill)
+
+    if resume_text and any(str(skill).lower() in text for skill in resume_skills):
+        reasons.append("Matches uploaded resume skills")
+
+    for target_company in profile.get("target_companies", []):
+        if target_company and target_company.lower() in company.lower():
+            score += 1.8
+            reasons.append(f"Target company: {company}")
+            break
+
+    if any(s in title.lower() for s in ["staff", "principal", "lead", "architect", "senior"]):
+        score += 0.8
+        reasons.append("Seniority signal fits experienced track")
+
+    geo_level = _geo_match_level(job, profile)
+    if geo_level == "preferred":
+        score += 0.9
+        reasons.append(f"Preferred area: {location}")
+    elif geo_level == "acceptable":
+        score += 0.2
+        concerns.append(f"Acceptable area: {location}")
+    elif geo_level == "none" and location:
+        concerns.append(f"Outside selected areas: {location}")
+
+    action = feedback.get(str(job.get("_id")))
+    if action in {"good_fit", "save", "applied"}:
+        score += 1.0
+        reasons.append("Boosted by your feedback")
+    elif action in {"not_for_me", "hide"}:
+        score -= 3.0
+        concerns.append("Previously marked not relevant")
+    elif action == "hide_company":
+        score -= 5.0
+        concerns.append("Company hidden by you")
+
+    score = max(0.0, min(10.0, round(score, 1)))
+    return {
+        "score": score,
+        "reasons": reasons[:4] or ["Possible match based on profile overlap"],
+        "concerns": concerns[:3],
+        "matched_skills": list(dict.fromkeys(matched_skills))[:8],
+    }
+
+
+@app.get("/api/profiles")
+async def get_career_profiles(request: Request):
+    """Return career radar profiles for the logged-in user."""
+    email = _get_user_email_from_request(request)
+    db = get_db()
+
+    profiles = list(db.career_profiles.find({"user_email": email}).sort("created_at", 1))
+
+    for idx, profile in enumerate(profiles):
+        if profile.get("_id"):
+            profile["id"] = str(profile["_id"])
+            profile.pop("_id", None)
+        else:
+            profile["id"] = profile.get("name", f"profile-{idx}").lower().replace(" ", "-")
+        profile.pop("user_email", None)
+    return profiles
+
+
+@app.post("/api/profiles")
+async def save_career_profile(request: Request):
+    """Create or update one of the user's career profiles. Limit to three tracks."""
+    email = _get_user_email_from_request(request)
+    data = await request.json()
+    db = get_db()
+
+    profile_id = data.get("id")
+    name = (data.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Profile name is required")
+
+    existing_count = db.career_profiles.count_documents({"user_email": email})
+    if not profile_id and existing_count >= 3:
+        raise HTTPException(status_code=400, detail="Maximum 3 career directions allowed")
+
+    resume_text = str(data.get("resume_text") or "")[:50000]
+    preferred_areas = _split_profile_terms(data.get("preferred_areas") or data.get("locations"))
+    acceptable_areas = _split_profile_terms(data.get("acceptable_areas"))
+    locations = list(dict.fromkeys(preferred_areas + acceptable_areas))
+    doc = {
+        "user_email": email,
+        "name": name,
+        "target_roles": _split_profile_terms(data.get("target_roles")),
+        "core_skills": _split_profile_terms(data.get("core_skills") or data.get("skills")),
+        "target_companies": _split_profile_terms(data.get("target_companies")),
+        "locations": locations,
+        "geo_preferences": {
+            "preferred_areas": preferred_areas,
+            "acceptable_areas": acceptable_areas,
+        },
+        "strict_location": bool(data.get("strict_location", True)),
+        "exclusions": _split_profile_terms(data.get("exclusions") or data.get("exclusion_keywords")),
+        "resume_text": resume_text,
+        "resume_filename": (data.get("resume_filename") or "").strip()[:180],
+        "resume_signals": _extract_resume_signals(resume_text),
+        "min_score": float(data.get("min_score", 5.0) or 5.0),
+        "is_default": bool(data.get("is_default", existing_count == 0)),
+        "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
+    }
+
+    if doc["is_default"]:
+        db.career_profiles.update_many({"user_email": email}, {"$set": {"is_default": False}})
+
+    if profile_id and ObjectId.is_valid(profile_id):
+        result = db.career_profiles.update_one(
+            {"_id": ObjectId(profile_id), "user_email": email},
+            {"$set": doc}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Profile not found")
+    else:
+        doc["created_at"] = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.career_profiles.insert_one(doc)
+
+    return {"status": "success", "message": "Career profile saved"}
+
+
+@app.post("/api/profiles/parse-resume")
+async def parse_resume_upload(request: Request, file: UploadFile = File(...)):
+    """Parse uploaded resume into text for profile storage."""
+    _get_user_email_from_request(request)
+    text = await _extract_resume_text_from_upload(file)
+    if not text:
+        raise HTTPException(status_code=400, detail="No readable text found in resume")
+    text = text[:50000]
+    return {
+        "filename": file.filename,
+        "text": text,
+        "resume_signals": _extract_resume_signals(text),
+        "profile_suggestions": _infer_profile_from_resume(text),
+    }
+
+
+@app.get("/api/recommendations")
+async def get_recommendations(
+    request: Request,
+    profile: Optional[str] = None,
+    days: int = 14,
+    limit: int = 30,
+    min_score: Optional[float] = None,
+):
+    """Return ranked jobs for the selected career profile."""
+    email = _get_user_email_from_request(request)
+    db = get_db()
+
+    profiles = list(db.career_profiles.find({"user_email": email}).sort("created_at", 1))
+    if not profiles:
+        return {
+            "setup_required": True,
+            "profile": None,
+            "profile_detail": None,
+            "profiles": [],
+            "jobs": [],
+            "total_ranked": 0,
+            "strong_count": 0,
+            "candidate_count": 0,
+            "days": days,
+            "message": "Create a career direction and add resume text to start personalized recommendations."
+        }
+
+    selected = None
+    if profile:
+        selected = next((
+            p for p in profiles
+            if str(p.get("_id", "")) == profile
+            or str(p.get("name", "")).lower() == profile.lower()
+            or str(p.get("id", "")).lower() == profile.lower()
+        ), None)
+    if not selected:
+        selected = next((p for p in profiles if p.get("is_default")), profiles[0])
+
+    selected = _profile_from_legacy_doc(selected) if "core_skills" not in selected and "skills" in selected else selected
+    selected["core_skills"] = selected.get("core_skills") or _split_profile_terms(selected.get("skills"))
+    selected["exclusions"] = selected.get("exclusions") or _split_profile_terms(selected.get("exclusion_keywords"))
+    selected["target_roles"] = selected.get("target_roles") or []
+    selected["target_companies"] = selected.get("target_companies") or []
+    selected["locations"] = selected.get("locations") or []
+    selected["resume_signals"] = selected.get("resume_signals") or _extract_resume_signals(selected.get("resume_text", ""))
+
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=max(1, min(days, 90)))
+    candidate_limit = max(limit * 8, 120)
+    query: Dict[str, Any] = {"is_active": True}
+    if days:
+        query["posted_date"] = {"$gte": cutoff}
+
+    jobs = list(db.jobs.find(query).sort("posted_date", -1).limit(candidate_limit))
+    if not jobs and days < 90:
+        jobs = list(db.jobs.find({"is_active": True}).sort("posted_date", -1).limit(candidate_limit))
+
+    feedback_rows = list(db.job_feedback.find({"user_email": email}))
+    feedback = {str(row.get("job_id")): row.get("action") for row in feedback_rows}
+
+    scored_jobs = []
+    for job in jobs:
+        job["_id"] = str(job["_id"])
+        if job.get("posted_date"):
+            job["posted_date"] = job["posted_date"].isoformat() if hasattr(job["posted_date"], "isoformat") else str(job["posted_date"])
+        if job.get("scraped_at"):
+            job["scraped_at"] = job["scraped_at"].isoformat() if hasattr(job["scraped_at"], "isoformat") else str(job["scraped_at"])
+        geo_level = _geo_match_level(job, selected)
+        if selected.get("strict_location", True) and geo_level == "none":
+            continue
+        scoring = _score_job_for_profile(job, selected, feedback)
+        if min_score is None or scoring["score"] >= min_score:
+            job["radar_score"] = scoring["score"]
+            job["radar_reasons"] = scoring["reasons"]
+            job["radar_concerns"] = scoring["concerns"]
+            job["matched_skills"] = scoring["matched_skills"]
+            scored_jobs.append(job)
+
+    scored_jobs.sort(key=lambda j: (j.get("radar_score", 0), j.get("posted_date", "")), reverse=True)
+    selected_name = selected.get("name", "My Profile")
+    strong_count = sum(1 for j in scored_jobs if j.get("radar_score", 0) >= 7)
+
+    return {
+        "profile": selected_name,
+        "profile_detail": {
+            "id": str(selected.get("_id", selected.get("id", ""))),
+            "name": selected_name,
+            "target_roles": selected.get("target_roles", []),
+            "core_skills": selected.get("core_skills", []),
+            "target_companies": selected.get("target_companies", []),
+            "locations": selected.get("locations", []),
+            "geo_preferences": _normalize_geo_preferences(selected),
+            "strict_location": selected.get("strict_location", True),
+            "exclusions": selected.get("exclusions", []),
+            "resume_text": selected.get("resume_text", ""),
+            "resume_filename": selected.get("resume_filename", ""),
+            "resume_signals": selected.get("resume_signals", {}),
+            "min_score": selected.get("min_score", 5.0),
+            "is_default": selected.get("is_default", False),
+        },
+        "profiles": [
+            {
+                "id": str(p.get("_id", p.get("id", p.get("name", "")))),
+                "name": p.get("name", "Profile"),
+                "is_default": p.get("is_default", False),
+            }
+            for p in profiles
+        ],
+        "jobs": scored_jobs[:limit],
+        "total_ranked": len(scored_jobs),
+        "strong_count": strong_count,
+        "candidate_count": len(jobs),
+        "days": days,
+    }
+
+
+@app.post("/api/jobs/{job_id}/feedback")
+async def save_job_feedback(job_id: str, request: Request):
+    """Store a recommendation feedback action for a job."""
+    email = _get_user_email_from_request(request)
+    data = await request.json()
+    action = data.get("action")
+    allowed = {"good_fit", "not_for_me", "save", "applied", "hide_company", "hide"}
+    if action not in allowed:
+        raise HTTPException(status_code=400, detail="Unsupported feedback action")
+
+    db = get_db()
+    db.job_feedback.update_one(
+        {"user_email": email, "job_id": job_id, "profile_name": data.get("profile_name", "default")},
+        {
+            "$set": {
+                "action": action,
+                "reason": data.get("reason", ""),
+                "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
+            },
+            "$setOnInsert": {
+                "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+            }
+        },
+        upsert=True,
+    )
+    return {"status": "success", "message": "Feedback saved"}
+
+
 @app.get("/my_digest.html", response_class=HTMLResponse)
 async def read_digest_page():
     digest_file = project_root_path / "my_digest.html"
@@ -1304,13 +1853,12 @@ async def get_user_profile(request: Request):
     
     profile = db.user_profiles.find_one({"user_email": email})
     if not profile:
-        # Default profile based on your existing hardcoded goals
         return {
-            "target_roles": "AI Platform Engineer, GenAI Platform Engineer, Cloud Solution Architect",
-            "skills": "Python, Cloud Architecture, Distributed Systems, AI Infrastructure",
-            "target_companies": "Morgan Stanley, JPMC, AWS, GCP, Databricks, Snowflake, OpenAI, Jane Street",
-            "min_experience": 15,
-            "exclusion_keywords": "Web Developer, Frontend only, Java"
+            "target_roles": "",
+            "skills": "",
+            "target_companies": "",
+            "min_experience": 0,
+            "exclusion_keywords": ""
         }
     
     # Remove MongoDB internal IDs
@@ -1501,4 +2049,3 @@ if __name__ == "__main__":
     port = 8123
     print(f"🚀 Starting Dashboard on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)
-

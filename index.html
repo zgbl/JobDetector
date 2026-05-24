@@ -29,9 +29,9 @@
     <meta property="twitter:image" content="https://jobdetector.vercel.app/assets/og-image.png">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico">
 
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20260524_radar">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -197,6 +197,93 @@
                 </div>
             </div>
         </header>
+
+        <section class="radar-section glass-card" id="radarSection" style="display: none;">
+            <div class="radar-header">
+                <div>
+                    <div class="radar-kicker">Personal Job Radar</div>
+                    <h2>Recommended for you</h2>
+                    <p id="radarSummary">Ranking fresh opportunities against your career profile.</p>
+                </div>
+                <div class="radar-actions">
+                    <select id="radarProfileSelect" title="Career track"></select>
+                    <button class="btn-secondary" id="refreshRadarBtn">
+                        <i class="fas fa-rotate"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="radar-metrics">
+                <div>
+                    <strong id="radarStrongCount">0</strong>
+                    <span>strong matches</span>
+                </div>
+                <div>
+                    <strong id="radarRankedCount">0</strong>
+                    <span>ranked jobs</span>
+                </div>
+                <div>
+                    <strong id="radarProfileName">Profile</strong>
+                    <span>active track</span>
+                </div>
+            </div>
+            <details class="radar-profile-editor" id="radarProfileEditor">
+                <summary><i class="fas fa-user-gear"></i> Edit career direction, resume, and geography</summary>
+                <div class="radar-editor-grid">
+                    <label>
+                        Direction name
+                        <input id="profileNameInput" type="text" placeholder="AI Platform">
+                    </label>
+                    <label>
+                        Min score
+                        <input id="profileMinScoreInput" type="number" min="0" max="10" step="0.5" value="5">
+                    </label>
+                    <label class="radar-editor-wide">
+                        Target roles
+                        <textarea id="profileRolesInput" placeholder="AI Platform Engineer, GenAI Platform Engineer"></textarea>
+                    </label>
+                    <label class="radar-editor-wide">
+                        Core skills
+                        <textarea id="profileSkillsInput" placeholder="Python, Go, Kubernetes, Terraform, RAG"></textarea>
+                    </label>
+                    <label class="radar-editor-wide">
+                        Target companies
+                        <textarea id="profileCompaniesInput" placeholder="OpenAI, Anthropic, Databricks, Morgan Stanley"></textarea>
+                    </label>
+                    <label class="radar-editor-wide">
+                        Preferred areas
+                        <input id="profilePreferredAreasInput" type="text" placeholder="e.g. New York, New Jersey, Seattle">
+                    </label>
+                    <label class="radar-editor-wide">
+                        Acceptable areas
+                        <input id="profileAcceptableAreasInput" type="text" placeholder="e.g. Remote, Japan, China, Canada">
+                    </label>
+                    <label class="radar-check">
+                        <input id="profileStrictLocationInput" type="checkbox" checked>
+                        Filter out jobs outside preferred or acceptable areas
+                    </label>
+                    <label class="radar-editor-wide">
+                        Exclusions
+                        <input id="profileExclusionsInput" type="text" placeholder="CUDA, Junior, Intern, QA, Data Analyst">
+                    </label>
+                    <label class="radar-editor-wide">
+                        Resume text
+                        <input id="profileResumeFileInput" type="file" accept=".pdf,.docx,.txt,.md,.text,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                        <textarea id="profileResumeInput" class="resume-textarea" placeholder="Paste resume text here, or upload a PDF, DOCX, TXT, or MD resume."></textarea>
+                    </label>
+                </div>
+                <div class="radar-editor-actions">
+                    <span id="profileSaveStatus"></span>
+                    <button class="btn-secondary" id="newProfileBtn" type="button">New direction</button>
+                    <button class="btn-primary" id="saveProfileBtn" type="button">Save direction</button>
+                </div>
+            </details>
+            <div class="radar-list" id="radarList">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Ranking opportunities...</span>
+                </div>
+            </div>
+        </section>
 
         <section class="filters-section">
             <div class="filters-bar">
@@ -469,7 +556,7 @@
         </div>
     </footer>
 
-    <script src="js/main.js?v=20260210_2315"></script>
+    <script src="js/main.js?v=20260524_radar"></script>
 </body>
 
 </html>
