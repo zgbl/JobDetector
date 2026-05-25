@@ -10,9 +10,15 @@ class LanguageFilterService:
     # Keywords that indicate Japanese proficiency is required
     JAPANESE_REQUIRED_KEYWORDS = [
         r'jlpt',
-        r'n1',
-        r'n2',
-        r'n3',
+        r'\bjlpt\s*n1\b',
+        r'\bjlpt\s*n2\b',
+        r'\bjlpt\s*n3\b',
+        r'\bn1\s+japanese\b',
+        r'\bn2\s+japanese\b',
+        r'\bn3\s+japanese\b',
+        r'japanese\s+n1\b',
+        r'japanese\s+n2\b',
+        r'japanese\s+n3\b',
         r'japanese[:\s]+business',
         r'japanese[:\s]+fluent',
         r'native[:\s]+japanese',

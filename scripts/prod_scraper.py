@@ -19,6 +19,7 @@ from src.scrapers.greenhouse import GreenhouseScraper
 from src.scrapers.lever import LeverScraper
 from src.scrapers.workday import WorkdayScraper
 from src.scrapers.ashby import AshbyScraper
+from src.scrapers.breezy import BreezyScraper
 from src.scrapers.workable import WorkableScraper
 from src.scrapers.wellfound import WellfoundScraper
 from src.services.language_filter import LanguageFilterService
@@ -58,6 +59,8 @@ async def scrape_company(company, scrapers, db, semaphore):
                 ats_type = 'workable'
             elif 'wellfound.com' in ats_url:
                 ats_type = 'wellfound'
+            elif 'breezy.hr' in ats_url:
+                ats_type = 'breezy'
                 
         # 2. Fallback to configured type
         if not ats_type:
@@ -110,11 +113,6 @@ async def scrape_company(company, scrapers, db, semaphore):
                         )
                         continue
 
-                    # 0.5 Check if already rejected
-                    if db.rejected_jobs.find_one({'content_hash': job['content_hash']}):
-                        logger.debug(f"⏭️ {company['name']}: 跳过已知不符合要求的职位 '{job['title']}'")
-                        continue
-
                     # 1. 查找现有职位
                     existing_job = db.jobs.find_one({'job_id': job['job_id']})
                     
@@ -158,6 +156,7 @@ async def run_production_scrape():
         'lever': LeverScraper(),
         'workday': WorkdayScraper(),
         'ashby': AshbyScraper(),
+        'breezy': BreezyScraper(),
         'workable': WorkableScraper(),
         'wellfound': WellfoundScraper(),
     }

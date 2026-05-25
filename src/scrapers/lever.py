@@ -70,6 +70,13 @@ class LeverScraper(BaseScraper):
 
     async def _get_board_token(self, company: Dict) -> Optional[str]:
         """获取 Lever board token"""
+        # 方法0: 从 ats_url 提取，例如 https://jobs.lever.co/mistral?utm_source=...
+        ats_url = company.get('ats_url') or ''
+        if 'lever.co/' in ats_url:
+            token = ats_url.split('lever.co/')[-1].split('/')[0].split('?')[0].strip()
+            if token:
+                return token
+
         # 方法1: 从配置读取
         ats_system = company.get('ats_system', {})
         if isinstance(ats_system, dict):

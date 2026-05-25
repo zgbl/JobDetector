@@ -36,6 +36,7 @@ Important product rule:
 - Personal AI digest script: `scripts/personal_digest.py`.
 - Keyword alert script: `scripts/keyword_alert.py`.
 - Production scraper: `scripts/prod_scraper.py`.
+- Company intake pipeline: `scripts/company_intake_pipeline.py`.
 - Company import/scrape scripts: `scripts/import_companies.py`, `scripts/import_benlang.py`, `scripts/scrape_new_companies.py`, `scripts/process_manual_list.py`.
 - System design notes: `Design/SystemDesign.md`.
 - Deployment docs: `docs/DEVELOPMENT.md`, `docs/PRODUCTION_DEPLOYMENT.md`.
@@ -710,6 +711,26 @@ Run scraper:
 ```bash
 python scripts/prod_scraper.py
 ```
+
+Import/discover company lists:
+
+```bash
+python scripts/company_intake_pipeline.py data/companies_startups.yaml --dry-run --skip-discovery --limit 20
+python scripts/company_intake_pipeline.py data/companies_startups.yaml data/companies_expansion_us_it.yaml --update-existing --scrape-now
+python scripts/company_intake_pipeline.py data/neolabs_ai_startups.csv --update-existing --scrape-now
+```
+
+Company intake notes:
+
+- YAML files with known `ats_type` are fastest to import.
+- TXT or CSV files with only company names need ATS discovery.
+- `--dry-run --skip-discovery` works offline and validates parsing.
+- Real import needs MongoDB and network access.
+- `--scrape-now` immediately tries to fetch jobs for newly imported or updated companies.
+- Supported ATS scrapers: Greenhouse, Lever, Ashby, Workday, Workable, Wellfound, Breezy.
+- Companies with unsupported/unknown ATS are inserted as inactive only if no supported ATS is discovered.
+- Breezy boards may be valid but empty; keep them active if `ats_url` is a real `*.breezy.hr` board so future openings are picked up.
+- Workday needs a concrete `ats_url` like `https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers`; generic `ats_type: workday` without that URL may not be enough.
 
 ## Notes For Future AI Agents
 

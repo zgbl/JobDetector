@@ -52,12 +52,15 @@
         .setup-actions { display:flex; align-items:center; justify-content:flex-end; gap:1rem; margin-top:1rem; }
         .setup-actions span { margin-right:auto; color:var(--text-dim); font-size:.85rem; }
         .direction-list { display:flex; flex-wrap:wrap; gap:.65rem; margin:0 0 1.2rem; }
-        .direction-chip { border:1px solid rgba(56,189,248,.25); background:rgba(56,189,248,.08); color:#7dd3fc; border-radius:12px; padding:.65rem .85rem; cursor:pointer; display:flex; align-items:center; gap:.55rem; font-weight:800; }
+        .direction-chip { border:1px solid rgba(56,189,248,.25); background:rgba(56,189,248,.08); color:#7dd3fc; border-radius:12px; padding:.65rem .85rem; display:flex; align-items:center; gap:.55rem; font-weight:800; }
         .direction-chip:hover { background:rgba(56,189,248,.16); border-color:rgba(56,189,248,.45); }
         .direction-chip.active { background:linear-gradient(135deg,rgba(56,189,248,.25),rgba(129,140,248,.22)); border-color:rgba(125,211,252,.65); color:white; }
         .direction-chip small { color:var(--text-dim); font-weight:700; }
         .direction-chip.active small { color:#bfdbfe; }
+        .direction-open, .direction-delete { border:0; cursor:pointer; font-family:inherit; font-weight:800; }
         .direction-open { margin-left:.25rem; padding:.28rem .55rem; border-radius:8px; background:rgba(255,255,255,.08); color:white; font-size:.72rem; }
+        .direction-delete { width:2rem; height:2rem; border-radius:8px; display:grid; place-items:center; background:rgba(248,113,113,.1); color:#fecaca; }
+        .direction-delete:hover { background:rgba(248,113,113,.2); color:#fff; }
         .optional-settings { border:1px solid rgba(255,255,255,.08); border-radius:12px; margin:1.5rem 0; background:rgba(255,255,255,.02); }
         .optional-settings summary { cursor:pointer; list-style:none; padding:1rem 1.2rem; display:flex; align-items:center; gap:.7rem; font-weight:800; color:var(--text-main); }
         .optional-settings summary::-webkit-details-marker { display:none; }
@@ -577,12 +580,17 @@ function renderCareerDirections(profiles = []) {
         const skills = (profile.resume_signals?.extracted_skills || profile.core_skills || []).slice(0, 3).join(', ');
         const active = profile.id === activeProfileId || (!activeProfileId && profile.is_default);
         return `
-            <button class="direction-chip ${active ? 'active' : ''}" type="button" onclick="viewCareerDirectionMatches('${profile.id}')">
+            <div class="direction-chip ${active ? 'active' : ''}">
                 <i class="fas fa-id-badge"></i>
-                <span>${escapeHtml(profile.name || 'Career Direction')}</span>
+                <button class="direction-open" type="button" onclick="selectCareerDirection('${profile.id}')" title="Edit this direction">
+                    ${escapeHtml(profile.name || 'Career Direction')}
+                </button>
                 ${skills ? `<small>${escapeHtml(skills)}</small>` : ''}
-                <span class="direction-open">View matches</span>
-            </button>
+                <button class="direction-open" type="button" onclick="viewCareerDirectionMatches('${profile.id}')">View matches</button>
+                <button class="direction-delete" type="button" onclick="deleteCareerDirection('${profile.id}')" title="Delete direction" aria-label="Delete ${escapeHtml(profile.name || 'Career Direction')}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         `;
     }).join('');
 }
@@ -622,6 +630,33 @@ function viewCareerDirectionMatches(profileId) {
     const params = new URLSearchParams();
     params.set('radarProfile', profile.id || profile.name);
     window.location.href = `/?${params.toString()}#radarSection`;
+}
+
+async function deleteCareerDirection(profileId) {
+    const profile = savedProfiles.find(p => p.id === profileId);
+    if (!profile) return;
+    if (!confirm(`Delete "${profile.name || 'Career Direction'}"? This cannot be undone.`)) return;
+
+    try {
+        const r = await fetch(`${API}/api/profiles/${profileId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await r.json();
+        if (!r.ok) {
+            showToast(data.detail || 'Failed to delete career direction.', 'error');
+            return;
+        }
+
+        if (activeProfileId === profileId) {
+            activeProfileId = '';
+            activeProfileName = '';
+        }
+        showToast(data.message || 'Career direction deleted.', 'success');
+        await loadProfile();
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    }
 }
 
 function fillIfEmpty(id, value) {

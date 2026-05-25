@@ -358,7 +358,7 @@ function openJobInNewTab(url) {
     window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-async function loadPersonalRadar(profileName = '') {
+async function loadPersonalRadar(profileKey = '') {
     if (!radarSection || !radarList) return;
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -373,7 +373,7 @@ async function loadPersonalRadar(profileName = '') {
 
     try {
         const params = new URLSearchParams({ days: '21', limit: '24', min_score: '4.5' });
-        if (profileName) params.append('profile', profileName);
+        if (profileKey) params.append('profile', profileKey);
 
         const response = await fetch(`/api/recommendations?${params.toString()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -386,13 +386,13 @@ async function loadPersonalRadar(profileName = '') {
 
         const data = await response.json();
         activeRadarProfile = data.profile_detail || null;
-        renderRadarProfiles(data.profiles || [], data.profile);
+        renderRadarProfiles(data.profiles || [], activeRadarProfile?.id || profileKey || data.profile);
         if (data.setup_required) {
             renderRadarSetup(data.message);
         } else {
             populateProfileEditor(activeRadarProfile);
             renderRadarJobs(data);
-            if (profileName && window.location.hash === '#radarSection') {
+            if (profileKey && window.location.hash === '#radarSection') {
                 setTimeout(() => radarSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
             }
         }
@@ -439,6 +439,32 @@ function clearProfileEditor() {
     profileExclusionsInput.value = 'Junior, Intern, QA';
     profileResumeInput.value = '';
     if (profileSaveStatus) profileSaveStatus.textContent = 'Creating a new direction. You can keep up to five.';
+}
+
+function normalizeProfileName(name) {
+    return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function uniqueProfilesForSelect(profiles, activeKey) {
+    const normalizedActiveKey = String(activeKey || '').toLowerCase();
+    const byName = new Map();
+
+    (profiles || []).forEach(profile => {
+        const nameKey = normalizeProfileName(profile.name || 'Profile');
+        const existing = byName.get(nameKey);
+        const isActive = String(profile.id || '').toLowerCase() === normalizedActiveKey
+            || normalizeProfileName(profile.name) === normalizedActiveKey;
+        const existingIsActive = existing && (
+            String(existing.id || '').toLowerCase() === normalizedActiveKey
+            || normalizeProfileName(existing.name) === normalizedActiveKey
+        );
+
+        if (!existing || isActive || (!existingIsActive && profile.is_default)) {
+            byName.set(nameKey, profile);
+        }
+    });
+
+    return Array.from(byName.values());
 }
 
 function fillProfileFieldIfEmpty(element, value) {
@@ -493,20 +519,27 @@ async function saveRadarProfile() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || 'Failed to save profile');
         if (profileSaveStatus) profileSaveStatus.textContent = 'Saved. Re-ranking jobs...';
-        await loadPersonalRadar(payload.name);
+        await loadPersonalRadar(data.id || payload.id || payload.name);
     } catch (error) {
         if (profileSaveStatus) profileSaveStatus.textContent = error.message;
     }
 }
 
-function renderRadarProfiles(profiles, activeName) {
+function renderRadarProfiles(profiles, activeKey) {
     if (!radarProfileSelect) return;
-    if (!profiles.length) {
+    const uniqueProfiles = uniqueProfilesForSelect(profiles, activeKey);
+    if (!uniqueProfiles.length) {
         radarProfileSelect.innerHTML = '<option value="">Add resume first</option>';
         return;
     }
-    radarProfileSelect.innerHTML = profiles.map(profile => `
-        <option value="${profile.name}" ${profile.name === activeName ? 'selected' : ''}>${profile.name}</option>
+    const normalizedActiveKey = String(activeKey || '').toLowerCase();
+    radarProfileSelect.innerHTML = uniqueProfiles.map(profile => `
+        <option value="${escapeHtml(profile.id || profile.name || '')}" ${
+            String(profile.id || '').toLowerCase() === normalizedActiveKey
+            || normalizeProfileName(profile.name) === normalizedActiveKey
+                ? 'selected'
+                : ''
+        }>${escapeHtml(profile.name || 'Profile')}</option>
     `).join('');
 }
 
@@ -594,7 +627,7 @@ async function sendRadarFeedback(event, jobId, action, allowDefault = false) {
             },
             body: JSON.stringify({
                 action,
-                profile_name: radarProfileSelect ? radarProfileSelect.value : 'default'
+                profile_name: activeRadarProfile?.id || (radarProfileSelect ? radarProfileSelect.value : 'default')
             })
         });
 

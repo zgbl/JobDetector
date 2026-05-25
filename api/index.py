@@ -1247,6 +1247,11 @@ def _split_profile_terms(value: Any) -> List[str]:
     return [term.strip() for term in raw_terms if term and term.strip()]
 
 
+def _normalize_profile_name(name: str) -> str:
+    """Normalize career direction names for duplicate checks."""
+    return re.sub(r"\s+", " ", (name or "").strip()).lower()
+
+
 def _profile_from_legacy_doc(profile: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     if not profile:
         return {}
@@ -1581,6 +1586,17 @@ async def save_career_profile(request: Request):
             "user_email": email,
             "name": {"$regex": f"^{re.escape(name)}$", "$options": "i"},
         })
+    else:
+        same_name_profile = next((
+            profile for profile in db.career_profiles.find({"user_email": email})
+            if profile.get("_id") != existing_profile["_id"]
+            and _normalize_profile_name(profile.get("name", "")) == _normalize_profile_name(name)
+        ), None)
+        if same_name_profile:
+            raise HTTPException(
+                status_code=400,
+                detail="A career direction with this name already exists. Choose a unique name or edit the existing direction.",
+            )
 
     existing_count = db.career_profiles.count_documents({"user_email": email})
     if not existing_profile and existing_count >= 5:
@@ -1634,6 +1650,31 @@ async def save_career_profile(request: Request):
         "id": str(saved_id) if saved_id else None,
         "name": name,
     }
+
+
+@app.delete("/api/profiles/{profile_id}")
+async def delete_career_profile(profile_id: str, request: Request):
+    """Delete one of the user's saved career directions."""
+    email = _get_user_email_from_request(request)
+    if not ObjectId.is_valid(profile_id):
+        raise HTTPException(status_code=400, detail="Invalid profile id")
+
+    db = get_db()
+    profile_object_id = ObjectId(profile_id)
+    profile = db.career_profiles.find_one({"_id": profile_object_id, "user_email": email})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Career direction not found")
+
+    result = db.career_profiles.delete_one({"_id": profile_object_id, "user_email": email})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Career direction not found")
+
+    if profile.get("is_default"):
+        fallback = db.career_profiles.find_one({"user_email": email}, sort=[("created_at", 1)])
+        if fallback:
+            db.career_profiles.update_one({"_id": fallback["_id"]}, {"$set": {"is_default": True}})
+
+    return {"status": "success", "message": "Career direction deleted"}
 
 
 @app.post("/api/profiles/parse-resume")
