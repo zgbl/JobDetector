@@ -91,9 +91,8 @@ const companyClose = document.querySelector('.company-close');
 // We need a better way to target sections
 const jobsDashboardParts = [
     document.querySelector('.hero-section'),
-    document.querySelector('.filters-section'),
-    document.getElementById('jobsGrid')
-];
+    document.querySelector('.jobs-workspace')
+].filter(Boolean);
 
 // Init
 async function init() {
@@ -118,7 +117,8 @@ async function init() {
     }
 
     if (currentUser) {
-        loadPersonalRadar();
+        const radarProfileFromUrl = params.get('radarProfile') || params.get('profile') || '';
+        loadPersonalRadar(radarProfileFromUrl);
     }
 
     try {
@@ -392,6 +392,9 @@ async function loadPersonalRadar(profileName = '') {
         } else {
             populateProfileEditor(activeRadarProfile);
             renderRadarJobs(data);
+            if (profileName && window.location.hash === '#radarSection') {
+                setTimeout(() => radarSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+            }
         }
     } catch (error) {
         console.error('Radar load failed:', error);
@@ -435,7 +438,7 @@ function clearProfileEditor() {
     profileStrictLocationInput.checked = true;
     profileExclusionsInput.value = 'Junior, Intern, QA';
     profileResumeInput.value = '';
-    if (profileSaveStatus) profileSaveStatus.textContent = 'Creating a new direction. You can keep up to three.';
+    if (profileSaveStatus) profileSaveStatus.textContent = 'Creating a new direction. You can keep up to five.';
 }
 
 function fillProfileFieldIfEmpty(element, value) {
@@ -1334,8 +1337,8 @@ function switchToView(view) {
     const requestCompanySection = document.getElementById('requestCompanySection');
 
     // Hide all sections
-    jobsDashboardParts.forEach(p => p.style.display = 'none');
-    companySection.style.display = 'none';
+    jobsDashboardParts.forEach(p => { p.style.display = 'none'; });
+    if (companySection) companySection.style.display = 'none';
     if (adminSection) adminSection.style.display = 'none';
     if (requestCompanySection) requestCompanySection.style.display = 'none';
     if (paginationContainer) paginationContainer.style.display = 'none';
@@ -1343,11 +1346,11 @@ function switchToView(view) {
 
     if (view === 'jobs') {
         navJobs.classList.add('active');
-        jobsDashboardParts.forEach(p => p.style.display = 'block');
+        jobsDashboardParts.forEach(p => { p.style.display = ''; });
         applyFilterAndRender();
     } else if (view === 'companies') {
         navCompanies.classList.add('active');
-        companySection.style.display = 'block';
+        if (companySection) companySection.style.display = 'block';
         fetchCompanies();
     } else if (view === 'request-company') {
         if (requestCompanySection) requestCompanySection.style.display = 'block';

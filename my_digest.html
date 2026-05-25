@@ -51,6 +51,19 @@
         .setup-check input { width:auto; }
         .setup-actions { display:flex; align-items:center; justify-content:flex-end; gap:1rem; margin-top:1rem; }
         .setup-actions span { margin-right:auto; color:var(--text-dim); font-size:.85rem; }
+        .direction-list { display:flex; flex-wrap:wrap; gap:.65rem; margin:0 0 1.2rem; }
+        .direction-chip { border:1px solid rgba(56,189,248,.25); background:rgba(56,189,248,.08); color:#7dd3fc; border-radius:12px; padding:.65rem .85rem; cursor:pointer; display:flex; align-items:center; gap:.55rem; font-weight:800; }
+        .direction-chip:hover { background:rgba(56,189,248,.16); border-color:rgba(56,189,248,.45); }
+        .direction-chip.active { background:linear-gradient(135deg,rgba(56,189,248,.25),rgba(129,140,248,.22)); border-color:rgba(125,211,252,.65); color:white; }
+        .direction-chip small { color:var(--text-dim); font-weight:700; }
+        .direction-chip.active small { color:#bfdbfe; }
+        .direction-open { margin-left:.25rem; padding:.28rem .55rem; border-radius:8px; background:rgba(255,255,255,.08); color:white; font-size:.72rem; }
+        .optional-settings { border:1px solid rgba(255,255,255,.08); border-radius:12px; margin:1.5rem 0; background:rgba(255,255,255,.02); }
+        .optional-settings summary { cursor:pointer; list-style:none; padding:1rem 1.2rem; display:flex; align-items:center; gap:.7rem; font-weight:800; color:var(--text-main); }
+        .optional-settings summary::-webkit-details-marker { display:none; }
+        .optional-settings summary i { color:var(--accent-blue); }
+        .optional-settings summary span { margin-left:auto; color:var(--text-dim); font-size:.78rem; font-weight:700; }
+        .optional-settings-body { padding:0 1.2rem 1.2rem; }
         .digest-preview { display:grid; gap:.8rem; margin:1rem 0 2rem; }
         .digest-job-card { display:grid; grid-template-columns:72px 1fr auto; gap:1rem; align-items:start; background:var(--card-bg); border:1px solid var(--glass-border); border-radius:10px; padding:1rem; }
         .digest-score { text-align:center; border:1px solid rgba(56,189,248,.25); border-radius:8px; padding:.7rem .4rem; color:var(--accent-blue); font-weight:800; }
@@ -122,9 +135,16 @@
                 <div>
                     <div class="radar-kicker" style="color:var(--accent-blue);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem;">Resume setup</div>
                     <h2>Upload resume and create a career direction</h2>
-                    <p>Your digest and homepage recommendations are generated from this saved profile. You can keep up to three directions.</p>
+                    <p>Your digest and homepage recommendations are generated from this saved profile. You can keep up to five directions.</p>
                 </div>
-                <span class="setup-badge" id="setupProfileCount">0 / 3 directions</span>
+                <span class="setup-badge" id="setupProfileCount">0 / 5 directions</span>
+            </div>
+            <div class="section-title" style="margin:0 0 .75rem;font-size:.95rem;">
+                <i class="fas fa-route" style="color:var(--accent-blue);"></i>
+                Saved Career Directions
+            </div>
+            <div class="direction-list" id="careerDirectionList">
+                <div style="color:var(--text-dim);font-size:.9rem;">No saved directions yet.</div>
             </div>
             <div class="setup-grid">
                 <label>
@@ -175,11 +195,11 @@
             <div class="setup-actions">
                 <span id="profileSetupStatus">No resume saved yet.</span>
                 <button class="btn-signin" onclick="newProfile()" id="btnNewProf" style="padding:.75rem 1rem;background:transparent;border:1px solid rgba(255,255,255,.18);color:white;border-radius:8px;font-weight:600;">New direction</button>
-                <button class="btn-signin" onclick="saveProfile()" id="btnSaveProf" style="padding:.75rem 1.4rem;background:var(--accent-blue);border:none;color:white;border-radius:8px;font-weight:700;">Save Resume Direction</button>
+                <button class="btn-signin" onclick="saveProfile()" id="btnSaveProf" style="padding:.75rem 1.4rem;background:var(--accent-blue);border:none;color:white;border-radius:8px;font-weight:700;">Save Career Direction</button>
             </div>
         </div>
 
-        <div class="section-title"><i class="fas fa-cog" style="color:var(--accent-blue);"></i> Run Configuration</div>
+        <div class="section-title"><i class="fas fa-paper-plane" style="color:var(--accent-blue);"></i> Run Once Now</div>
         <div class="controls-grid">
             <div class="control-card">
                 <label><i class="fas fa-calendar-alt"></i> &nbsp; Lookback (days)</label>
@@ -213,11 +233,17 @@
         </div>
 
         <!-- Automation Subscription -->
-        <div class="section-title"><i class="fas fa-bell" style="color:var(--accent-blue);"></i> Automation Subscription</div>
-        <div class="control-card" style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
+        <details class="optional-settings">
+            <summary>
+                <i class="fas fa-bell"></i>
+                AI Digest Schedule
+                <span>optional email automation</span>
+            </summary>
+            <div class="optional-settings-body">
+        <div class="control-card" style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
             <div style="flex: 1;">
                 <label style="margin-bottom: 0.2rem;">Email Frequency</label>
-                <p style="font-size: 0.8rem; color: var(--text-dim); margin: 0;">How often should we send your AI-matched jobs?</p>
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin: 0;">Scheduled email for AI-matched jobs from the active career direction.</p>
             </div>
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <select id="subFrequency" style="width: 150px; margin: 0;">
@@ -225,16 +251,20 @@
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
                 </select>
-                <button class="btn-signin" onclick="saveSubscription()" id="btnSaveSub" style="padding: 0.6rem 1.2rem; background: var(--accent-blue); border: none; color: white;">Save Changes</button>
+                <button class="btn-signin" onclick="saveSubscription()" id="btnSaveSub" style="padding: 0.6rem 1.2rem; background: transparent; border:1px solid rgba(56,189,248,.38); color: var(--accent-blue);">Update Schedule</button>
             </div>
         </div>
+            </div>
+        </details>
 
         <!-- ── Keyword Email Alert ───────────────────────────── -->
-        <div class="section-title">
-            <i class="fas fa-envelope-open-text" style="color:#f59e0b;"></i>
-            Keyword Email Alert
-            <span id="alertStatusBadge" class="alert-badge inactive" style="margin-left:.5rem;">Off</span>
-        </div>
+        <details class="optional-settings">
+            <summary>
+                <i class="fas fa-envelope-open-text" style="color:#f59e0b;"></i>
+                Keyword Alert
+                <span id="alertStatusBadge" class="alert-badge inactive">Off</span>
+            </summary>
+            <div class="optional-settings-body">
         <div class="alert-card">
             <p style="font-size:.85rem;color:var(--text-dim);margin:0 0 1.2rem;">
                 Get an email whenever new jobs matching <em>any</em> of your skill keywords are posted.
@@ -269,8 +299,8 @@
                 </div>
                 <div style="display:flex;flex-direction:column;gap:.5rem;">
                     <button class="btn-run" onclick="saveAlertSettings()" id="btnSaveAlert"
-                            style="padding:.65rem 1.4rem;font-size:.88rem;">
-                        <i class="fas fa-save"></i> Save Alert
+                            style="padding:.65rem 1.4rem;font-size:.88rem;background:transparent;border:1px solid rgba(56,189,248,.38);color:var(--accent-blue);">
+                        <i class="fas fa-bell"></i> Update Keyword Alert
                     </button>
                     <button onclick="disableAlert()" id="btnDisableAlert"
                             style="padding:.45rem 1rem;font-size:.78rem;background:transparent;border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:8px;cursor:pointer;transition:all .2s;"
@@ -287,6 +317,8 @@
                 <span>Last match: <strong id="alertLastMatch">—</strong></span>
             </div>
         </div>
+            </div>
+        </details>
 
         <div class="section-title">
             <i class="fas fa-note-sticky" style="color:var(--accent-blue);"></i>
@@ -358,6 +390,7 @@ const API = '';
 let token = localStorage.getItem('jd_token') || '';
 let activeProfileId = '';
 let activeProfileName = '';
+let savedProfiles = [];
 
 async function init() {
     if (!token) { showAuthGate(); return; }
@@ -487,7 +520,7 @@ async function saveSubscription() {
     const btn = document.getElementById('btnSaveSub');
     const frequency = document.getElementById('subFrequency').value;
     btn.disabled = true;
-    btn.textContent = 'Saving...';
+    btn.textContent = 'Updating...';
     try {
         const r = await fetch(`${API}/api/digest/settings`, {
             method: 'POST',
@@ -495,12 +528,12 @@ async function saveSubscription() {
             body: JSON.stringify({ frequency, is_active: frequency !== 'off' }),
         });
         const data = await r.json();
-        showToast(data.message || 'Subscription saved.', r.ok ? 'success' : 'error');
+        showToast(data.message || 'AI digest schedule updated.', r.ok ? 'success' : 'error');
     } catch (e) {
         showToast('Error: ' + e.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Save Changes';
+        btn.textContent = 'Update Schedule';
     }
 }
 
@@ -518,31 +551,77 @@ async function loadProfile() {
         const r = await fetch(`${API}/api/profiles`, { headers: { Authorization: `Bearer ${token}` } });
         if (!r.ok) return;
         const profiles = await r.json();
-        document.getElementById('setupProfileCount').textContent = `${profiles.length} / 3 directions`;
+        savedProfiles = profiles;
+        document.getElementById('setupProfileCount').textContent = `${profiles.length} / 5 directions`;
+        renderCareerDirections(profiles);
         if (!profiles.length) {
             newProfile();
             document.getElementById('profileSetupStatus').textContent = 'Start by uploading or pasting your resume.';
             return;
         }
-        const data = profiles.find(p => p.is_default) || profiles[0];
-        activeProfileId = data.id || '';
-        activeProfileName = data.name || '';
-        document.getElementById('profName').value = data.name || '';
-        document.getElementById('profRoles').value = (data.target_roles || []).join(', ');
-        document.getElementById('profSkills').value = (data.core_skills || []).join(', ');
-        document.getElementById('profCompanies').value = (data.target_companies || []).join(', ');
-        const geo = data.geo_preferences || {};
-        document.getElementById('profPreferredAreas').value = (geo.preferred_areas || data.locations || []).join(', ');
-        document.getElementById('profAcceptableAreas').value = (geo.acceptable_areas || []).join(', ');
-        document.getElementById('profStrictLocation').checked = data.strict_location !== false;
-        document.getElementById('profExclude').value = (data.exclusions || []).join(', ');
-        document.getElementById('profResumeText').value = data.resume_text || '';
-        document.getElementById('profMinScore').value = data.min_score || 5;
-        const signals = data.resume_signals?.extracted_skills || [];
-        document.getElementById('profileSetupStatus').textContent = signals.length
-            ? `Resume saved. Signals: ${signals.slice(0, 8).join(', ')}`
-            : 'Profile saved. Add resume text for better matching.';
+        const data = profiles.find(p => p.id === activeProfileId)
+            || profiles.find(p => p.is_default)
+            || profiles[0];
+        populateProfileForm(data);
     } catch (e) { console.error('Failed to load profile', e); }
+}
+
+function renderCareerDirections(profiles = []) {
+    const list = document.getElementById('careerDirectionList');
+    if (!list) return;
+    if (!profiles.length) {
+        list.innerHTML = '<div style="color:var(--text-dim);font-size:.9rem;">No saved directions yet. Upload a resume and save one.</div>';
+        return;
+    }
+    list.innerHTML = profiles.map(profile => {
+        const skills = (profile.resume_signals?.extracted_skills || profile.core_skills || []).slice(0, 3).join(', ');
+        const active = profile.id === activeProfileId || (!activeProfileId && profile.is_default);
+        return `
+            <button class="direction-chip ${active ? 'active' : ''}" type="button" onclick="viewCareerDirectionMatches('${profile.id}')">
+                <i class="fas fa-id-badge"></i>
+                <span>${escapeHtml(profile.name || 'Career Direction')}</span>
+                ${skills ? `<small>${escapeHtml(skills)}</small>` : ''}
+                <span class="direction-open">View matches</span>
+            </button>
+        `;
+    }).join('');
+}
+
+function populateProfileForm(data) {
+    if (!data) return;
+    activeProfileId = data.id || '';
+    activeProfileName = data.name || '';
+    document.getElementById('profName').value = data.name || '';
+    document.getElementById('profRoles').value = (data.target_roles || []).join(', ');
+    document.getElementById('profSkills').value = (data.core_skills || []).join(', ');
+    document.getElementById('profCompanies').value = (data.target_companies || []).join(', ');
+    const geo = data.geo_preferences || {};
+    document.getElementById('profPreferredAreas').value = (geo.preferred_areas || data.locations || []).join(', ');
+    document.getElementById('profAcceptableAreas').value = (geo.acceptable_areas || []).join(', ');
+    document.getElementById('profStrictLocation').checked = data.strict_location !== false;
+    document.getElementById('profExclude').value = (data.exclusions || []).join(', ');
+    document.getElementById('profResumeText').value = data.resume_text || '';
+    document.getElementById('profMinScore').value = data.min_score || 5;
+    const signals = data.resume_signals?.extracted_skills || [];
+    document.getElementById('profileSetupStatus').textContent = signals.length
+        ? `Loaded ${data.name}. Signals: ${signals.slice(0, 8).join(', ')}`
+        : `Loaded ${data.name}. Add resume text for better matching.`;
+    renderCareerDirections(savedProfiles);
+}
+
+function selectCareerDirection(profileId) {
+    const profile = savedProfiles.find(p => p.id === profileId);
+    if (!profile) return;
+    populateProfileForm(profile);
+}
+
+function viewCareerDirectionMatches(profileId) {
+    const profile = savedProfiles.find(p => p.id === profileId);
+    if (!profile) return;
+    populateProfileForm(profile);
+    const params = new URLSearchParams();
+    params.set('radarProfile', profile.id || profile.name);
+    window.location.href = `/?${params.toString()}#radarSection`;
 }
 
 function fillIfEmpty(id, value) {
@@ -563,6 +642,7 @@ function applyResumeSuggestions(suggestions) {
 function newProfile() {
     activeProfileId = '';
     activeProfileName = '';
+    renderCareerDirections(savedProfiles);
     document.getElementById('profName').value = '';
     document.getElementById('profRoles').value = '';
     document.getElementById('profSkills').value = '';
@@ -574,6 +654,16 @@ function newProfile() {
     document.getElementById('profResumeText').value = '';
     document.getElementById('profMinScore').value = '5';
     document.getElementById('profileSetupStatus').textContent = 'Creating a new direction.';
+}
+
+function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[ch]));
 }
 
 // ── Keyword Alert Logic ──────────────────────────────────────────────────────
@@ -707,7 +797,7 @@ async function saveAlertSettings() {
     const alertEmail = document.getElementById('alertEmail').value.trim();
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
 
     const payload = {
         keywords:    alertKeywords,
@@ -727,16 +817,16 @@ async function saveAlertSettings() {
             // Re-load to refresh badge + stats
             await loadAlertSettings();
             await loadSavedSearchShortcuts();
-            showToast(d.message || 'Alert settings saved!', 'success');
+            showToast(d.message || 'Keyword alert updated.', 'success');
         } else {
             const err = await r.json();
-            showToast(err.detail || 'Failed to save.', 'error');
+            showToast(err.detail || 'Failed to update keyword alert.', 'error');
         }
     } catch (e) {
         showToast('Network error: ' + e.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Save Alert';
+        btn.innerHTML = '<i class="fas fa-bell"></i> Update Keyword Alert';
     }
 }
 
@@ -778,9 +868,35 @@ function showToast(msg, type = 'success') {
 
 async function saveProfile() {
     const btn = document.getElementById('btnSaveProf');
+    const requestedName = document.getElementById('profName').value.trim();
+    const sameSelectedName = activeProfileId
+        && activeProfileName
+        && requestedName.toLowerCase() === activeProfileName.toLowerCase();
+    const sameNameProfile = savedProfiles.find(profile =>
+        (profile.name || '').toLowerCase() === requestedName.toLowerCase()
+    );
+    let saveProfileId = sameSelectedName ? activeProfileId : (sameNameProfile?.id || '');
+
+    if (!saveProfileId && savedProfiles.length >= 5) {
+        const choices = savedProfiles
+            .map((profile, index) => `${index + 1}. ${profile.name || 'Career Direction'}`)
+            .join('\n');
+        const answer = prompt(`You already have 5 career directions.\nChoose one to overwrite:\n\n${choices}\n\nEnter 1-5, or Cancel to keep everything.`);
+        if (!answer) {
+            document.getElementById('profileSetupStatus').textContent = 'Save canceled. No career direction was overwritten.';
+            return;
+        }
+        const index = Number(answer) - 1;
+        if (!Number.isInteger(index) || index < 0 || index >= savedProfiles.length) {
+            document.getElementById('profileSetupStatus').textContent = 'Invalid overwrite choice. Nothing was saved.';
+            return;
+        }
+        saveProfileId = savedProfiles[index].id || '';
+    }
+
     const payload = {
-        id: activeProfileId,
-        name: document.getElementById('profName').value.trim(),
+        id: saveProfileId,
+        name: requestedName,
         target_roles: document.getElementById('profRoles').value,
         core_skills: document.getElementById('profSkills').value,
         target_companies: document.getElementById('profCompanies').value,
@@ -810,18 +926,20 @@ async function saveProfile() {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(payload),
         });
+        const data = await r.json();
         if (r.ok) {
-            document.getElementById('profileSetupStatus').textContent = 'Saved. Your digest and homepage radar will use this resume direction.';
+            activeProfileId = data.id || activeProfileId;
+            activeProfileName = data.name || payload.name;
+            document.getElementById('profileSetupStatus').textContent = `Saved ${activeProfileName}. Your digest and homepage radar will use this resume direction.`;
             await loadProfile();
         } else {
-            const err = await r.json();
-            document.getElementById('profileSetupStatus').textContent = err.detail || 'Failed to save resume direction.';
+            document.getElementById('profileSetupStatus').textContent = data.detail || 'Failed to save resume direction.';
         }
     } catch (e) {
         document.getElementById('profileSetupStatus').textContent = 'Error: ' + e.message;
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Save Resume Direction';
+        btn.textContent = 'Save Career Direction';
     }
 }
 
@@ -846,7 +964,7 @@ document.getElementById('profResumeFile').onchange = async (e) => {
         if (!r.ok) throw new Error(data.detail || 'Could not parse resume');
         document.getElementById('profResumeText').value = data.text || '';
         applyResumeSuggestions(data.profile_suggestions);
-        document.getElementById('profileSetupStatus').textContent = `Loaded ${file.name}. Click Save Resume Direction.`;
+        document.getElementById('profileSetupStatus').textContent = `Loaded ${file.name}. Click Save Career Direction.`;
     } catch (err) {
         document.getElementById('profileSetupStatus').textContent = err.message;
     }

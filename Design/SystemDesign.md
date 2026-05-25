@@ -167,7 +167,7 @@ Stores multiple resume variants and extracted profile signals. In the current im
 - Browser uploads read `.txt` / `.md` files locally and submit text via JSON.
 - PDF and DOCX uploads are sent to `POST /api/profiles/parse-resume`, parsed into text, and then saved as text in `career_profiles.resume_text`.
 - The first implementation supports PDF, DOCX, TXT, and MD. Original binary files are not stored.
-- Keep one resume per career direction in Phase B, with a maximum of three directions per user.
+- Keep one resume per career direction in Phase B, with a maximum of five directions per user.
 
 #### Geography Policy
 

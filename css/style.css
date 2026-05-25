@@ -175,7 +175,7 @@ mark {
 
 /* Dashboard Header */
 .dashboard {
-    max-width: 1200px;
+    max-width: 1540px;
     margin: 100px auto 40px;
     padding: 0 2rem;
 }
@@ -998,9 +998,28 @@ mark {
 }
 
 /* Personal Job Radar */
+.jobs-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.all-jobs-column {
+    min-width: 0;
+}
+
+.radar-column {
+    position: sticky;
+    top: 92px;
+    max-height: calc(100vh - 110px);
+    overflow: auto;
+    scrollbar-width: thin;
+}
+
 .radar-section {
-    margin: 0 auto 2rem;
-    padding: 1.5rem;
+    margin: 0 0 2rem;
+    padding: 1rem;
 }
 
 .radar-header,
@@ -1018,8 +1037,8 @@ mark {
 .radar-header {
     align-items: flex-start;
     justify-content: space-between;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
+    gap: 0.8rem;
+    margin-bottom: 0.75rem;
 }
 
 .radar-kicker {
@@ -1032,39 +1051,43 @@ mark {
 }
 
 .radar-header h2 {
-    font-size: 1.7rem;
+    font-size: 1.15rem;
     margin: 0 0 0.35rem;
 }
 
 .radar-header p {
     color: var(--text-dim);
     margin: 0;
+    font-size: 0.82rem;
 }
 
 .radar-actions {
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .radar-actions select {
-    min-width: 180px;
+    min-width: 150px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     color: var(--text-main);
-    padding: 0.7rem 0.9rem;
+    padding: 0.55rem 0.7rem;
     font-family: inherit;
 }
 
 .radar-metrics {
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.7rem;
     flex-wrap: wrap;
 }
 
 .radar-metrics div {
-    min-width: 140px;
-    padding: 0.9rem 1rem;
+    min-width: 0;
+    flex: 1;
+    padding: 0.55rem 0.65rem;
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.03);
@@ -1073,31 +1096,31 @@ mark {
 .radar-metrics strong {
     display: block;
     color: var(--text-main);
-    font-size: 1.35rem;
+    font-size: 1rem;
 }
 
 .radar-metrics span {
     color: var(--text-dim);
-    font-size: 0.78rem;
+    font-size: 0.68rem;
 }
 
 .radar-list {
     display: grid;
-    gap: 0.75rem;
+    gap: 0.55rem;
 }
 
 .radar-job {
-    align-items: stretch;
-    gap: 1rem;
-    padding: 1rem;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.7rem;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     background: rgba(15, 23, 42, 0.38);
 }
 
 .radar-score {
-    width: 62px;
-    min-width: 62px;
+    width: 44px;
+    min-width: 44px;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
@@ -1108,12 +1131,12 @@ mark {
 }
 
 .radar-score strong {
-    font-size: 1.35rem;
+    font-size: 0.95rem;
 }
 
 .radar-score span {
     color: var(--text-dim);
-    font-size: 0.72rem;
+    font-size: 0.62rem;
 }
 
 .radar-score.strong strong { color: var(--accent-green); }
@@ -1134,32 +1157,39 @@ mark {
 
 .radar-job-topline h3 {
     margin: 0;
-    font-size: 1rem;
-    line-height: 1.35;
+    font-size: 0.82rem;
+    line-height: 1.25;
 }
 
 .radar-job-topline span,
 .radar-company {
     color: var(--text-dim);
-    font-size: 0.82rem;
+    font-size: 0.72rem;
 }
 
 .radar-company {
     align-items: center;
     gap: 0.55rem;
-    margin: 0.35rem 0 0.5rem;
+    margin: 0.2rem 0 0.35rem;
     flex-wrap: wrap;
 }
 
 .radar-reasons {
-    margin: 0.35rem 0 0.55rem;
-    padding-left: 1.1rem;
+    margin: 0.25rem 0 0.35rem;
+    padding-left: 0;
     color: var(--text-main);
-    font-size: 0.86rem;
+    font-size: 0.72rem;
+    list-style: none;
 }
 
 .radar-reasons li {
-    margin: 0.18rem 0;
+    margin: 0.12rem 0;
+}
+
+.radar-reasons li:nth-child(n+2),
+.radar-skills .radar-skill:nth-child(n+4),
+.radar-concerns span:nth-child(n+2) {
+    display: none;
 }
 
 .radar-skills,
@@ -1171,8 +1201,8 @@ mark {
 .radar-skill,
 .radar-concerns span {
     border-radius: 6px;
-    padding: 0.22rem 0.5rem;
-    font-size: 0.72rem;
+    padding: 0.14rem 0.4rem;
+    font-size: 0.64rem;
 }
 
 .radar-skill {
@@ -1190,15 +1220,15 @@ mark {
 }
 
 .radar-feedback {
-    width: 44px;
+    width: 32px;
     flex-direction: column;
     gap: 0.45rem;
 }
 
 .radar-feedback button,
 .radar-feedback a {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     border-radius: 8px;
     border: 1px solid var(--glass-border);
     background: rgba(255, 255, 255, 0.04);
@@ -1218,14 +1248,14 @@ mark {
 }
 
 .radar-profile-editor {
-    margin: 1rem 0;
+    margin: 0.7rem 0;
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.025);
 }
 
 .radar-profile-editor summary {
-    padding: 0.9rem 1rem;
+    padding: 0.65rem 0.75rem;
     cursor: pointer;
     color: var(--accent-blue);
     font-weight: 700;
@@ -1322,6 +1352,16 @@ mark {
 }
 
 @media (max-width: 760px) {
+    .jobs-workspace {
+        display: block;
+    }
+
+    .radar-column {
+        position: static;
+        max-height: none;
+        overflow: visible;
+    }
+
     .radar-header,
     .radar-job {
         flex-direction: column;

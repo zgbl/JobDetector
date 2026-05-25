@@ -198,6 +198,97 @@
             </div>
         </header>
 
+        <div class="jobs-workspace">
+            <div class="all-jobs-column">
+        <section class="filters-section">
+            <div class="filters-bar">
+                <div class="filter-pill-group">
+                    <button class="filter-pill active" data-filter="all">All Jobs</button>
+                    <button class="filter-pill" data-toggle="job_type" data-value="Full-time">Full-time</button>
+                    <button class="filter-pill" data-toggle="job_type" data-value="Internship">Internship</button>
+                    <button class="filter-pill" data-toggle="remote_only">Remote Only</button>
+                </div>
+
+                <div class="filter-dropdowns">
+                    <div class="dropdown-wrapper">
+                        <i class="fas fa-layer-group"></i>
+                        <select id="categoryFilter">
+                            <option value="">Category</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Product">Product</option>
+                            <option value="Design">Design</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Legal">Legal</option>
+                            <option value="People">People</option>
+                        </select>
+                    </div>
+
+                    <div class="dropdown-wrapper input-wrapper keyword-filter-wrapper">
+                        <i class="fas fa-search"></i>
+                        <div id="keywordTags" class="location-tags"></div>
+                        <input type="text" id="keywordFilter" placeholder="Keyword + Enter" style="min-width: 180px;">
+                    </div>
+
+                    <div class="dropdown-wrapper input-wrapper location-filter-wrapper">
+                        <i class="fas fa-globe-americas"></i>
+                        <div id="locationTags" class="location-tags"></div>
+                        <input type="text" id="locationFilter" placeholder="Location + Enter" list="locationOptions">
+                        <datalist id="locationOptions">
+                            <option value="USA">
+                            <option value="Japan">
+                            <option value="China">
+                            <option value="Europe">
+                            <option value="United Kingdom">
+                            <option value="Canada">
+                            <option value="Remote">
+                            <option value="San Francisco">
+                            <option value="New York">
+                            <option value="Seattle">
+                            <option value="Austin">
+                        </datalist>
+                    </div>
+
+                    <div class="dropdown-wrapper">
+                        <i class="fas fa-calendar-alt"></i>
+                        <select id="dateFilter">
+                            <option value="">Any Time</option>
+                            <option value="1">Last 24 Hours</option>
+                            <option value="3">Last 3 Days</option>
+                            <option value="7">Last 7 Days</option>
+                            <option value="30">Last 30 Days</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-clear" id="clearFilters">
+                        <i class="fas fa-redo-alt"></i> Reset
+                    </button>
+                    <button class="btn-icon" onclick="openSaveSearchModal()" title="Save this search">
+                        <i class="far fa-bookmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="results-info" style="display: flex; align-items: center; justify-content: space-between;">
+                <div>Found <span id="resultsCount">0</span> opportunities</div>
+                <button class="btn-sm btn-secondary" onclick="openSaveSearchModal(true)"
+                    style="display: flex; align-items: center; gap: 0.5rem; background: rgba(102, 126, 234, 0.1); color: var(--accent-blue); border: 1px solid rgba(102, 126, 234, 0.3);">
+                    <i class="far fa-bell"></i> Create Job Alert
+                </button>
+            </div>
+        </section>
+
+        <section class="jobs-grid" id="jobsGrid">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Scanning opportunities...</span>
+            </div>
+        </section>
+
+        <div id="pagination-container" class="pagination-container" style="display: none;"></div>
+            </div>
+
+            <aside class="radar-column">
         <section class="radar-section glass-card" id="radarSection" style="display: none;">
             <div class="radar-header">
                 <div>
@@ -284,96 +375,7 @@
                 </div>
             </div>
         </section>
-
-        <section class="filters-section">
-            <div class="filters-bar">
-                <div class="filter-pill-group">
-                    <button class="filter-pill active" data-filter="all">All Jobs</button>
-                    <button class="filter-pill" data-toggle="job_type" data-value="Full-time">Full-time</button>
-                    <button class="filter-pill" data-toggle="job_type" data-value="Internship">Internship</button>
-                    <button class="filter-pill" data-toggle="remote_only">Remote Only</button>
-                </div>
-
-                <div class="filter-dropdowns">
-                    <div class="dropdown-wrapper">
-                        <i class="fas fa-layer-group"></i>
-                        <select id="categoryFilter">
-                            <option value="">Category</option>
-                            <option value="Engineering">Engineering</option>
-                            <option value="Product">Product</option>
-                            <option value="Design">Design</option>
-                            <option value="Marketing">Marketing</option>
-                            <option value="Sales">Sales</option>
-                            <option value="Finance">Finance</option>
-                            <option value="Legal">Legal</option>
-                            <option value="People">People</option>
-                        </select>
-                    </div>
-
-                    <div class="dropdown-wrapper input-wrapper keyword-filter-wrapper">
-                        <i class="fas fa-search"></i>
-                        <div id="keywordTags" class="location-tags"></div>
-                        <input type="text" id="keywordFilter" placeholder="Keyword Search (Title, Company, Skills)">
-                    </div>
-
-                    <div class="dropdown-wrapper input-wrapper location-filter-wrapper">
-                        <i class="fas fa-globe-americas" style="color: var(--accent-blue);"></i>
-                        <div id="locationTags" class="location-tags"></div>
-                        <input list="locationOptions" id="locationFilter" placeholder="Location + Enter">
-                        <datalist id="locationOptions">
-                            <option value="USA">
-                            <option value="China">
-                            <option value="Japan">
-                            <option value="Europe">
-                            <option value="United Kingdom">
-                            <option value="Canada">
-                            <option value="Remote">
-                            <option value="San Francisco">
-                            <option value="New York">
-                            <option value="Seattle">
-                            <option value="Austin">
-                        </datalist>
-                    </div>
-
-                    <div class="dropdown-wrapper">
-                        <i class="fas fa-calendar-alt"></i>
-                        <select id="dateFilter">
-                            <option value="">Any Time</option>
-                            <option value="1">Last 24 Hours</option>
-                            <option value="3">Last 3 Days</option>
-                            <option value="7">Last 7 Days</option>
-                            <option value="30">Last 30 Days</option>
-                        </select>
-                    </div>
-
-                    <button class="btn-clear" id="clearFilters">
-                        <i class="fas fa-redo-alt"></i> Reset
-                    </button>
-                    <button class="btn-icon" onclick="openSaveSearchModal()" title="Save this search">
-                        <i class="far fa-bookmark"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="results-info" style="display: flex; align-items: center; justify-content: space-between;">
-                <div>Found <span id="resultsCount">0</span> opportunities</div>
-                <button class="btn-sm btn-secondary" onclick="openSaveSearchModal(true)"
-                    style="display: flex; align-items: center; gap: 0.5rem; background: rgba(102, 126, 234, 0.1); color: var(--accent-blue); border: 1px solid rgba(102, 126, 234, 0.3);">
-                    <i class="far fa-bell"></i> Create Job Alert
-                </button>
-            </div>
-        </section>
-
-        <section class="jobs-grid" id="jobsGrid">
-            <!-- Loading State -->
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i>
-                <span>Scanning opportunities...</span>
-            </div>
-        </section>
-
-        <!-- Pagination System [NEW] -->
-        <div id="pagination-container" class="pagination-container" style="display: none;">
-            <!-- Content injected via JS -->
+            </aside>
         </div>
 
         <!-- Company Explorer Section [NEW] -->
@@ -391,7 +393,6 @@
         </section>
 
 
-    </main>
     </main>
 
     <!-- Dynamic Modals -->

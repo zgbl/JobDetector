@@ -1563,7 +1563,7 @@ async def get_career_profiles(request: Request):
 
 @app.post("/api/profiles")
 async def save_career_profile(request: Request):
-    """Create or update one of the user's career profiles. Limit to three tracks."""
+    """Create or update one of the user's career profiles. Limit to five tracks."""
     email = _get_user_email_from_request(request)
     data = await request.json()
     db = get_db()
@@ -1573,9 +1573,18 @@ async def save_career_profile(request: Request):
     if not name:
         raise HTTPException(status_code=400, detail="Profile name is required")
 
+    existing_profile = None
+    if profile_id and ObjectId.is_valid(profile_id):
+        existing_profile = db.career_profiles.find_one({"_id": ObjectId(profile_id), "user_email": email})
+    if not existing_profile:
+        existing_profile = db.career_profiles.find_one({
+            "user_email": email,
+            "name": {"$regex": f"^{re.escape(name)}$", "$options": "i"},
+        })
+
     existing_count = db.career_profiles.count_documents({"user_email": email})
-    if not profile_id and existing_count >= 3:
-        raise HTTPException(status_code=400, detail="Maximum 3 career directions allowed")
+    if not existing_profile and existing_count >= 5:
+        raise HTTPException(status_code=400, detail="Maximum 5 career directions allowed. Choose an existing direction to overwrite.")
 
     resume_text = str(data.get("resume_text") or "")[:50000]
     preferred_areas = _split_profile_terms(data.get("preferred_areas") or data.get("locations"))
@@ -1605,18 +1614,26 @@ async def save_career_profile(request: Request):
     if doc["is_default"]:
         db.career_profiles.update_many({"user_email": email}, {"$set": {"is_default": False}})
 
-    if profile_id and ObjectId.is_valid(profile_id):
+    saved_id = None
+    if existing_profile:
+        saved_id = existing_profile.get("_id")
         result = db.career_profiles.update_one(
-            {"_id": ObjectId(profile_id), "user_email": email},
+            {"_id": saved_id, "user_email": email},
             {"$set": doc}
         )
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Profile not found")
     else:
         doc["created_at"] = datetime.now(timezone.utc).replace(tzinfo=None)
-        db.career_profiles.insert_one(doc)
+        result = db.career_profiles.insert_one(doc)
+        saved_id = result.inserted_id
 
-    return {"status": "success", "message": "Career profile saved"}
+    return {
+        "status": "success",
+        "message": "Career profile saved",
+        "id": str(saved_id) if saved_id else None,
+        "name": name,
+    }
 
 
 @app.post("/api/profiles/parse-resume")
