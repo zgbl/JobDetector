@@ -109,8 +109,13 @@
         <div class="nav-links">
             <a href="/" class="nav-item">Jobs</a>
             <a href="/favorites.html" class="nav-item">Favorites</a>
-            <a href="/my_digest.html" class="nav-item active">My Digest</a>
-            <a href="/admin_stats.html" class="nav-item">Admin</a>
+            <a href="/?view=companies" class="nav-item">Companies</a>
+            <a href="/?savedSearches=1" class="nav-item">My Searches</a>
+            <a href="/?view=request-company" id="navRequestCompany" class="nav-item" style="display: none;">Request Company</a>
+            <a href="/admin_stats.html" id="adminNavLink" class="nav-item" style="display: none;">Admin Dashboard</a>
+            <a href="/my_digest.html" id="navMyDigest" class="nav-item active">🎯 My Digest</a>
+            <a href="/feedback.html" class="nav-item">Feedback</a>
+            <a href="/about.html" class="nav-item">About</a>
         </div>
         <div class="user-profile" id="userProfile">
             <button class="btn-signin" id="showLogin">Sign In</button>
@@ -424,6 +429,10 @@ function showAuthGate(msg) {
 function showMainContent(me) {
     document.getElementById('authGate').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
+    const requestLink = document.getElementById('navRequestCompany');
+    const adminLink = document.getElementById('adminNavLink');
+    if (requestLink) requestLink.style.display = 'inline-block';
+    if (adminLink && me.is_admin) adminLink.style.display = 'inline-block';
     const up = document.getElementById('userProfile');
     up.innerHTML = `<div class="user-display">
         <div class="avatar">${me.email[0].toUpperCase()}</div>

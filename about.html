@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us | JobDetector</title>
+    <title>About / Founder / Investors | JobDetector</title>
 
     <!-- SEO Meta Tags -->
     <meta name="description"
-        content="JobDetector missions: Direct-from-source job listings. No noise, just opportunities.">
-    <meta name="author" content="JobDetector">
+        content="JobDetector is an independent founder-built job intelligence product tracking direct-source company jobs with personalized ranking and active product updates.">
+    <meta name="author" content="Tuxy">
 
     <link rel="icon" type="image/svg+xml" href="/favicon.ico">
 
@@ -23,64 +23,165 @@
 
     <style>
         .about-section {
-            max-width: 900px;
+            max-width: 1120px;
             margin: 0 auto;
-            padding: 4rem 1.5rem;
+            padding: 4rem 1.5rem 5rem;
         }
 
         .about-hero {
-            text-align: center;
-            margin-bottom: 4rem;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+            gap: 3rem;
+            align-items: center;
+            margin-bottom: 4.5rem;
         }
 
         .about-hero h1 {
-            font-size: 3rem;
+            font-size: clamp(2.5rem, 6vw, 5rem);
             margin-bottom: 1rem;
             line-height: 1.2;
         }
 
-        .mission-grid {
+        .eyebrow {
+            color: var(--accent-blue);
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero-copy {
+            font-size: 1.15rem;
+            color: var(--text-dim);
+            max-width: 720px;
+            line-height: 1.8;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .founder-panel {
+            border: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.62);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .founder-panel h2 {
+            font-size: 1.15rem;
+            margin-bottom: 1rem;
+        }
+
+        .proof-list {
+            display: grid;
+            gap: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .proof-list div {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .proof-list i {
+            color: var(--accent-green);
+            margin-top: 0.2rem;
+        }
+
+        .section-block {
+            margin-top: 4rem;
+        }
+
+        .section-kicker {
+            color: var(--accent-blue);
+            font-size: 0.82rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-size: clamp(1.8rem, 3vw, 2.6rem);
+            margin-bottom: 1rem;
+        }
+
+        .section-lede {
+            color: var(--text-dim);
+            max-width: 760px;
+            line-height: 1.75;
+            font-size: 1.05rem;
+        }
+
+        .content-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-bottom: 4rem;
+            gap: 1.25rem;
+            margin-top: 1.75rem;
         }
 
         .feature-card {
-            padding: 2rem;
+            padding: 1.5rem;
             height: 100%;
+            border-radius: 8px;
         }
 
         .feature-icon {
-            font-size: 2rem;
+            font-size: 1.5rem;
             margin-bottom: 1rem;
             color: var(--accent-blue);
         }
 
+        .feature-card p,
+        .feature-card li {
+            color: var(--text-dim);
+            line-height: 1.65;
+        }
+
+        .feature-card ul {
+            padding-left: 1.1rem;
+            margin-top: 0.8rem;
+        }
+
+        .founder-note {
+            border-left: 3px solid var(--accent-blue);
+            padding: 1.5rem 1.5rem 1.5rem 1.75rem;
+            background: rgba(56, 189, 248, 0.06);
+            border-radius: 8px;
+            color: var(--text-dim);
+            line-height: 1.8;
+            margin-top: 1.75rem;
+        }
+
         .invest-section {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(59, 130, 246, 0.05) 100%);
-            border-radius: 20px;
+            padding: 2rem;
+            background: rgba(15, 23, 42, 0.72);
+            border-radius: 8px;
             border: 1px solid var(--glass-border);
-            margin-top: 4rem;
+            margin-top: 1.75rem;
         }
 
         .invest-title {
-            font-size: 2.2rem;
+            font-size: 1.6rem;
             margin-bottom: 1rem;
         }
 
         .contact-email {
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: var(--accent-blue);
             font-weight: 600;
             text-decoration: none;
             display: inline-block;
-            margin-top: 1rem;
-            padding: 1rem 2rem;
+            padding: 0.95rem 1.35rem;
             background: rgba(59, 130, 246, 0.1);
-            border-radius: 50px;
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            border-radius: 8px;
             transition: all 0.3s ease;
         }
 
@@ -89,21 +190,22 @@
             transform: translateY(-2px);
         }
 
-        /* Stats in About */
         .impact-stats {
-            display: flex;
-            justify-content: center;
-            gap: 3rem;
-            margin: 3rem 0;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0 0;
         }
 
         .impact-stat {
-            text-align: center;
+            padding: 1.25rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
         }
 
         .impact-number {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
             color: white;
             display: block;
@@ -114,6 +216,48 @@
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+
+        .timeline {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1.75rem;
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 130px minmax(0, 1fr);
+            gap: 1.25rem;
+            padding: 1.25rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .timeline-date {
+            color: var(--accent-green);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .timeline-item h3 {
+            margin-bottom: 0.35rem;
+        }
+
+        .timeline-item p {
+            color: var(--text-dim);
+            line-height: 1.65;
+        }
+
+        @media (max-width: 820px) {
+            .about-hero {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-item {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -128,11 +272,16 @@
             <div class="nav-links">
                 <a href="/" class="nav-item">Jobs</a>
                 <a href="/favorites.html" class="nav-item">Favorites</a>
-                <a href="/about.html" class="nav-item active">About</a>
+                <a href="/?view=companies" class="nav-item">Companies</a>
+                <a href="/?savedSearches=1" class="nav-item">My Searches</a>
+                <a href="/?view=request-company" id="navRequestCompany" class="nav-item" style="display: none;">Request Company</a>
+                <a href="/admin_stats.html" id="adminNavLink" class="nav-item" style="display: none;">Admin Dashboard</a>
+                <a href="/my_digest.html" id="navMyDigest" class="nav-item" style="display: none;">🎯 My Digest</a>
                 <a href="/feedback.html" class="nav-item">Feedback</a>
+                <a href="/about.html" class="nav-item active">About</a>
             </div>
-            <div class="user-profile" id="userProfile" style="width: 100px;">
-                <!-- Auth Placeholder -->
+            <div class="user-profile" id="auth-section">
+                <button class="btn-signin" onclick="window.location.href='/?login=true'">Sign In</button>
             </div>
         </div>
     </nav>
@@ -140,71 +289,213 @@
     <main class="dashboard">
         <section class="about-section">
             <div class="about-hero">
-                <h1>Job Search, <span class="gradient-text">Reimagined</span>.</h1>
-                <p style="font-size: 1.2rem; color: var(--text-dim); max-width: 600px; margin: 0 auto;">
-                    We believe finding your next role should be about the work, not the noise.
-                    No recruiters, no ghost jobs, just direct connections.
-                </p>
+                <div>
+                    <div class="eyebrow">Founder-built job intelligence</div>
+                    <h1>JobDetector is built and operated by <span class="gradient-text">Tuxy</span>.</h1>
+                    <p class="hero-copy">
+                        This is an independent product I designed, coded, tested, and use myself.
+                        JobDetector tracks company career pages directly, ranks roles by personal fit and freshness,
+                        and turns job search from keyword browsing into an active career radar.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="mailto:qlsr2024@gmail.com" class="btn-primary">
+                            <i class="fas fa-envelope"></i> Contact Founder
+                        </a>
+                        <a href="#updates" class="btn-secondary">
+                            <i class="fas fa-clock-rotate-left"></i> View Updates
+                        </a>
+                    </div>
+                </div>
 
-                <div class="impact-stats">
-                    <div class="impact-stat">
-                        <span class="impact-number gradient-text">Direct</span>
-                        <span class="impact-label">Source Data</span>
+                <aside class="founder-panel">
+                    <h2>Build transparency</h2>
+                    <div class="proof-list">
+                        <div>
+                            <i class="fas fa-check-circle"></i>
+                            <span>Independent founder-built product, not a copied job board template.</span>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle"></i>
+                            <span>Direct-source crawlers monitor company ATS and career pages.</span>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle"></i>
+                            <span>Personal ranking logic, feedback loops, profile editor, digest workflows, and UI are actively maintained.</span>
+                        </div>
                     </div>
-                    <div class="impact-stat">
-                        <span class="impact-number gradient-text">6h</span>
-                        <span class="impact-label">Refresh Rate</span>
-                    </div>
-                    <div class="impact-stat">
-                        <span class="impact-number gradient-text">0%</span>
-                        <span class="impact-label">Noise</span>
-                    </div>
+                </aside>
+            </div>
+
+            <div class="impact-stats">
+                <div class="impact-stat">
+                    <span class="impact-number gradient-text">50k+</span>
+                    <span class="impact-label">Active job records</span>
+                </div>
+                <div class="impact-stat">
+                    <span class="impact-number gradient-text">Direct</span>
+                    <span class="impact-label">Company source data</span>
+                </div>
+                <div class="impact-stat">
+                    <span class="impact-number gradient-text">Personal</span>
+                    <span class="impact-label">Resume-based radar</span>
+                </div>
+                <div class="impact-stat">
+                    <span class="impact-number gradient-text">Live</span>
+                    <span class="impact-label">Actively shipped</span>
                 </div>
             </div>
 
-            <div class="mission-grid">
+            <section class="section-block">
+                <div class="section-kicker">Product proof</div>
+                <h2 class="section-title">A working product, not a pitch deck.</h2>
+                <p class="section-lede">
+                    JobDetector combines source-of-truth job collection with a personal recommendation layer.
+                    It is built for job seekers who want signal, speed, and control instead of stale listings and duplicate search results.
+                </p>
+            </section>
+
+            <div class="content-grid">
                 <div class="glass-card feature-card">
                     <i class="fas fa-filter feature-icon"></i>
-                    <h3>High Signal, Low Noise</h3>
-                    <p style="color: var(--text-dim); margin-top: 0.5rem;">
-                        Conventional job boards are flooded with promoted listings and third-party recruiters.
-                        JobDetector scrapes directly from company ATS pages to ensure authenticity.
+                    <h3>Direct-source job data</h3>
+                    <p>
+                        The system collects roles from company ATS and career pages, reducing recruiter reposts and stale aggregator noise.
                     </p>
                 </div>
                 <div class="glass-card feature-card">
                     <i class="fas fa-bolt feature-icon" style="color: var(--accent-purple);"></i>
-                    <h3>Speed Matters</h3>
-                    <p style="color: var(--text-dim); margin-top: 0.5rem;">
-                        Great roles are filled effectively in days. Our engine monitors career pages continuously
-                        so you can apply the moment a role opens.
+                    <h3>Personal Job Radar</h3>
+                    <p>
+                        Users can create career directions, add resume signals, set geography, exclude poor-fit roles, and rank recent openings.
                     </p>
                 </div>
                 <div class="glass-card feature-card">
                     <i class="fas fa-globe feature-icon" style="color: var(--accent-green);"></i>
-                    <h3>Global Scope</h3>
-                    <p style="color: var(--text-dim); margin-top: 0.5rem;">
-                        From Silicon Valley giants to hidden gems in Europe and Asia. We track the fastest-growing
-                        companies regardless of location.
+                    <h3>Feedback-driven workflow</h3>
+                    <p>
+                        Favorites, saved searches, company requests, recommendation feedback, and digest settings create a loop for product learning.
                     </p>
                 </div>
             </div>
 
-            <section class="invest-section">
-                <h2 class="invest-title">Invest in the <span class="gradient-text">Future of Hiring</span></h2>
-                <p
-                    style="font-size: 1.1rem; color: var(--text-dim); margin-bottom: 2rem; max-width: 700px; margin-left: auto; margin-right: auto;">
-                    We are building the most accurate real-time map of the global labor market.
-                    JobDetector is growing rapidly and we are looking for strategic partners to scale our vision.
+            <section class="section-block">
+                <div class="section-kicker">Founder note</div>
+                <h2 class="section-title">Why I built it.</h2>
+                <p class="founder-note">
+                    I built JobDetector because I was frustrated with job boards that miss high-quality roles,
+                    show stale postings, and bury useful signals behind keyword search. Every crawler, profile system,
+                    ranking rule, digest workflow, and UI iteration has been built and tested directly through my own
+                    job search workflow. The product is intentionally practical: find the right openings earlier,
+                    understand why they match, and keep improving the recommendation loop.
+                </p>
+            </section>
+
+            <section class="section-block">
+                <div class="section-kicker">Investors and partners</div>
+                <h2 class="section-title">A sharper layer for job search and labor-market intelligence.</h2>
+                <p class="section-lede">
+                    Job seekers need personalized ranking, not another keyword box. Investors, operators, and companies
+                    need a cleaner view of hiring demand as it changes. JobDetector can grow into a personal career agent
+                    and a real-time labor-market intelligence layer built on direct company data.
                 </p>
 
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
-                    <span style="color: white; font-weight: 500;">Interested in getting involved?</span>
-                    <a href="mailto:qlsr2024@gmail.com" class="contact-email">
-                        <i class="fas fa-envelope" style="margin-right: 8px;"></i> qlsr2024@gmail.com
-                    </a>
+                <div class="invest-section">
+                    <h3 class="invest-title">Open to strategic conversations</h3>
+                    <div class="content-grid" style="margin-top: 1rem;">
+                        <div>
+                            <h4>Good fits</h4>
+                            <ul>
+                                <li>Pre-seed or seed investors interested in career infrastructure.</li>
+                                <li>Technical and product advisors with hiring-market experience.</li>
+                                <li>Data, API, or distribution partners.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Near-term focus</h4>
+                            <ul>
+                                <li>Better candidate-job matching and deduplication.</li>
+                                <li>More reliable direct-source crawlers.</li>
+                                <li>Personal digest and company intelligence workflows.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1.5rem;">
+                        <span style="color: white; font-weight: 600; display: block; margin-bottom: 0.75rem;">Investor / partnership contact</span>
+                        <a href="mailto:qlsr2024@gmail.com" class="contact-email">
+                            <i class="fas fa-envelope" style="margin-right: 8px;"></i> qlsr2024@gmail.com
+                        </a>
+                    </div>
                 </div>
             </section>
 
+            <section class="section-block" id="updates">
+                <div class="section-kicker">Recent updates</div>
+                <h2 class="section-title">Shipped recently.</h2>
+                <p class="section-lede">
+                    JobDetector is under active development. These are recent product updates that improved ranking,
+                    personalization, workflow, and product feedback loops.
+                </p>
+
+                <div class="timeline">
+                    <article class="timeline-item">
+                        <div class="timeline-date">2026-05-27</div>
+                        <div>
+                            <h3>Recommendation score split into match and freshness</h3>
+                            <p>Added a composite ranking model where match quality and time decay each contribute 50% to the final radar score.</p>
+                        </div>
+                    </article>
+                    <article class="timeline-item">
+                        <div class="timeline-date">2026-05-26</div>
+                        <div>
+                            <h3>Personal Job Radar diagnostics</h3>
+                            <p>Audited recommendation coverage, profile duplication, strict geography filtering, and candidate pool limits to improve match quality.</p>
+                        </div>
+                    </article>
+                    <article class="timeline-item">
+                        <div class="timeline-date">2026-05-25</div>
+                        <div>
+                            <h3>Career directions and resume-based profiles</h3>
+                            <p>Added profile editing for target roles, skills, companies, geography, exclusions, resume text, and minimum score settings.</p>
+                        </div>
+                    </article>
+                    <article class="timeline-item">
+                        <div class="timeline-date">2026-05-24</div>
+                        <div>
+                            <h3>Recommendation feedback controls</h3>
+                            <p>Added good fit, not for me, save, and apply actions so user feedback can influence future ranking behavior.</p>
+                        </div>
+                    </article>
+                    <article class="timeline-item">
+                        <div class="timeline-date">2026-05-23</div>
+                        <div>
+                            <h3>Digest and company request workflow</h3>
+                            <p>Expanded the My Digest experience and made it easier for users to request new companies for monitoring.</p>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <div class="section-kicker">Roadmap</div>
+                <h2 class="section-title">What comes next.</h2>
+                <div class="content-grid">
+                    <div class="glass-card feature-card">
+                        <i class="fas fa-ranking-star feature-icon"></i>
+                        <h3>Smarter matching</h3>
+                        <p>Improve ranking with better role taxonomy, seniority parsing, salary signals, and stricter exclusion matching.</p>
+                    </div>
+                    <div class="glass-card feature-card">
+                        <i class="fas fa-layer-group feature-icon" style="color: var(--accent-purple);"></i>
+                        <h3>Cleaner job graph</h3>
+                        <p>Deduplicate overlapping ATS postings, normalize locations, and improve company metadata quality.</p>
+                    </div>
+                    <div class="glass-card feature-card">
+                        <i class="fas fa-chart-line feature-icon" style="color: var(--accent-green);"></i>
+                        <h3>Market intelligence</h3>
+                        <p>Turn direct-source hiring data into dashboards for company growth, role demand, and market movement.</p>
+                    </div>
+                </div>
+            </section>
         </section>
     </main>
 
@@ -213,6 +504,12 @@
             <p>&copy; 2026 JobDetector. Directly from source.</p>
         </div>
     </footer>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+        });
+    </script>
 </body>
 
 </html>

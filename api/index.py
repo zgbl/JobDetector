@@ -7,6 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import re
 import secrets
+import math
 from bson import ObjectId
 
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -1548,6 +1549,41 @@ def _score_job_for_profile(job: Dict[str, Any], profile: Dict[str, Any], feedbac
     }
 
 
+def _parse_job_datetime(value: Any) -> Optional[datetime]:
+    """Parse stored job dates from Mongo datetime or API-formatted strings."""
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+        except ValueError:
+            return None
+    return None
+
+
+def _time_decay_score(posted_date: Any, window_days: int = 14, decay_rate: float = 0.28) -> float:
+    """Return a 0-10 freshness score that drops quickly at first and reaches 0 at window_days."""
+    posted_at = _parse_job_datetime(posted_date)
+    if not posted_at:
+        return 0.0
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    age_days = max(0.0, (now - posted_at).total_seconds() / 86400)
+    if age_days >= window_days:
+        return 0.0
+
+    floor = math.exp(-decay_rate * window_days)
+    freshness = (math.exp(-decay_rate * age_days) - floor) / (1 - floor)
+    return round(max(0.0, min(10.0, freshness * 10)), 1)
+
+
+def _combine_recommendation_score(match_score: float, time_score: float) -> float:
+    """Blend match quality and freshness as equal-weight recommendation signals."""
+    return round((match_score * 0.5) + (time_score * 0.5), 1)
+
+
 @app.get("/api/profiles")
 async def get_career_profiles(request: Request):
     """Return career radar profiles for the logged-in user."""
@@ -1763,8 +1799,13 @@ async def get_recommendations(
         if selected.get("strict_location", True) and geo_level == "none":
             continue
         scoring = _score_job_for_profile(job, selected, feedback)
-        if min_score is None or scoring["score"] >= min_score:
-            job["radar_score"] = scoring["score"]
+        match_score = scoring["score"]
+        time_score = _time_decay_score(job.get("posted_date"))
+        final_score = _combine_recommendation_score(match_score, time_score)
+        if min_score is None or final_score >= min_score:
+            job["radar_score"] = final_score
+            job["radar_match_score"] = match_score
+            job["radar_time_score"] = time_score
             job["radar_reasons"] = scoring["reasons"]
             job["radar_concerns"] = scoring["concerns"]
             job["matched_skills"] = scoring["matched_skills"]

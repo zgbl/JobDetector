@@ -27,6 +27,14 @@ async function checkAuth() {
 
 function updateAuthUI() {
     const authSection = document.getElementById('auth-section');
+    const adminLink = document.getElementById('adminNavLink');
+    const requestLink = document.getElementById('navRequestCompany');
+    const digestLink = document.getElementById('navMyDigest');
+
+    if (requestLink) requestLink.style.display = currentUser ? 'inline-block' : 'none';
+    if (digestLink) digestLink.style.display = currentUser ? 'inline-block' : 'none';
+    if (adminLink) adminLink.style.display = currentUser?.is_admin ? 'inline-block' : 'none';
+
     if (!authSection) return;
 
     if (currentUser) {

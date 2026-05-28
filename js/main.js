@@ -119,6 +119,9 @@ async function init() {
     if (currentUser) {
         const radarProfileFromUrl = params.get('radarProfile') || params.get('profile') || '';
         loadPersonalRadar(radarProfileFromUrl);
+        if (params.get('savedSearches') === '1') {
+            setTimeout(openSavedSearches, 0);
+        }
     }
 
     try {
@@ -1669,6 +1672,8 @@ function loadFiltersFromURL() {
     const view = params.get('view');
     if (view === 'companies') {
         switchToView('companies');
+    } else if (view === 'request-company') {
+        switchToView('request-company');
     }
 
     currentFilters.q = params.get('q') || '';
