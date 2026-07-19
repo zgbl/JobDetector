@@ -563,6 +563,44 @@ async def get_me(request: Request):
         "created_at": user["created_at"].isoformat() if hasattr(user.get("created_at"), "isoformat") else str(user.get("created_at", ""))
     }
 
+
+def _require_admin(request: Request) -> str:
+    """Require a logged-in admin user and return the admin email."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    payload = decode_access_token(auth_header.split(" ")[1])
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("sub", "")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    db = get_db()
+    user = db.users.find_one({"email": email})
+    admin_email = os.getenv("ADMIN_EMAIL")
+    is_admin = (admin_email and email.lower() == admin_email.lower()) or bool(user and user.get("is_admin"))
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin only")
+    return email
+
+
+def _optional_user_email(request: Request) -> Optional[str]:
+    """Return the logged-in email when a valid token is present."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    payload = decode_access_token(auth_header.split(" ")[1])
+    return payload.get("sub") if payload else None
+
+
+def _serialize_dt(value: Any) -> Any:
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return value
+
 # --- Saved Search Endpoints ---
 
 @app.get("/api/user/searches")
@@ -746,7 +784,8 @@ async def record_visit(request: Request):
             "user_agent": request.headers.get("user-agent"),
             "referrer": request.headers.get("referer"),
             "path": request.url.path,
-            "method": request.method
+            "method": request.method,
+            "user_email": _optional_user_email(request)
         }
         
         # Insert log asynchronously (fire and forget pattern if possible, but here we just wait)
@@ -765,9 +804,7 @@ async def record_visit(request: Request):
 @app.get("/api/admin/visitor-stats")
 async def get_visitor_stats(request: Request, limit: int = 50):
     """Get detailed visitor statistics for admin dashboard"""
-    # Simple check for now - can be enhanced with proper auth
-    # For now, we'll just allow it if it's coming from a local dev machine or has a specific secret 
-    # (In a real app, this would be behind @login_required + admin role)
+    _require_admin(request)
     db = get_db()
     try:
         # Get recent logs
@@ -797,6 +834,166 @@ async def get_visitor_stats(request: Request, limit: int = 50):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/stats/click")
+async def record_click(request: Request):
+    """Record lightweight click analytics for product activity tracking."""
+    data = await request.json()
+    target_text = str(data.get("target_text") or "")[:180]
+    target_href = str(data.get("target_href") or "")[:500]
+    target_id = str(data.get("target_id") or "")[:120]
+    target_class = str(data.get("target_class") or "")[:240]
+    page_path = str(data.get("page_path") or "")[:500]
+
+    db = get_db()
+    db.click_events.insert_one({
+        "timestamp": datetime.now(timezone.utc).replace(tzinfo=None),
+        "user_email": _optional_user_email(request),
+        "ip_address": request.client.host if request.client else None,
+        "user_agent": request.headers.get("user-agent"),
+        "page_path": page_path,
+        "target_text": target_text,
+        "target_href": target_href,
+        "target_id": target_id,
+        "target_class": target_class,
+    })
+    return {"status": "ok"}
+
+
+def _count_since(collection, query: Dict[str, Any], days: int) -> int:
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    query = dict(query)
+    query["created_at"] = {"$gte": cutoff}
+    return collection.count_documents(query)
+
+
+def _daily_counts(collection, date_field: str, query: Dict[str, Any], days: int) -> List[Dict[str, Any]]:
+    start = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days - 1)
+    pipeline = [
+        {"$match": {**query, date_field: {"$gte": start}}},
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": f"${date_field}"}},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}},
+    ]
+    rows = {row["_id"]: row["count"] for row in collection.aggregate(pipeline)}
+    result = []
+    for offset in range(days):
+        day = (start + timedelta(days=offset)).strftime("%Y-%m-%d")
+        result.append({"date": day, "count": rows.get(day, 0)})
+    return result
+
+
+@app.get("/api/admin/product-analytics")
+async def get_product_analytics(request: Request):
+    """Admin-only product analytics for user, click, and engagement trends."""
+    _require_admin(request)
+    db = get_db()
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    cutoff_24h = now - timedelta(days=1)
+    cutoff_7d = now - timedelta(days=7)
+    cutoff_30d = now - timedelta(days=30)
+
+    user_query = {}
+    total_users = db.users.count_documents(user_query)
+    verified_users = db.users.count_documents({"is_verified": True})
+    users_7d = db.users.count_documents({"created_at": {"$gte": cutoff_7d}})
+    users_30d = db.users.count_documents({"created_at": {"$gte": cutoff_30d}})
+
+    total_clicks = db.click_events.count_documents({})
+    clicks_24h = db.click_events.count_documents({"timestamp": {"$gte": cutoff_24h}})
+    clicks_7d = db.click_events.count_documents({"timestamp": {"$gte": cutoff_7d}})
+    total_visits = db.visitor_logs.count_documents({})
+    visits_7d = db.visitor_logs.count_documents({"timestamp": {"$gte": cutoff_7d}})
+    unique_visitors = len(db.visitor_logs.distinct("ip_address"))
+    unique_logged_in_users_30d = len(db.click_events.distinct("user_email", {
+        "timestamp": {"$gte": cutoff_30d},
+        "user_email": {"$nin": [None, ""]},
+    }))
+
+    top_pages = list(db.visitor_logs.aggregate([
+        {"$match": {"timestamp": {"$gte": cutoff_30d}}},
+        {"$group": {"_id": "$path", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10},
+    ]))
+
+    top_clicks = list(db.click_events.aggregate([
+        {"$match": {"timestamp": {"$gte": cutoff_30d}}},
+        {"$project": {
+            "label": {
+                "$ifNull": [
+                    "$target_text",
+                    {"$ifNull": ["$target_id", "$target_href"]}
+                ]
+            },
+            "page_path": "$page_path"
+        }},
+        {"$group": {"_id": {"label": "$label", "page_path": "$page_path"}, "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 12},
+    ]))
+
+    feedback_actions = list(db.job_feedback.aggregate([
+        {"$group": {"_id": "$action", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+    ]))
+
+    company_request_status = list(db.company_requests.aggregate([
+        {"$group": {"_id": "$status", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+    ]))
+
+    recent_users = list(db.users.find({}, {
+        "_id": 0,
+        "email": 1,
+        "full_name": 1,
+        "created_at": 1,
+        "is_verified": 1,
+        "is_admin": 1,
+    }).sort("created_at", -1).limit(10))
+
+    for user in recent_users:
+        user["created_at"] = _serialize_dt(user.get("created_at"))
+
+    return {
+        "summary": {
+            "total_users": total_users,
+            "verified_users": verified_users,
+            "users_7d": users_7d,
+            "users_30d": users_30d,
+            "total_visits": total_visits,
+            "visits_7d": visits_7d,
+            "unique_visitors": unique_visitors,
+            "total_clicks": total_clicks,
+            "clicks_24h": clicks_24h,
+            "clicks_7d": clicks_7d,
+            "unique_logged_in_users_30d": unique_logged_in_users_30d,
+            "career_profiles": db.career_profiles.count_documents({}),
+            "saved_searches": db.saved_searches.count_documents({}),
+            "favorites": db.user_favorites.count_documents({}),
+            "feedback_messages": db.user_feedbacks.count_documents({}),
+            "company_requests": db.company_requests.count_documents({}),
+        },
+        "user_growth": _daily_counts(db.users, "created_at", {}, 30),
+        "visit_trend": _daily_counts(db.visitor_logs, "timestamp", {}, 14),
+        "click_trend": _daily_counts(db.click_events, "timestamp", {}, 14),
+        "top_pages": [{"path": row.get("_id") or "unknown", "count": row.get("count", 0)} for row in top_pages],
+        "top_clicks": [
+            {
+                "label": (row.get("_id", {}).get("label") or "unlabeled")[:120],
+                "page_path": row.get("_id", {}).get("page_path") or "",
+                "count": row.get("count", 0),
+            }
+            for row in top_clicks
+        ],
+        "feedback_actions": [{"action": row.get("_id") or "unknown", "count": row.get("count", 0)} for row in feedback_actions],
+        "company_request_status": [{"status": row.get("_id") or "unknown", "count": row.get("count", 0)} for row in company_request_status],
+        "recent_users": recent_users,
+    }
 
 # --- Favorites Endpoints ---
 
@@ -1429,9 +1626,21 @@ def _location_matches(job: Dict[str, Any], preferred_locations: List[str]) -> bo
         aliases = _location_aliases(preferred)
         if "remote" in aliases and ("remote" in haystack or remote_type.lower() == "remote"):
             return True
-        if any(alias and alias in haystack for alias in aliases):
+        if any(_location_alias_in_text(alias, haystack) for alias in aliases):
             return True
     return False
+
+
+def _location_alias_in_text(alias: str, haystack: str) -> bool:
+    """Match location aliases as terms, not arbitrary substrings.
+
+    This prevents false positives like matching USA inside Busan.
+    """
+    alias = (alias or "").strip().lower()
+    if not alias:
+        return False
+    pattern = rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])"
+    return bool(re.search(pattern, haystack))
 
 
 def _normalize_geo_preferences(profile: Dict[str, Any]) -> Dict[str, Any]:

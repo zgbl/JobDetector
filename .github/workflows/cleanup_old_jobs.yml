@@ -1,0 +1,49 @@
+name: Weekly Old Job Cleanup
+
+on:
+  schedule:
+    # Sundays at 10:00 UTC. Default retention is 60 days.
+    - cron: '0 10 * * 0'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Retention window in days'
+        required: false
+        default: '60'
+      dry_run:
+        description: 'Dry run only'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Delete old jobs
+        timeout-minutes: 15
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+        run: |
+          DAYS="${{ github.event.inputs.days || '60' }}"
+          ARGS="--days ${DAYS}"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python scripts/cleanup_old_jobs.py $ARGS

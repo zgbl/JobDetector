@@ -24,20 +24,56 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Scraper & Alerts
+      - name: Import base companies
+        id: import_base
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+        run: python scripts/import_companies.py
+
+      - name: Import Ben Lang companies
+        id: import_benlang
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 30
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+        run: python scripts/import_benlang.py --file BenLang.txt
+
+      - name: Run production scraper
+        id: prod_scraper
+        if: always()
+        timeout-minutes: 300
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+        run: python scripts/prod_scraper.py
+
+      - name: Send saved-search alerts
+        id: saved_search_alerts
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 10
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
           EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
-        run: |
-          # 1. Ensure companies are in DB
-          python scripts/import_companies.py
-          # 2. Import Ben Lang companies
-          python scripts/import_benlang.py --file BenLang.txt
-          # 3. Run the production master scraper
-          python scripts/prod_scraper.py
-          # 4. Send email alerts [NEW]
-          python scripts/send_alerts.py
+        run: python scripts/send_alerts.py
 
-          
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Scheduled scrape stage status"
+            echo ""
+            echo "| Stage | Result |"
+            echo "| --- | --- |"
+            echo "| Import base companies | ${{ steps.import_base.outcome }} |"
+            echo "| Import Ben Lang companies | ${{ steps.import_benlang.outcome }} |"
+            echo "| Production scraper | ${{ steps.prod_scraper.outcome }} |"
+            echo "| Saved-search alerts | ${{ steps.saved_search_alerts.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
