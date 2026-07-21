@@ -85,7 +85,15 @@ async def scrape_company(company, scrapers, db, semaphore):
                 # Save/Update jobs in DB
                 saved_count = 0
                 for job in jobs:
-                    # 0. Content analysis (English-Only & IT-Only check)
+                    # 0. Reject India locations before any database write.
+                    is_india, india_reason = LanguageFilterService.is_india_location(
+                        f"{job.get('location', '')} {job.get('company_location', '')}"
+                    )
+                    if is_india:
+                        logger.info(f"🚫 {company['name']}: 职位 '{job['title']}' 因印度地点被过滤: {india_reason}")
+                        continue
+
+                    # 1. Content analysis (English-Only & IT-Only check)
                     job_text = job.get('description', '') + ' ' + job.get('title', '')
                     
                     # A. Category Check (IT Only)

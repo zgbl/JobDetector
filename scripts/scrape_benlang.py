@@ -16,6 +16,7 @@ from src.scrapers.greenhouse import GreenhouseScraper
 from src.scrapers.lever import LeverScraper
 from src.scrapers.ashby import AshbyScraper
 from src.scrapers.workable import WorkableScraper
+from src.services.language_filter import LanguageFilterService
 # Remind: Workday scraper might handle some too but mostly we saw GH/Lever/Ashby/Workable
 
 # Configure logging
@@ -127,6 +128,21 @@ async def scrape_benlang_companies():
                 if jobs:
                     # Save jobs
                     for job in jobs:
+                        is_india, india_reason = LanguageFilterService.is_india_location(
+                            f"{job.get('location', '')} {job.get('company_location', '')}"
+                        )
+                        if is_india:
+                            logger.info(f"🚫 {name}: 职位 '{job['title']}' 因印度地点被过滤: {india_reason}")
+                            continue
+
+                        job_text = f"{job.get('description', '')} {job.get('title', '')}"
+                        is_it, it_reason = LanguageFilterService.is_it_role(job.get('title', ''), is_title=True)
+                        if not is_it:
+                            is_it_desc, it_reason_desc = LanguageFilterService.is_it_role(job_text, is_title=False)
+                            if not is_it_desc:
+                                logger.info(f"🚫 {name}: 职位 '{job['title']}' 非 IT 职位被过滤: {it_reason_desc}")
+                                continue
+
                         # Basic dedupe query
                         existing = db.jobs.find_one({
                             'company': name,

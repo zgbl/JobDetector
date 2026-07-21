@@ -6,6 +6,19 @@ import re
 from typing import Tuple
 
 class LanguageFilterService:
+
+    # Country names, common Indian metro areas, and state/region names that
+    # frequently appear in ATS location strings without the word "India".
+    INDIA_LOCATION_PATTERNS = [
+        r'\bindia\b', r'\bindian\b', r'\bbengaluru\b', r'\bbangalore\b',
+        r'\bmumbai\b', r'\bnew\s+delhi\b', r'\bdelhi\b', r'\bgurgaon\b',
+        r'\bgurugram\b', r'\bnoida\b', r'\bhyderabad\b', r'\bpune\b',
+        r'\bchennai\b', r'\bkolkata\b', r'\bcalcutta\b', r'\bahmedabad\b',
+        r'\bjaipur\b', r'\bkochi\b', r'\bcoimbatore\b', r'\bindore\b',
+        r'\bthiruvananthapuram\b', r'\btelangana\b', r'\bkarnataka\b',
+        r'\bmaharashtra\b', r'\btamil\s+nadu\b', r'\buttar\s+pradesh\b',
+        r'\bwest\s+bengal\b', r'\bharyana\b', r'\bandhra\s+pradesh\b'
+    ]
     
     # Keywords that indicate Japanese proficiency is required
     JAPANESE_REQUIRED_KEYWORDS = [
@@ -61,8 +74,9 @@ class LanguageFilterService:
     # These should only be used as deal-breakers if found in the TITLE
     NON_IT_ROLE_TITLES = [
         r'\bsales\b', r'\bmarketing\b', r'\bcustomer\s+success\b', r'\baccount\s+manager\b',
+        r'\baccount(?:ing|ant|\s+executive)?\b', r'\bbusiness\s+development\b',
         r'\bhuman\s+resources\b', r'\bhr\b', r'\brecruiting\b', r'\brecruiter\b', r'\bfinance\b', 
-        r'\blegal\b', r'\baccountant\b', r'\bauditor\b', r'\bpayroll\b', r'\bworkplace\b', 
+        r'\blegal\b', r'\blawyer\b', r'\battorney\b', r'\bcounsel\b', r'\bauditor\b', r'\bpayroll\b', r'\bworkplace\b',
         r'\bfacilities\b', r'\boffice\s+manager\b', r'\badministrator\b', r'\breceptionist\b', 
         r'\bclerk\b', r'\boperator\b', r'\blogistics\b', r'\bwarehouse\b', r'\bsupply\s+chain\b',
         r'\btreasury\b', r'\btax\b', r'\bpublic\s+relations\b', r'\bcomms\b', r'\bcommunications\b'
@@ -100,6 +114,18 @@ class LanguageFilterService:
                 return True, f"Detected IT role keyword: {pattern}"
                 
         return False, "No IT keywords found"
+
+    @classmethod
+    def is_india_location(cls, location: str) -> Tuple[bool, str]:
+        """Return true when an ATS location identifies India or an Indian region."""
+        if not location:
+            return False, "No location provided"
+
+        location_lower = str(location).lower()
+        for pattern in cls.INDIA_LOCATION_PATTERNS:
+            if re.search(pattern, location_lower):
+                return True, f"Detected India location keyword: {pattern}"
+        return False, "Location is not identified as India"
 
     @classmethod
     def is_english_only(cls, text: str) -> Tuple[bool, str]:
