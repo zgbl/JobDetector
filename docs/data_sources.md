@@ -19,6 +19,8 @@ The project currently supports direct crawling from several major Applicant Trac
 
 Company lists are stored as YAML files in the `data/` directory. These are imported into the database to guide the scrapers.
 
+Ben Lang Google Sheet exports belong in `data/benlang/google_sheets/`. Ben Lang companies are merged into the unified `companies` collection. Durable provenance is stored in `metadata.source_records` (career page, thread reply link, source filename, location, and stable source ID). MongoDB is the long-term record for verified links; the CSV files remain auditable source snapshots. The legacy `collections` company-name snapshot is no longer used by the Ben Lang scraper.
+
 | List Name | File Path | Description |
 |-----------|-----------|-------------|
 | **Initial List** | [companies_initial.yaml](file:///Users/tuxy/Codes/Github2/JobDetector/data/companies_initial.yaml) | Seed list of companies. |

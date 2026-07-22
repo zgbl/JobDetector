@@ -4,6 +4,7 @@ Parse Ben Lang's company lists from LinkedIn posts.
 Extracts company names, descriptions, and locations.
 """
 import re
+import csv
 from typing import List, Dict, Optional
 from pathlib import Path
 
@@ -31,6 +32,9 @@ class BenLangParser:
         Returns:
             List of dicts with keys: name, description, location, raw_name
         """
+        if Path(file_path).suffix.lower() == '.csv':
+            return self.parse_csv_file(file_path)
+
         companies = []
         
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -54,6 +58,45 @@ class BenLangParser:
                     'location': location
                 })
         
+        return companies
+
+    def parse_csv_file(self, file_path: str) -> List[Dict[str, str]]:
+        """Parse a Google Sheets CSV export."""
+        companies = []
+        seen = set()
+        with open(file_path, 'r', encoding='utf-8-sig', newline='') as f:
+            rows = list(csv.reader(f))
+
+        # Google Sheets exports may include one or more instruction rows before
+        # the actual header row.
+        header_index = next(
+            (i for i, row in enumerate(rows) if 'Company' in row and 'Career Page' in row),
+            None,
+        )
+        if header_index is None:
+            return companies
+
+        headers = rows[header_index]
+        for values in rows[header_index + 1:]:
+            row = dict(zip(headers, values))
+            raw_name = (row.get('Company') or '').strip()
+            if not raw_name:
+                continue
+            name = self.normalize_name(raw_name)
+            career_url = (row.get('Career Page') or '').strip()
+            key = career_url.casefold().rstrip('/') or name.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            companies.append({
+                'raw_name': raw_name,
+                'name': name,
+                'description': '',
+                'location': (row.get('Location') or '').strip(),
+                'career_url': career_url,
+                'thread_url': (row.get('Thread Reply Link') or '').strip(),
+                'source_file': Path(file_path).name,
+            })
         return companies
     
     def normalize_name(self, raw_name: str) -> str:

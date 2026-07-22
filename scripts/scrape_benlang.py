@@ -26,14 +26,17 @@ logger = logging.getLogger("BenLangScraper")
 async def scrape_benlang_companies():
     db = get_db()
     
-    # Get companies from collection
-    collection = db.collections.find_one({'id': 'ben-lang-feb-2024'})
-    if not collection:
-        logger.error("Collection not found!")
-        return
-        
-    company_names = collection['data']['companies']
-    logger.info(f"Targets: {len(company_names)} companies from Ben Lang collection")
+    # Ben Lang is a source on the unified companies collection, not a separate
+    # company-name snapshot in collections.
+    companies = list(db.companies.find({
+        '$or': [
+            {'metadata.source_records': {'$elemMatch': {'source': 'benlang'}}},
+            {'metadata.source': 'benlang'},
+            {'metadata.benlang.source': 'benlang'},
+        ],
+        'is_active': {'$ne': False},
+    }))
+    logger.info(f"Targets: {len(companies)} companies from unified company list")
     
     # Initialize scrapers
     scrapers = {
@@ -45,12 +48,9 @@ async def scrape_benlang_companies():
     
     semaphore = asyncio.Semaphore(5)  # Concurrency limit
     
-    async def process_company(name):
+    async def process_company(company):
         async with semaphore:
-            company = db.companies.find_one({'name': name})
-            if not company:
-                logger.warning(f"Company {name} not found in DB")
-                return
+            name = company['name']
             
             # Correcting data mapping issue from import_benlang.py
             # The importer swapped fields:
@@ -163,7 +163,7 @@ async def scrape_benlang_companies():
             except Exception as e:
                 logger.error(f"Error scraping {name}: {e}")
 
-    tasks = [process_company(name) for name in company_names]
+    tasks = [process_company(company) for company in companies]
     await asyncio.gather(*tasks)
 
 if __name__ == '__main__':

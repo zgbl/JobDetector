@@ -44,6 +44,8 @@ Stores job postings scraped from various sources.
 
 ### 4. `companies`
 Stores metadata about tracked companies.
+
+The `metadata.source_records` array stores provenance from multiple company lists without creating duplicate company documents. Each record includes a `source` (for example `benlang`), stable `source_id`, source-specific links, location, and source filename.
 - **_id**: ObjectId
 - **name**: `String`
 - **domain**: `String`

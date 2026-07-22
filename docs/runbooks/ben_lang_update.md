@@ -1,6 +1,6 @@
 # Runbook: Updating "Ben Lang's List" Collection
 
-Use this guide to manually update the "Ben Lang's $100M+ Raises" collection on your local machine when Ben posts a new list on LinkedIn.
+Use this guide to manually update the Ben Lang collection when Ben publishes a new Google Sheet list.
 
 ## Prerequisites
 - Terminal open at project root (`/Users/tuxy/Codes/Github2/JobDetector`)
@@ -9,21 +9,18 @@ Use this guide to manually update the "Ben Lang's $100M+ Raises" collection on y
 ## Step-by-Step Guide
 
 ### 1. Update the Source Data
-1. Go to [Ben Lang's LinkedIn Activity](https://www.linkedin.com/in/benmlang/recent-activity/all/).
-2. Copy the text of his latest posts (lists of companies).
-3. Open the source file:
+1. Download the Google Sheet as CSV.
+2. Save it under:
    ```bash
-   code data/ImportList/BenLang.txt
+   data/benlang/google_sheets/
    ```
-4. **Append** the new text to the bottom of the file (or replace it if you want a fresh start, but appending preserves history).
-5. Save the file.
+   Keep prior CSV files in this directory. The old `data/ImportList/BenLang.txt` remains supported.
 
 ### 2. Clean & Deduplicate
-Since Ben often reposts or overlaps lists, run the cleaner to remove duplicates and normalize format:
+The importer deduplicates overlapping CSV files by career link or normalized company name:
 ```bash
-python3 scripts/clean_benlang_list.py
+python3 scripts/import_benlang.py --dry-run
 ```
-*Output will show how many duplicate companies were removed.*
 
 ### 3. Import & Discovery (Async)
 Run the importer to find career sites and identify ATS systems for new companies. This script also updates the Collection record in the database.
@@ -31,7 +28,7 @@ Run the importer to find career sites and identify ATS systems for new companies
 python3 scripts/import_benlang.py
 ```
 *This runs in parallel (Async) and should take 1-2 minutes for hundreds of companies.*
-*Look for "✅ Imported" messages for new discoveries.*
+*Ben Lang is stored as a source record inside the unified `companies` collection. Career links, thread links, source filenames, and import identifiers are kept in `metadata.source_records`; no separate company-name collection is updated.*
 
 ### 4. Fetch Jobs (Scraping)
 The import step only finds *where* to scrape. To actually populate the jobs, run the scraper:

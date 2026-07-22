@@ -61,6 +61,36 @@ class BenLangImporter:
                 }
         
         return None
+
+    def benlang_metadata(self, company_data: Dict) -> Dict:
+        record = {
+            'source': 'benlang',
+            'raw_name': company_data.get('raw_name', company_data['name']),
+            'location': company_data.get('location', ''),
+        }
+        for key in ('career_url', 'thread_url', 'source_file'):
+            if company_data.get(key):
+                record[key] = company_data[key]
+        record['source_id'] = (record.get('career_url') or company_data['name']).casefold().rstrip('/')
+        return record
+
+    def career_info_for(self, company_data: Dict) -> Optional[Dict]:
+        url = company_data.get('career_url')
+        if url:
+            domain = re.sub(r'^https?://', '', url).split('/')[0]
+            return {'domain': domain, 'career_url': url, 'source': 'google_sheet'}
+        return self.find_career_site(company_data['name'])
+
+    def mark_existing(self, existing: Dict, company_data: Dict) -> None:
+        if not self.dry_run and self.db is not None:
+            self.db.companies.update_one(
+                {'_id': existing['_id']},
+                {'$set': {
+                    'metadata.last_benlang_imported_at': datetime.utcnow(),
+                }, '$addToSet': {
+                    'metadata.source_records': self.benlang_metadata(company_data),
+                }}
+            )
     
     def check_existing_company(self, company_name: str) -> Optional[Dict]:
         """Check if company already exists in database"""
@@ -89,6 +119,7 @@ class BenLangImporter:
             # Check if already exists (Sync DB call - okay for now or use ThreadPool if strict)
             existing = self.check_existing_company(company_name)
             if existing:
+                self.mark_existing(existing, company_data)
                 return {
                     'name': company_name,
                     'status': 'exists',
@@ -97,7 +128,7 @@ class BenLangImporter:
                 }
             
             # Find career site (Sync logic but fast/CPU bound)
-            career_info = self.find_career_site(company_name)
+            career_info = self.career_info_for(company_data)
             if not career_info:
                 return {
                     'name': company_name,
@@ -132,8 +163,7 @@ class BenLangImporter:
                     'size': 'startup',
                     'industry': company_data.get('description', ''),
                     'location': company_data.get('location', ''),
-                    'source': 'benlang',
-                    'raw_name': company_data.get('raw_name', company_name)
+                    'source_records': [self.benlang_metadata(company_data)],
                 },
                 'stats': {
                     'active_jobs': 0,
@@ -225,6 +255,7 @@ class BenLangImporter:
         # Check if already exists
         existing = self.check_existing_company(company_name)
         if existing:
+            self.mark_existing(existing, company_data)
             # print(f"ℹ️  Skipping {company_name} (Exists)")
             return {
                 'name': company_name,
@@ -234,7 +265,7 @@ class BenLangImporter:
             }
         
         # Find career site
-        career_info = self.find_career_site(company_name)
+        career_info = self.career_info_for(company_data)
         if not career_info:
             print(f"⚠️  No career site pattern for {company_name}")
             return {
@@ -270,8 +301,7 @@ class BenLangImporter:
                 'size': 'startup',
                 'industry': company_data.get('description', ''),
                 'location': company_data.get('location', ''),
-                'source': 'benlang',
-                'raw_name': company_data.get('raw_name', company_name)
+                'source_records': [self.benlang_metadata(company_data)],
             },
             'stats': {
                 'active_jobs': 0,
@@ -304,19 +334,42 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Import Ben Lang companies')
-    parser.add_argument('--file', default='BenLang.txt', help='Input file name')
+    parser.add_argument('--file', default=None, help='Input file path or legacy filename')
+    parser.add_argument('--dir', default=None, help='Directory containing Google Sheet CSV exports')
     parser.add_argument('--dry-run', action='store_true', help='Dry run mode (no DB writes)')
     args = parser.parse_args()
     
     # Parse companies
-    file_path = Path(__file__).parent.parent / 'data' / 'ImportList' / args.file
-    if not file_path.exists():
-        print(f"❌ File not found: {file_path}")
+    project_root = Path(__file__).parent.parent
+    if args.file:
+        file_path = Path(args.file)
+        if not file_path.is_absolute():
+            file_path = project_root / 'data' / 'ImportList' / args.file
+        input_files = [file_path]
+    else:
+        source_dir = Path(args.dir) if args.dir else project_root / 'data' / 'benlang' / 'google_sheets'
+        input_files = sorted(source_dir.glob('*.csv'))
+        # Also accept existing downloads kept directly under data/benlang.
+        if not args.dir:
+            input_files += sorted((project_root / 'data' / 'benlang').glob('*.csv'))
+        legacy_file = project_root / 'data' / 'ImportList' / 'BenLang.txt'
+        if legacy_file.exists():
+            input_files.append(legacy_file)
+    missing = [path for path in input_files if not path.exists()]
+    if missing or not input_files:
+        print(f"❌ No Ben Lang source files found: {missing or input_files}")
         return 1
-    
-    print(f"📋 Parsing companies from {args.file}...")
+
+    print(f"📋 Parsing {len(input_files)} Ben Lang source file(s)...")
     benlang_parser = BenLangParser()
-    companies = benlang_parser.parse_file(str(file_path))
+    companies = []
+    seen_keys = set()
+    for input_file in input_files:
+        for company in benlang_parser.parse_file(str(input_file)):
+            key = (company.get('career_url') or company['name']).strip().casefold().rstrip('/')
+            if key not in seen_keys:
+                seen_keys.add(key)
+                companies.append(company)
     # Reverse the order so new companies (at the bottom of the file) are processed first
     companies.reverse()
     
@@ -343,24 +396,8 @@ def main():
     print(f"❌ Failed: {results['failed']}")
     print(f"Success rate: {(results['imported'] / results['total'] * 100):.1f}%")
 
-    # Update Collection
-    if not args.dry_run:
-        db = get_db()
-        valid_companies = [r['name'] for r in results['companies'] if r['status'] in ('imported', 'exists')]
-        
-        if valid_companies:
-            print(f"\n📚 Updating 'ben-lang-feb-2024' collection with {len(valid_companies)} companies...")
-            db.collections.update_one(
-                {'id': 'ben-lang-feb-2024'},
-                {'$set': {
-                    'name': "Ben Lang's List",
-                    'data.companies': valid_companies, 
-                    'updated_at': datetime.utcnow(),
-                    'count': len(valid_companies)
-                }},
-                upsert=True
-            )
-            print("✅ Collection updated")
+    # Ben Lang records live in the unified companies collection. The old
+    # collections snapshot is intentionally no longer updated.
     
     # Generate CSV Report
     report_path = Path(__file__).parent.parent / 'data' / 'ImportList' / 'benlang_import_report.csv'
