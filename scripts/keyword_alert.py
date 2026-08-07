@@ -31,12 +31,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Logging ───────────────────────────────────────────────────────────────────
+LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("logs/keyword_alert.log", mode="a"),
+        logging.FileHandler(os.path.join(LOG_DIR, "keyword_alert.log"), mode="a"),
     ],
 )
 log = logging.getLogger(__name__)
