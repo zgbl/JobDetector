@@ -41,7 +41,7 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
-          run: python scripts/import_benlang.py
+        run: python scripts/import_benlang.py
 
       - name: Run production scraper
         id: prod_scraper
