@@ -157,6 +157,7 @@ ATS_SOURCES = (
     "recruitee",
     "personio",
     "teamtailor",
+    "bamboohr",
     "careers_page",
 )
 

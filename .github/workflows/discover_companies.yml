@@ -1,0 +1,75 @@
+name: Discover New Companies
+
+# Harvests companies that are not in the database yet and stages them in the
+# `company_candidates` collection. This job NEVER approves or scrapes anything —
+# a human reviews the candidates with scripts/review_candidates.py first.
+on:
+  schedule:
+    # Weekly, Monday 03:00 UTC (HN "Who is hiring?" threads are monthly).
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Sources: hn, yc or hn,yc'
+        required: false
+        default: 'hn'
+      months:
+        description: 'How many recent HN hiring threads'
+        required: false
+        default: '2'
+      max_resolve:
+        description: 'Max candidates to run through ATS resolution'
+        required: false
+        default: '80'
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Discover companies (staged, not scraped)
+        id: discover
+        continue-on-error: true
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+        run: |
+          python scripts/discover_companies.py \
+            --source "${{ github.event.inputs.source || 'hn' }}" \
+            --months "${{ github.event.inputs.months || '2' }}" \
+            --max-resolve "${{ github.event.inputs.max_resolve || '80' }}" \
+            --workers 10 \
+            --min-jobs 2 \
+            --min-relevance 2
+
+      - name: Candidate summary
+        if: always()
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+        run: |
+          python scripts/review_candidates.py --stats || true
+          {
+            echo "## Company discovery"
+            echo ""
+            echo "Candidates are staged with status \`pending\`. Nothing is scraped until approved:"
+            echo ""
+            echo '```'
+            echo "python scripts/review_candidates.py --list --min-jobs 5"
+            echo "python scripts/review_candidates.py --approve-all --min-jobs 5 --min-relevance 4"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

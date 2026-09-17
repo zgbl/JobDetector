@@ -24,6 +24,8 @@ Automated job scraping and notification system that monitors company career webs
 | Web UI — paste a link, get the verdict | `/verify.html` | this file |
 | Live annotation in the browser | `extension/` | [extension/README.md](extension/README.md) |
 | Bulk re-check — deactivate postings whose source is gone | `scripts/verify_active_jobs.py` | [docs/SOURCE_VERIFICATION.md](docs/SOURCE_VERIFICATION.md) §6 |
+| Auto-discover companies that are not in the DB yet (staged for review) | `scripts/discover_companies.py` | [docs/COMPANY_DISCOVERY.md](docs/COMPANY_DISCOVERY.md) |
+| Review / approve discovered candidates | `scripts/review_candidates.py` | [docs/COMPANY_DISCOVERY.md](docs/COMPANY_DISCOVERY.md) §4 |
 
 ```bash
 # Verify one posting (this is what the extension calls)
@@ -38,6 +40,13 @@ python scripts/verify_active_jobs.py --limit 200 --dry-run
 # Engine health check against the real ATS APIs
 python scripts/verify_source_smoke.py
 pytest tests/ -q
+```
+
+```bash
+# Grow the company list: harvest + resolve, staged for human review
+python scripts/discover_companies.py --source hn --months 2 --min-jobs 2 --min-relevance 2
+python scripts/review_candidates.py --list --min-jobs 5
+python scripts/review_candidates.py --approve-all --min-jobs 5 --min-relevance 4
 ```
 
 > API responses carry both `reason` (Chinese, used by the extension) and

@@ -207,6 +207,13 @@ _REASON_EN_RULES: List[Tuple[str, str]] = [
 
     # -- Breezy / Recruitee / Personio / Teamtailor ------------------------
     (r"^无法解析 Breezy 子域名$", "Could not resolve the Breezy subdomain"),
+    (r"^无法解析 BambooHR 子域名$", "Could not resolve the BambooHR subdomain"),
+    (r"^BambooHR board 不存在$", "The BambooHR board does not exist"),
+    (r"^BambooHR 源头仍在招该岗位$", "BambooHR still lists this posting as open"),
+    (r"^BambooHR 源头已无此岗位（当前在招 (\d+) 个）$",
+     r"BambooHR no longer lists this posting (\1 roles currently open)"),
+    (r"^仅校验到 BambooHR board 存在（(\d+) 个在招岗位）$",
+     r"BambooHR board exists (\1 open roles)"),
     (r"^无法解析 Recruitee 子域名$", "Could not resolve the Recruitee subdomain"),
     (r"^无法解析 Personio 子域名$", "Could not resolve the Personio subdomain"),
     (r"^无法解析 Teamtailor 子域名$", "Could not resolve the Teamtailor subdomain"),
@@ -313,6 +320,7 @@ BREEZY_RE = re.compile(r"\.breezy\.hr", re.I)
 RECRUITEE_RE = re.compile(r"\.recruitee\.com", re.I)
 PERSONIO_RE = re.compile(r"\.jobs\.personio\.(?:de|com)", re.I)
 TEAMTAILOR_RE = re.compile(r"\.teamtailor\.com", re.I)
+BAMBOOHR_RE = re.compile(r"\.bamboohr\.com", re.I)
 
 
 REDIRECT_PARAMS = ("url", "u", "target", "redirect", "redirect_url", "dest", "destination", "to")
@@ -328,6 +336,7 @@ _ANY_ATS_RE = re.compile(
         r"\.recruitee\.com",
         r"\.jobs\.personio\.(?:de|com)",
         r"\.teamtailor\.com",
+        r"\.bamboohr\.com",
     ]),
     re.I,
 )
@@ -533,6 +542,17 @@ def identify(url: str) -> Dict[str, Any]:
         parts = [p for p in parsed.path.split("/") if p]
         if len(parts) > 1 and parts[0] == "job":
             ref["job_id"] = parts[1]
+        return ref
+
+    # --- BambooHR ---------------------------------------------------------
+    if BAMBOOHR_RE.search(ref["host"]):
+        ref["ats"] = "bamboohr"
+        ref["token"] = ref["host"].split(".")[0]
+        parts = [p for p in parsed.path.split("/") if p]
+        if len(parts) > 1 and parts[0] in ("careers", "jobs"):
+            ref["job_id"] = parts[1]
+        elif "id" in query:
+            ref["job_id"] = (query.get("id") or [None])[0]
         return ref
 
     # --- Teamtailor -------------------------------------------------------
@@ -1143,6 +1163,52 @@ class SourceVerifier:
             out.reason = f"仅校验到 Personio board 存在（{len(ids)} 个岗位）"
             return
         out.reason = f"Personio feed 请求异常 (HTTP {code})"
+
+    # -- BambooHR ----------------------------------------------------------
+    def _check_bamboohr(self, ref: Dict[str, Any], out: VerifyResult, **_: Any) -> None:
+        token, job_id = ref.get("token"), ref.get("job_id")
+        if not token:
+            out.reason = "无法解析 BambooHR 子域名"
+            return
+        board = f"https://{token}.bamboohr.com"
+        out.canonical_url = f"{board}/careers/{job_id}" if job_id else f"{board}/careers"
+        data, code = self.http.get_json(f"{board}/careers/list")
+        out.http_status = code
+        if code != 200 or not isinstance(data, dict):
+            if code in (404, 410):
+                out.status = STATUS_CLOSED
+                out.confidence = 0.75
+                out.reason = "BambooHR board 不存在"
+            else:
+                out.reason = f"BambooHR 请求异常 (HTTP {code})"
+            return
+
+        jobs = data.get("result") or []
+        if not isinstance(jobs, list):
+            jobs = []
+        if not job_id:
+            out.status = STATUS_OPEN
+            out.confidence = 0.4
+            out.reason = f"仅校验到 BambooHR board 存在（{len(jobs)} 个在招岗位）"
+            return
+        match = next(
+            (j for j in jobs if isinstance(j, dict) and str(j.get("id")) == str(job_id)), None
+        )
+        if match:
+            out.status = STATUS_OPEN
+            out.confidence = 0.9
+            out.reason = "BambooHR 源头仍在招该岗位"
+            out.matched_title = str(match.get("jobOpeningName") or "")
+            location = match.get("location") or {}
+            if isinstance(location, dict):
+                out.location = ", ".join(
+                    str(v) for v in (location.get("city"), location.get("state"), location.get("country")) if v
+                )
+            out.apply_url = f"{board}/careers/{job_id}"
+            return
+        out.status = STATUS_CLOSED
+        out.confidence = 0.9
+        out.reason = f"BambooHR 源头已无此岗位（当前在招 {len(jobs)} 个）"
 
     # -- Teamtailor --------------------------------------------------------
     def _check_teamtailor(self, ref: Dict[str, Any], out: VerifyResult, **_: Any) -> None:

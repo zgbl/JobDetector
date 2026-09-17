@@ -19,6 +19,7 @@ from src.scrapers.greenhouse import GreenhouseScraper
 from src.scrapers.lever import LeverScraper
 from src.scrapers.workday import WorkdayScraper
 from src.scrapers.ashby import AshbyScraper
+from src.scrapers.bamboohr import BambooHRScraper
 from src.scrapers.breezy import BreezyScraper
 from src.scrapers.workable import WorkableScraper
 from src.scrapers.wellfound import WellfoundScraper
@@ -61,6 +62,8 @@ async def scrape_company(company, scrapers, db, semaphore):
                 ats_type = 'wellfound'
             elif 'breezy.hr' in ats_url:
                 ats_type = 'breezy'
+            elif 'bamboohr.com' in ats_url:
+                ats_type = 'bamboohr'
                 
         # 2. Fallback to configured type
         if not ats_type:
@@ -165,6 +168,7 @@ async def run_production_scrape():
         'workday': WorkdayScraper(),
         'ashby': AshbyScraper(),
         'breezy': BreezyScraper(),
+        'bamboohr': BambooHRScraper(),
         'workable': WorkableScraper(),
         'wellfound': WellfoundScraper(),
     }
