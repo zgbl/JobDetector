@@ -126,6 +126,15 @@ async def read_about():
     return "<h1>Page not found</h1>"
 
 
+@app.get("/verify.html", response_class=HTMLResponse)
+async def read_verify():
+    """Public web UI for the source-verification engine (extension-free entry point)."""
+    verify_file = project_root_path / "verify.html"
+    if verify_file.exists():
+        return verify_file.read_text()
+    return "<h1>Page not found</h1>"
+
+
 
 @app.get("/api/health")
 async def health_check():
