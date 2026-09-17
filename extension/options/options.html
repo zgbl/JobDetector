@@ -1,64 +1,64 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>JobDetector 设置</title>
+    <title>JobDetector Settings</title>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
     <main class="jd-page">
-      <h1>JobDetector 设置</h1>
+      <h1>JobDetector Settings</h1>
       <p class="jd-lead">
-        在 LinkedIn / Indeed 职位页面上自动校验雇主 ATS 的原始岗位是否仍在招聘。
+        Automatically check whether the employer's original ATS posting is still open while you browse job pages on LinkedIn / Indeed.
       </p>
 
       <section class="jd-card">
-        <h2>后端服务</h2>
+        <h2>Backend</h2>
         <label class="jd-field">
-          <span class="jd-label">后端地址（backendBaseUrl）</span>
+          <span class="jd-label">Backend URL</span>
           <input id="backendBaseUrl" type="url" placeholder="https://jobdetector.blackrice.top" />
         </label>
         <div class="jd-inline">
-          <button id="testConnection" type="button" class="jd-btn">测试连接</button>
+          <button id="testConnection" type="button" class="jd-btn">Test connection</button>
           <span id="testResult" class="jd-test-result"></span>
         </div>
       </section>
 
       <section class="jd-card">
-        <h2>校验行为</h2>
+        <h2>Check behavior</h2>
         <label class="jd-switch">
           <input id="enableLinkedIn" type="checkbox" />
-          <span>在 LinkedIn 职位页启用</span>
+          <span>Enable on LinkedIn</span>
         </label>
         <label class="jd-switch">
           <input id="enableIndeed" type="checkbox" />
-          <span>在 Indeed 职位页启用</span>
+          <span>Enable on Indeed</span>
         </label>
         <label class="jd-switch">
           <input id="autoVerify" type="checkbox" />
-          <span>打开职位页时自动校验</span>
+          <span>Auto-verify on page load</span>
         </label>
         <label class="jd-switch">
           <input id="showGhostButton" type="checkbox" />
-          <span>显示「Ghost Job 风险分析」按钮</span>
+          <span>Show ghost-job button</span>
         </label>
         <label class="jd-field">
-          <span class="jd-label">缓存有效期（小时）</span>
+          <span class="jd-label">Cache TTL (hours)</span>
           <input id="cacheTtlHours" type="number" min="1" max="168" step="1" />
-          <span class="jd-hint">默认 12 小时；已关闭 / 无法判定的结果按一半时间缓存。</span>
+          <span class="jd-hint">Default 12 hours; closed / undetermined results are cached for half that time.</span>
         </label>
       </section>
 
       <section class="jd-card">
-        <h2>本地数据</h2>
+        <h2>Local data</h2>
         <div class="jd-inline">
-          <button id="clearCache" type="button" class="jd-btn">清空本地缓存</button>
+          <button id="clearCache" type="button" class="jd-btn">Clear local cache</button>
           <span id="clearResult" class="jd-test-result"></span>
         </div>
       </section>
 
       <div class="jd-actions">
-        <button id="save" type="button" class="jd-btn jd-btn--primary">保存</button>
+        <button id="save" type="button" class="jd-btn jd-btn--primary">Save</button>
       </div>
 
       <div id="toast" class="jd-toast" role="status" aria-live="polite"></div>

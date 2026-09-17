@@ -1,177 +1,215 @@
-# JobDetector — 岗位源头校验（Chrome 扩展）
+# JobDetector — Job Source Check (Chrome extension)
 
-在 LinkedIn / Indeed 浏览职位时，自动去**雇主自己的 ATS**（Greenhouse / Lever / Ashby /
-Workable / SmartRecruiters / Workday / Breezy / Recruitee 等）校验**原始岗位是否仍在招聘**，
-把结果以一个徽章直接标注在职位标题旁边。
+While you browse jobs on LinkedIn / Indeed, it automatically checks the
+**employer's own ATS** (Greenhouse / Lever / Ashby / Workable / SmartRecruiters /
+Workday / Breezy / Recruitee, …) to see whether the **original posting is still
+open**, and annotates the result with a badge right next to the job title.
 
-- 源头还在招 → 可以放心投递
-- 源头已关闭 → 这个岗位很可能只是 LinkedIn / Indeed 上的僵尸岗位，**无需投递**
-- 无法判定 → 网络、反爬或页面结构问题
+- Still open at the source → safe to apply
+- Closed at the source → this is probably a zombie posting on LinkedIn / Indeed, **don't apply**
+- Can't determine → network, bot protection or page-structure problem
 
-除此之外还提供两个能力：**直达源头投递**（跳过中间平台，直接打开 ATS 申请页）和
-**Ghost Job 风险分析**（按需调用你自己的后端 LLM 服务，给出幽灵岗位风险分）。
-
----
-
-## 1. 安装（Load unpacked）
-
-1. 打开 Chrome，访问 `chrome://extensions`
-2. 右上角打开 **开发者模式**
-3. 点击 **加载已解压的扩展程序**
-4. 选择本仓库的 `extension/` 目录（即本 README 所在目录）
-5. 打开任意 LinkedIn / Indeed 职位页，职位标题右侧会出现徽章
-
-无需构建、无需 npm、无第三方依赖：所有代码都是 Chrome 直接加载的普通 ES Module。
-
-> 若徽章没出现：确认页面是 `linkedin.com/jobs/*` 或 `indeed.com/viewjob*`，
-> 然后在 `chrome://extensions` 里点一次「重新加载」并刷新页面。
+It also offers two extra capabilities: **Apply at the source** (skip the
+aggregator and open the ATS application page directly) and
+**Ghost job risk analysis** (calls your own backend LLM service on demand and
+returns a ghost-job risk score).
 
 ---
 
-## 2. 徽章含义
+## 1. Install (Load unpacked)
 
-| 徽章 | 含义 |
+1. Open Chrome and go to `chrome://extensions`
+2. Turn on **Developer mode** in the top right
+3. Click **Load unpacked**
+4. Select this repository's `extension/` folder (the folder containing this README)
+5. Open any LinkedIn / Indeed job page — the badge appears next to the job title
+
+No build step, no npm, no third-party dependencies: every file is a plain ES
+Module that Chrome loads directly.
+
+> If the badge does not appear: confirm the page is `linkedin.com/jobs/*` or
+> `indeed.com/viewjob*`, then click "Reload" once on `chrome://extensions` and
+> refresh the page.
+
+---
+
+## 2. Badge legend
+
+| Badge | Meaning |
 | --- | --- |
-| `校验中…` | 正在请求后端 / 本地校验 |
-| `🟢 源头在招` | 源头 ATS 明确返回该岗位仍在招 |
-| `⚠️ 源头已关闭 · 无需投递` | 源头 ATS 已下架该岗位（404 / board 列表无此 ID / 截止日期已过） |
-| `❓ 无法判定` | 无法访问或无法解释源头响应 |
-| `🟠 后端不可用（本地校验）` | 后端请求失败，结果由扩展内置的本地校验产生（置信度通常更低） |
+| `Checking…` | Requesting the backend / running the local check |
+| `🟢 Open at the source` | The source ATS explicitly reports this posting as still open |
+| `⚠️ Closed at the source · don't apply` | The source ATS has taken the posting down (404 / id missing from the board list / closing date passed) |
+| `❓ Can't determine` | The source could not be reached or its response could not be interpreted |
+| `🟠 Backend unreachable (checked locally)` | The backend request failed and the result came from the extension's built-in local checker (usually lower confidence) |
 
-点击徽章展开详情卡片：
+Click the badge to expand the detail card:
 
-- **原因**：人类可读的判定理由（与后端返回的 `reason` 一致）
-- **源头**：识别到的 ATS 名称
-- **源头链接**：`canonical_url`
-- **直达源头投递 →**：在新标签页打开 `apply_url`（`rel="noopener"`）
-- **Ghost Job 风险分析**：调用 `POST /api/ghost/analyze`，展示 `one_liner`、`ghost_score`、
-  `risk_factors[]`、`recommendation`。后端不可用时该按钮会被禁用并提示「需要后端服务」。
+- **Verdict**: a human-readable reason (identical to the backend's `reason_en`)
+- **Source**: the recognised ATS name
+- **Source link**: `canonical_url`
+- **Apply at the source →**: opens `apply_url` in a new tab (`rel="noopener"`)
+- **Ghost job risk analysis**: calls `POST /api/ghost/analyze` and shows `one_liner`,
+  `ghost_score`, `risk_factors[]`, `recommendation`. When the backend is
+  unavailable the button is disabled with the tooltip "Backend required".
 
-工具栏图标上的角标：`✓`（绿色，在招）/ `!`（红色，已关闭）/ `?`（灰色，无法判定）。
+Toolbar badge on the extension icon: `✓` (green, open) / `!` (red, closed) /
+`?` (grey, can't determine).
 
 ---
 
-## 3. 后端 HTTP 契约
+## 3. Backend HTTP contract
 
-默认后端地址 `https://jobdetector.blackrice.top`，可在设置页修改
-（`chrome.storage.sync` → `settings.backendBaseUrl`）。所有接口均为 CORS 开放
-（`Access-Control-Allow-Origin: *`）。
+The default backend URL is `https://jobdetector.blackrice.top` and can be changed
+on the settings page (`chrome.storage.sync` → `settings.backendBaseUrl`). All
+endpoints are CORS-open (`Access-Control-Allow-Origin: *`).
 
-| 方法 | 路径 | 请求 | 响应 |
+| Method | Path | Request | Response |
 | --- | --- | --- | --- |
 | POST | `/api/verify/source` | `{urls: string[], company, title, location, refresh: bool}` | `{count, results: VerifyResult[], lookup: VerifyResult \| null}` |
 | POST | `/api/verify/lookup` | `{company, title}` | `{result: VerifyResult \| null}` |
-| POST | `/api/ghost/analyze` | `{job_title, company_name, post_age_days: number\|null, source_type, jd_text, source_status}` | `{ghost_score, is_ghost_job, risk_factors[], recommendation, one_liner, provider, cached}` |
-| GET | `/api/health` | — | `{"status": "ok", ...}`（设置页「测试连接」使用） |
+| POST | `/api/ghost/analyze` | `{job_title, company_name, post_age_days: number\|null, source_type, jd_text, source_status, lang: 'en'}` | `{ghost_score, is_ghost_job, risk_factors[], recommendation, one_liner, provider, cached}` |
+| GET | `/api/health` | — | `{"status": "ok", ...}` (used by "Test connection" on the settings page) |
 
-`VerifyResult`（所有字段始终存在，未知取空字符串 / `null`）：
+`VerifyResult` (every field is always present; unknown values are an empty string / `null`):
 
 ```
-{ input_url, status: "open"|"closed"|"unknown", ats, confidence: 0..1, reason,
+{ input_url, status: "open"|"closed"|"unknown", ats, confidence: 0..1, reason, reason_en,
   canonical_url, apply_url, matched_title, company, location, posted_at,
   http_status: int|null, checked_at: ISO8601, elapsed_ms: int, cached: bool }
 ```
 
-`/api/verify/source` 的 `lookup` 是后端的兜底结果：当页面里没有找到 ATS 链接时，
-后端会用自己的公司库按 `company + title` 反查，可能是 `null`。
+The response always carries both `reason` (Chinese) and `reason_en` (English);
+the extension displays `reason_en` whenever it is available.
 
-### 请求流程
+`lookup` in `/api/verify/source` is the backend's fallback: when no ATS link was
+found on the page, the backend reverse-looks-up `company + title` in its company
+index, and may be `null`.
 
-1. 内容脚本抓取职位标题、公司、地点、页面上**所有**指向 ATS 的外链
-   （含 `a[href]`、内嵌 JSON `<script>`、`data-*` 属性；Indeed 额外解析 `#applyJobLinkContainer a`）。
-2. 后台 `POST /api/verify/source`（`AbortController` 超时 8s）。
-3. 成功 → 取 `results` + `lookup`，按 `open > closed > unknown`、再按 `confidence` 选最佳结果。
-4. 失败（网络错误 / 超时 / 未配置后端）→ 回退到本地校验，并在返回载荷里标记 `degraded: true`。
+### Request flow
 
-### 本地（离线）校验覆盖范围
+1. The content script scrapes the job title, company, location and **all**
+   outbound ATS links on the page (including `a[href]`, embedded JSON `<script>`
+   tags and `data-*` attributes; for Indeed it additionally parses
+   `#applyJobLinkContainer a`).
+2. The background worker calls `POST /api/verify/source` (`AbortController`
+   timeout 8s).
+3. On success → combine `results` + `lookup` and pick the best result by
+   `open > closed > unknown`, then by `confidence`.
+4. On failure (network error / timeout / no backend configured) → fall back to
+   the local checker and mark the payload `degraded: true`.
 
-`lib/ats.js` 的 `verifyLocal()` 不依赖后端，覆盖：
+### Local (offline) verification coverage
 
-- **Greenhouse**：`GET boards-api.greenhouse.io/v1/boards/{token}/jobs/{id}`，
-  200 = 在招；404/410 时再查 board 列表二次确认（列表里有 = unlisted job post，无 = 已关闭）
-- **Lever**：`GET api.lever.co/v0/postings/{token}/{id}`，404 时回退 board 列表比对
-- **Ashby**：`GET api.ashbyhq.com/posting-api/job-board/{org}`，在 `jobs[]` 中按 `id` 匹配
-- **通用页面探针**：HTTP 状态码（404/410 = 已关闭）+ 失效提示文案 + 是否被重定向到列表页
+`verifyLocal()` in `lib/ats.js` does not need the backend and covers:
 
-其它 ATS（Workable / SmartRecruiters / Workday / Breezy / Recruitee 等）只在
-**后端可用**时校验；后端不可用时它们会返回「无法判定」。
+- **Greenhouse**: `GET boards-api.greenhouse.io/v1/boards/{token}/jobs/{id}`,
+  200 = open; on 404/410 it re-checks the board list (present = unlisted job post,
+  absent = closed)
+- **Lever**: `GET api.lever.co/v0/postings/{token}/{id}`, on 404 it falls back to
+  comparing against the board list
+- **Ashby**: `GET api.ashbyhq.com/posting-api/job-board/{org}`, matched by `id`
+  inside `jobs[]`
+- **Generic page probe**: HTTP status code (404/410 = closed) + expired-posting
+  notice phrases + whether the URL was redirected to a listing page
 
----
-
-## 4. 缓存模型
-
-- 存储位置：`chrome.storage.local`，键 `jd_cache_v1`
-- 缓存键：可识别来源时用 `ats|token|jobId`，否则用规范化后的 URL
-- TTL（后台常量，位于 `background.js` 顶部）：
-  - `open` → **12 小时**（可招聘状态稳定，变化慢）
-  - `closed` / `unknown` → **6 小时**（负面结果更可能变化，比如岗位重新开放）
-  - 若在设置页把 `cacheTtlHours` 改成其它值，则 `open` 用该值，`closed`/`unknown` 用其一半
-- 容量上限 **500 条**，超出时按 `checkedAt` 从旧到新淘汰
-- 点击「重新校验」会带 `refresh: true` **跳过缓存**并刷新该条记录
-
----
-
-## 5. 隐私说明
-
-- 扩展不收集、不上传任何浏览历史或账号信息。
-- 页面抓取（职位标题、公司、地点、外链、JD 文本）**只在本地内存中使用**。
-- 只有在以下两种情况才会向**你自己配置的后端**发起网络请求：
-  1. 自动校验：发送页面 URL 列表 + 公司 + 职位名到 `POST /api/verify/source`
-     （用于判断源头岗位是否还在）；
-  2. 你**手动点击**「Ghost Job 风险分析」：才会把 JD 文本（截断到 6000 字符）
-     发送到 `POST /api/ghost/analyze`。
-- 除此之外，本地 ATS 校验会直接访问 Greenhouse / Lever / Ashby 的公开 job board API。
-- 清空缓存：设置页 →「清空本地缓存」（删除 `jd_cache_v1`）。
+Other ATSs (Workable / SmartRecruiters / Workday / Breezy / Recruitee, …) are only
+checked when the **backend is available**; when the backend is down they return
+"Can't determine".
 
 ---
 
-## 6. 常见问题排查
+## 4. Caching model
 
-**徽章一直显示「🟠 后端不可用（本地校验）」**
-- 检查后端地址是否填写正确（设置页 → 测试连接），应返回 `{"status":"ok"}`。
-- 打开 DevTools Console 看是否有 CORS 报错；后端需允许 `Access-Control-Allow-Origin: *`，
-  并允许 `POST` + `Content-Type: application/json`（预检请求 `OPTIONS` 要返回 204/200）。
-- 自签证书 / HTTPS 证书错误也会导致请求失败。
-
-**徽章不出现**
-- 只有 `linkedin.com/jobs/*`（`/jobs/view/*`、`/jobs/search*`、`/jobs/collections/*`）
-  和 `indeed.com/viewjob*` 会被注入。
-- 在设置页确认对应站点开关是打开的。
-- LinkedIn 是 SPA：扩展已 patch `history.pushState/replaceState`、监听 `popstate`、
-  用 `MutationObserver`（800ms 防抖）+ 2.5s 轮询兜底；若仍不出现请刷新整页。
-
-**LinkedIn / Indeed 改了 DOM 结构**
-- 站点适配器位于 `content/extract.js`。选择器失效时徽章会退化为
-  「❓ 无法判定」或抓不到 JD 文本，但**不会**破坏页面。
-- 修复方式：更新该文件里的 `*_TITLE` / `*_COMPANY` / `*_LOCATION` / `*_JD` 选择器数组即可。
-
-**Ghost 分析按钮是灰的**
-- 说明后端不可用（`degraded`），鼠标悬停会提示「需要后端服务」；
-  修复后端连接后点「重新校验」即可恢复。
+- Storage location: `chrome.storage.local`, key `jd_cache_v1`
+- Cache key: `ats|token|jobId` when the source is identifiable, otherwise the
+  normalized URL
+- TTL (background constants, at the top of `background.js`):
+  - `open` → **12 hours** (a recruitable state is stable and changes slowly)
+  - `closed` / `unknown` → **6 hours** (negative results are more likely to
+    change, for example when a posting is re-opened)
+  - If `cacheTtlHours` is changed on the settings page, `open` uses that value
+    and `closed`/`unknown` use half of it
+- Capacity cap: **500 entries**; when exceeded, the oldest by `checkedAt` are
+  evicted first
+- Clicking "Re-check" sends `refresh: true`, **skips the cache** and refreshes
+  that entry
 
 ---
 
-## 7. 目录结构
+## 5. Privacy
+
+- The extension does not collect or upload any browsing history or account
+  information.
+- Page scraping (job title, company, location, outbound links, JD text) is used
+  **in local memory only**.
+- Network requests to the **backend that you configure yourself** happen in only
+  two cases:
+  1. Automatic verification: the page URL list + company + job title are sent to
+     `POST /api/verify/source` (to decide whether the source posting is still
+     open);
+  2. You **manually click** "Ghost job risk analysis": only then is the JD text
+     (truncated to 6000 characters) sent to `POST /api/ghost/analyze`.
+- Apart from that, local ATS verification talks directly to the public job-board
+  APIs of Greenhouse / Lever / Ashby.
+- Clearing the cache: settings page → "Clear local cache" (deletes `jd_cache_v1`).
+
+---
+
+## 6. Troubleshooting
+
+**The badge always shows "🟠 Backend unreachable (checked locally)"**
+- Check that the backend URL is correct (settings page → Test connection); it
+  should return `{"status":"ok"}`.
+- Open the DevTools Console and look for CORS errors; the backend must allow
+  `Access-Control-Allow-Origin: *` and allow `POST` +
+  `Content-Type: application/json` (the `OPTIONS` preflight must return 204/200).
+- Self-signed certificates / HTTPS certificate errors also make the request fail.
+
+**The badge never appears**
+- Only `linkedin.com/jobs/*` (`/jobs/view/*`, `/jobs/search*`,
+  `/jobs/collections/*`) and `indeed.com/viewjob*` are injected.
+- On the settings page, confirm the toggle for that site is on.
+- LinkedIn is an SPA: the extension patches `history.pushState/replaceState`,
+  listens for `popstate`, and uses a `MutationObserver` (800ms debounce) plus a
+  2.5s polling fallback; if it still does not appear, reload the whole page.
+
+**LinkedIn / Indeed changed their DOM structure**
+- The site adapters live in `content/extract.js`. When a selector breaks, the
+  badge degrades to "❓ Can't determine" or the JD text cannot be scraped, but the
+  page is **never** broken.
+- To fix it: update the `*_TITLE` / `*_COMPANY` / `*_LOCATION` / `*_JD` selector
+  arrays in that file.
+
+**The ghost analysis button is greyed out**
+- This means the backend is unavailable (`degraded`); hovering it shows
+  "Backend required". Once the backend connection is fixed, click "Re-check" to
+  recover.
+
+---
+
+## 7. Directory structure
 
 ```
 extension/
-├── manifest.json          # MV3 清单（无图标、无构建）
-├── background.js          # Service Worker：校验编排、缓存、角标、消息路由
-├── lib/ats.js             # 纯函数：identifyAts / verifyLocal（无 chrome.*，可被 node 测试）
+├── manifest.json          # MV3 manifest (no icons, no build step)
+├── background.js          # Service Worker: verification orchestration, cache, badge, message routing
+├── lib/ats.js             # Pure functions: identifyAts / verifyLocal (no chrome.*, node-testable)
 ├── content/
-│   ├── extract.js         # LinkedIn / Indeed 站点适配器（经典脚本，挂到 globalThis）
-│   ├── content.js         # Shadow DOM 徽章 + 详情卡片 + SPA 导航监听
-│   └── content.css        # 仅宿主元素定位样式
-├── popup/                 # 工具栏弹窗
-├── options/               # 设置页
-└── test/ats.test.mjs      # node --test 单元测试
+│   ├── extract.js         # LinkedIn / Indeed site adapters (classic script, attaches to globalThis)
+│   ├── content.js         # Shadow DOM badge + detail card + SPA navigation listeners
+│   └── content.css        # Host-element positioning styles only
+├── popup/                 # Toolbar popup
+├── options/               # Settings page
+└── test/ats.test.mjs      # node --test unit tests
 ```
 
-运行测试：
+Running the tests:
 
 ```bash
 node --test extension/test/*.test.mjs
 ```
 
-> Node.js 24 起，`node --test` 不再接受「目录」作为参数（`node --test extension/test/`
-> 会报 `Cannot find module .../extension/test`），因此请使用上面的 glob 写法。
+> As of Node.js 24, `node --test` no longer accepts a "directory" argument
+> (`node --test extension/test/` fails with
+> `Cannot find module .../extension/test`), so use the glob form above.

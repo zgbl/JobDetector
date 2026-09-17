@@ -864,7 +864,8 @@
                     post_age_days: els.ghostAge.value === '' ? null : Number(els.ghostAge.value),
                     source_type: current ? (current.ats || 'unknown') : 'unknown',
                     jd_text: els.ghostJd.value.trim(),
-                    source_status: current ? (current.status || 'unknown') : 'unknown'
+                    source_status: current ? (current.status || 'unknown') : 'unknown',
+                    lang: 'en'
                 };
                 els.ghostRunBtn.disabled = true;
                 els.ghostRunBtn.innerHTML = '<span class="spinner"></span>Analyzing…';

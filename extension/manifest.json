@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "JobDetector — 岗位源头校验",
+  "name": "JobDetector — Job Source Check",
   "version": "0.1.0",
-  "description": "在 LinkedIn / Indeed 职位页面上校验雇主 ATS 的原始岗位是否仍在招聘，并提供直达源头投递与 Ghost Job 风险分析。",
+  "description": "Check whether the employer's original ATS posting is still open while browsing job pages on LinkedIn / Indeed, with a direct apply link at the source and ghost-job risk analysis.",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://*.linkedin.com/*",
@@ -35,7 +35,7 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "JobDetector — 岗位源头校验"
+    "default_title": "JobDetector — Job Source Check"
   },
   "options_page": "options/options.html"
 }

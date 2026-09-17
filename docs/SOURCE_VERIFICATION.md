@@ -91,6 +91,9 @@ curl -X POST https://jobdetector.blackrice.top/api/verify/source \
 3. 页面里没有明确的单岗位链接时（Indeed/LinkedIn 站内页很常见），才使用 `lookup` 的结果。
 
 - `results`：对传入的每个候选链接逐一校验。
+- 每条结果都同时带 `reason`（中文，插件用）和 `reason_en`（英文，网页用）。两条语言由
+  `src/services/source_verify.py` 的 `_REASON_EN_RULES` 统一生成，`tests/test_source_verify.py::test_every_reason_has_an_english_rule`
+  会扫描源码里所有中文 reason 字面量，漏翻译直接让 CI 失败。
 - `lookup`：**当 URL 里没有 ATS 信息时（Indeed/LinkedIn 常见）的后备路径**——用公司名+职位名去查：
   1. 先查 JobDetector 自己的 `jobs` 库（我们早就抓过这条岗位，直接拿 `source_url` 复检）；
   2. 再查该公司的实时 ATS board 列表，做标题模糊匹配（token 相似度 ≥ 0.55）；

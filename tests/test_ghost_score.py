@@ -4,6 +4,8 @@ Run: ``pytest tests/test_ghost_score.py -q``
 """
 from __future__ import annotations
 
+import re
+
 from datetime import datetime, timedelta, timezone
 
 from src.services.ghost_score import (
@@ -119,7 +121,7 @@ def test_merge_prefers_llm_but_clamps_bounds():
     verdict = GhostAnalyzer._merge(
         {"ghost_score": 999, "risk_factors": ["x"], "recommendation": "建议忽略",
          "one_liner": "hi", "_provider": "deepseek"},
-        baseline,
+        baseline, "unknown", "zh",
     )
     assert verdict.ghost_score == 100
     assert verdict.provider == "deepseek"
@@ -128,7 +130,92 @@ def test_merge_prefers_llm_but_clamps_bounds():
 
 def test_merge_falls_back_when_llm_fields_missing():
     baseline = heuristic_signals("Eng", "A", 95, "unknown", GHOSTY_JD)
-    verdict = GhostAnalyzer._merge({"ghost_score": "not-a-number"}, baseline)
+    verdict = GhostAnalyzer._merge({"ghost_score": "not-a-number"}, baseline, "unknown", "zh")
     assert verdict.ghost_score == baseline["ghost_score"]
     assert verdict.risk_factors == baseline["risk_factors"]
     assert verdict.one_liner
+
+
+# ---------------------------------------------------------------------------
+# Localisation
+# ---------------------------------------------------------------------------
+CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+
+
+def test_english_output_has_no_cjk():
+    verdict = GhostAnalyzer(provider="heuristic").analyze(
+        job_title="Software Engineer",
+        company_name="Mystery Staffing",
+        post_age_days=95,
+        source_type="unknown",
+        jd_text=GHOSTY_JD,
+        source_status="unknown",
+        lang="en",
+    )
+    assert verdict.lang == "en"
+    assert not CJK_RE.search(verdict.one_liner)
+    assert not CJK_RE.search(verdict.recommendation)
+    assert all(not CJK_RE.search(f) for f in verdict.risk_factors)
+    assert verdict.recommendation_code == "ignore"
+    assert verdict.recommendation == "Ignore it"
+
+
+def test_chinese_is_still_the_default():
+    verdict = GhostAnalyzer(provider="heuristic").analyze(
+        job_title="Software Engineer",
+        company_name="Mystery Staffing",
+        post_age_days=95,
+        source_type="unknown",
+        jd_text=GHOSTY_JD,
+        source_status="unknown",
+    )
+    assert verdict.lang == "zh"
+    assert CJK_RE.search(verdict.one_liner)
+    assert verdict.recommendation == "建议忽略"
+    assert verdict.recommendation_code == "ignore"
+
+
+def test_closed_source_is_localised_both_ways():
+    for lang, expected in (("en", "stale listing"), ("zh", "陈旧挂单")):
+        verdict = GhostAnalyzer(provider="heuristic").analyze(
+            job_title="Eng", company_name="Acme", post_age_days=3,
+            source_type="greenhouse", jd_text=SPECIFIC_JD,
+            source_status="closed", lang=lang,
+        )
+        assert verdict.ghost_score >= 95
+        assert verdict.recommendation_code == "ignore"
+        assert expected in verdict.one_liner
+
+
+def test_every_factor_code_has_both_languages():
+    from src.services.ghost_score import FACTOR_TEXT, RECOMMENDATION_TEXT
+
+    for code, table in FACTOR_TEXT.items():
+        assert table.get("zh"), f"{code} missing zh"
+        assert table.get("en"), f"{code} missing en"
+        assert not CJK_RE.search(table["en"]), f"{code} english text contains CJK"
+    for code, table in RECOMMENDATION_TEXT.items():
+        assert table.get("zh") and table.get("en"), f"{code} incomplete"
+
+
+def test_english_recommendation_codes_are_stable():
+    """The UI must never depend on translated text: codes drive styling."""
+    cases = [
+        (5, "greenhouse", SPECIFIC_JD, "apply"),
+        (45, "unknown", "fast-paced environment, do all assigned tasks", "verify"),
+        (95, "unknown", GHOSTY_JD, "ignore"),
+    ]
+    for days, source, jd, expected in cases:
+        signals = heuristic_signals("Eng", "Acme", days, source, jd, "open", lang="en")
+        assert signals["recommendation_code"] == expected, (days, signals["ghost_score"])
+
+
+def test_merge_maps_localised_labels_back_to_codes():
+    baseline = heuristic_signals("Eng", "Acme", 5, "greenhouse", SPECIFIC_JD, lang="en")
+    verdict = GhostAnalyzer._merge(
+        {"ghost_score": 60, "recommendation": "建议忽略", "risk_factors": ["x"], "one_liner": "y"},
+        baseline, "unknown", "en",
+    )
+    assert verdict.recommendation_code == "ignore"
+    assert verdict.recommendation == "Ignore it"  # rendered in the requested language
+    assert verdict.lang == "en"

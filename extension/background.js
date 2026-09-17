@@ -229,7 +229,7 @@ function pickBest(results) {
 
 function noSourceResult(payload) {
   const result = coerceResult(null, payload && payload.url);
-  result.reason = '未在页面中发现源头 ATS 链接，后端公司库也未匹配到该岗位';
+  result.reason = 'No source information found. Try adding the company name, or paste the employer\'s own apply link.';
   result.confidence = 0;
   return result;
 }
@@ -325,7 +325,7 @@ async function handleVerifyJob(payload = {}) {
 async function handleGhostAnalyze(payload = {}) {
   const settings = await getSettings();
   if (!settings.backendBaseUrl) {
-    return { ok: false, error: '需要后端服务（未配置后端地址）' };
+    return { ok: false, error: 'Backend required (no backend URL configured)' };
   }
   const body = {
     job_title: String(payload.job_title || '').slice(0, 300),
@@ -339,12 +339,13 @@ async function handleGhostAnalyze(payload = {}) {
     source_status: ['open', 'closed', 'unknown'].includes(payload.source_status)
       ? payload.source_status
       : null,
+    lang: 'en',
   };
   try {
     const data = await postJson(`${settings.backendBaseUrl}/api/ghost/analyze`, body, GHOST_TIMEOUT_MS);
     return { ok: true, data };
   } catch (err) {
-    return { ok: false, error: `Ghost Job 分析失败：${err && err.message ? err.message : '后端不可用'}` };
+    return { ok: false, error: `Ghost job analysis failed: ${err && err.message ? err.message : 'backend unavailable'}` };
   }
 }
 
@@ -364,7 +365,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       .catch((err) => {
         const result = coerceResult(null, (message.payload && message.payload.url) || '');
-        result.reason = `校验失败：${err && err.message ? err.message : '未知错误'}`;
+        result.reason = `Check failed: ${err && err.message ? err.message : 'unknown error'}`;
         sendResponse({ ok: false, result, degraded: true, candidates: [], cached: false });
       });
     return true;
@@ -373,7 +374,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (type === 'GHOST_ANALYZE') {
     handleGhostAnalyze(message.payload || {})
       .then(sendResponse)
-      .catch((err) => sendResponse({ ok: false, error: `Ghost Job 分析失败：${err && err.message}` }));
+      .catch((err) => sendResponse({ ok: false, error: `Ghost job analysis failed: ${err && err.message}` }));
     return true;
   }
 

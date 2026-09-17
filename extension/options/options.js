@@ -93,9 +93,9 @@ $('save').addEventListener('click', async () => {
     const settings = readForm();
     await persist(settings);
     fillForm(settings);
-    showToast('已保存');
+    showToast('Saved');
   } catch (err) {
-    showToast(`保存失败：${err && err.message ? err.message : '未知错误'}`, true);
+    showToast(`Save failed: ${err && err.message ? err.message : 'unknown error'}`, true);
   }
 });
 
@@ -104,7 +104,7 @@ $('testConnection').addEventListener('click', async () => {
   const button = $('testConnection');
   const base = cleanBaseUrl(fields.backendBaseUrl.value) || DEFAULTS.backendBaseUrl;
   resultEl.className = 'jd-test-result';
-  resultEl.textContent = '测试中…';
+  resultEl.textContent = 'Testing…';
   button.disabled = true;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
@@ -113,14 +113,14 @@ $('testConnection').addEventListener('click', async () => {
     const data = await res.json().catch(() => null);
     if (res.ok && data && data.status === 'ok') {
       resultEl.className = 'jd-test-result jd-ok';
-      resultEl.textContent = '✅ 连接正常';
+      resultEl.textContent = '✅ Connection OK';
     } else {
       resultEl.className = 'jd-test-result jd-bad';
-      resultEl.textContent = `❌ 连接失败（HTTP ${res.status}）`;
+      resultEl.textContent = `❌ Connection failed (HTTP ${res.status})`;
     }
   } catch (err) {
     resultEl.className = 'jd-test-result jd-bad';
-    resultEl.textContent = `❌ 连接失败：${err && err.name === 'AbortError' ? '请求超时' : '无法访问该地址'}`;
+    resultEl.textContent = `❌ Connection failed: ${err && err.name === 'AbortError' ? 'request timed out' : 'the address is unreachable'}`;
   } finally {
     clearTimeout(timer);
     button.disabled = false;
@@ -132,10 +132,10 @@ $('clearCache').addEventListener('click', async () => {
   try {
     await chrome.storage.local.remove(CACHE_KEY);
     resultEl.className = 'jd-test-result jd-ok';
-    resultEl.textContent = '✅ 本地缓存已清空';
+    resultEl.textContent = '✅ Local cache cleared';
   } catch (err) {
     resultEl.className = 'jd-test-result jd-bad';
-    resultEl.textContent = `清空失败：${err && err.message ? err.message : '未知错误'}`;
+    resultEl.textContent = `Clear failed: ${err && err.message ? err.message : 'unknown error'}`;
   }
 });
 

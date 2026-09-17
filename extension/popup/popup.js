@@ -38,12 +38,12 @@ function fmtTime(iso) {
   if (!iso) return '';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return String(iso);
-  return date.toLocaleString('zh-CN', { hour12: false });
+  return date.toLocaleString('en-US', { hour12: false });
 }
 
 function setGhostEnabled(enabled, tooltip) {
   ui.ghostBtn.disabled = !enabled;
-  ui.ghostBtn.title = enabled ? '' : tooltip || '需要后端服务';
+  ui.ghostBtn.title = enabled ? '' : tooltip || 'Backend required';
 }
 
 function render() {
@@ -61,7 +61,7 @@ function render() {
   ui.ghost.classList.remove('jd-hidden');
 
   const job = state.job || {};
-  ui.jobTitle.textContent = job.title || '未识别到岗位标题';
+  ui.jobTitle.textContent = job.title || 'No job title detected';
   ui.jobCompany.textContent = [job.company, job.location].filter(Boolean).join(' · ');
 
   const response = state.response;
@@ -70,7 +70,7 @@ function render() {
 
   if (!result) {
     ui.badge.className = 'jd-badge jd-badge--loading';
-    ui.badge.textContent = '校验中…';
+    ui.badge.textContent = 'Checking…';
     ui.reason.textContent = '';
     ui.meta.textContent = '';
     ui.openSource.disabled = true;
@@ -79,32 +79,32 @@ function render() {
 
   if (degraded) {
     ui.badge.className = 'jd-badge jd-badge--degraded';
-    ui.badge.textContent = '🟠 后端不可用（本地校验）';
+    ui.badge.textContent = '🟠 Backend unreachable (checked locally)';
   } else if (result.status === 'open') {
     ui.badge.className = 'jd-badge jd-badge--open';
-    ui.badge.textContent = '🟢 源头在招';
+    ui.badge.textContent = '🟢 Open at the source';
   } else if (result.status === 'closed') {
     ui.badge.className = 'jd-badge jd-badge--closed';
-    ui.badge.textContent = '⚠️ 源头已关闭 · 无需投递';
+    ui.badge.textContent = "⚠️ Closed at the source · don't apply";
   } else {
     ui.badge.className = 'jd-badge jd-badge--unknown';
-    ui.badge.textContent = '❓ 无法判定';
+    ui.badge.textContent = "❓ Can't determine";
   }
 
-  ui.reason.textContent = result.reason || '';
+  ui.reason.textContent = result.reason_en || result.reason || '';
 
   const metaParts = [];
-  if (result.ats && result.ats !== 'unknown') metaParts.push(`源头：${result.ats}`);
-  if (result.confidence) metaParts.push(`置信度：${Math.round(result.confidence * 100)}%`);
-  if (result.checked_at) metaParts.push(`校验时间：${fmtTime(result.checked_at)}`);
-  if (result.cached) metaParts.push('来自缓存');
+  if (result.ats && result.ats !== 'unknown') metaParts.push(`Source: ${result.ats}`);
+  if (result.confidence) metaParts.push(`Confidence: ${Math.round(result.confidence * 100)}%`);
+  if (result.checked_at) metaParts.push(`Checked: ${fmtTime(result.checked_at)}`);
+  if (result.cached) metaParts.push('From cache');
   ui.meta.textContent = metaParts.join(' · ');
 
   const applyUrl = result.apply_url || result.canonical_url;
   ui.openSource.disabled = !applyUrl;
   ui.openSource.dataset.url = applyUrl || '';
 
-  setGhostEnabled(!degraded, '需要后端服务');
+  setGhostEnabled(!degraded, 'Backend required');
 }
 
 async function loadState(force) {
@@ -135,34 +135,34 @@ async function loadState(force) {
 function renderGhost(data) {
   ui.ghostResult.replaceChildren();
   if (!data || typeof data !== 'object') {
-    ui.ghostResult.appendChild(el('div', 'jd-err', 'Ghost Job 分析返回了空结果。'));
+    ui.ghostResult.appendChild(el('div', 'jd-err', 'Ghost job analysis returned an empty result.'));
     return;
   }
   if (data.one_liner) ui.ghostResult.appendChild(el('div', 'jd-strong', data.one_liner));
 
   const score = Number(data.ghost_score);
   const scoreRow = el('div', null);
-  scoreRow.appendChild(el('span', 'jd-muted', 'Ghost 风险分：'));
+  scoreRow.appendChild(el('span', 'jd-muted', 'Ghost risk score:'));
   scoreRow.appendChild(el('span', 'jd-strong', Number.isFinite(score) ? `${Math.round(score)} / 100` : '—'));
-  if (data.is_ghost_job) scoreRow.appendChild(el('span', 'jd-err', ' · 疑似幽灵岗位'));
+  if (data.is_ghost_job) scoreRow.appendChild(el('span', 'jd-err', ' · High risk: likely a ghost job'));
   ui.ghostResult.appendChild(scoreRow);
 
   const factors = Array.isArray(data.risk_factors) ? data.risk_factors : [];
   if (factors.length) {
-    ui.ghostResult.appendChild(el('div', 'jd-muted', '风险因素：'));
+    ui.ghostResult.appendChild(el('div', 'jd-muted', 'Risk factors:'));
     const list = el('ul');
     for (const factor of factors) list.appendChild(el('li', null, String(factor)));
     ui.ghostResult.appendChild(list);
   }
   if (data.recommendation) {
     const row = el('div');
-    row.appendChild(el('span', 'jd-muted', '建议：'));
+    row.appendChild(el('span', 'jd-muted', 'Recommendation:'));
     row.appendChild(el('span', null, data.recommendation));
     ui.ghostResult.appendChild(row);
   }
   if (data.provider) {
     ui.ghostResult.appendChild(
-      el('div', 'jd-muted', `分析来源：${data.provider}${data.cached ? '（缓存）' : ''}`)
+      el('div', 'jd-muted', `Analysis source: ${data.provider}${data.cached ? ' (cached)' : ''}`)
     );
   }
 }
@@ -170,14 +170,14 @@ function renderGhost(data) {
 /* --- events --- */
 ui.reverify.addEventListener('click', async () => {
   ui.reverify.disabled = true;
-  ui.reverify.textContent = '校验中…';
+  ui.reverify.textContent = 'Checking…';
   ui.badge.className = 'jd-badge jd-badge--loading';
-  ui.badge.textContent = '校验中…';
+  ui.badge.textContent = 'Checking…';
   try {
     await loadState(true);
   } finally {
     ui.reverify.disabled = false;
-    ui.reverify.textContent = '重新校验';
+    ui.reverify.textContent = 'Re-check';
   }
 });
 
@@ -192,7 +192,7 @@ ui.ghostBtn.addEventListener('click', async () => {
   ui.ghostResult.replaceChildren();
   ui.ghostBtn.disabled = true;
   const original = ui.ghostBtn.textContent;
-  ui.ghostBtn.textContent = '分析中…';
+  ui.ghostBtn.textContent = 'Analyzing…';
   try {
     const res = await chrome.runtime.sendMessage({
       type: 'GHOST_ANALYZE',
@@ -208,12 +208,12 @@ ui.ghostBtn.addEventListener('click', async () => {
     if (res && res.ok) {
       renderGhost(res.data);
     } else {
-      ui.ghostResult.appendChild(el('div', 'jd-err', (res && res.error) || 'Ghost Job 分析失败，请稍后再试。'));
+      ui.ghostResult.appendChild(el('div', 'jd-err', (res && res.error) || 'Ghost job analysis failed. Please try again later.'));
     }
   } catch {
-    ui.ghostResult.appendChild(el('div', 'jd-err', '无法连接后端服务，请检查网络或后端地址设置。'));
+    ui.ghostResult.appendChild(el('div', 'jd-err', 'Could not reach the backend. Check your network or the backend URL in Settings.'));
   } finally {
-    ui.ghostBtn.textContent = original || 'Ghost Job 风险分析';
+    ui.ghostBtn.textContent = original || 'Ghost job risk analysis';
     ui.ghostBtn.disabled = false;
   }
 });

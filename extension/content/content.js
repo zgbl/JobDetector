@@ -110,7 +110,7 @@
       const wrap = el('div', 'jd-wrap');
       const badge = el('div', 'jd-badge jd-badge--loading');
       const spinner = el('span', 'jd-spinner');
-      const badgeText = el('span', null, '校验中…');
+      const badgeText = el('span', null, 'Checking…');
       badge.appendChild(spinner);
       badge.appendChild(badgeText);
 
@@ -176,7 +176,7 @@
       ui.card.style.display = 'none';
       expanded = false;
       ui.card.replaceChildren();
-      setBadge('loading', '校验中…', { title: '正在向岗位源头 ATS 校验…' });
+      setBadge('loading', 'Checking…', { title: 'Checking the employer\'s ATS source…' });
     } catch (err) {
       console.debug('[JobDetector] renderLoading failed', err);
     }
@@ -186,26 +186,26 @@
     if (!iso) return '';
     const date = new Date(iso);
     if (Number.isNaN(date.getTime())) return String(iso);
-    return date.toLocaleString('zh-CN', { hour12: false });
+    return date.toLocaleString('en-US', { hour12: false });
   }
 
   function statusHeadline(result) {
-    if (result.status === 'open') return '源头在招';
-    if (result.status === 'closed') return '源头已关闭 · 无需投递';
-    return '无法判定';
+    if (result.status === 'open') return 'Open at the source';
+    if (result.status === 'closed') return "Closed at the source · don't apply";
+    return "Can't determine";
   }
 
   function setBadgeFromResult(result, degraded) {
     if (degraded) {
-      setBadge('degraded', '🟠 后端不可用（本地校验）', { title: result.reason || '后端不可用，已使用本地校验' });
+      setBadge('degraded', '🟠 Backend unreachable (checked locally)', { title: result.reason_en || result.reason || 'Backend unreachable, so this result came from the local checker' });
       return;
     }
     if (result.status === 'open') {
-      setBadge('open', '🟢 源头在招', { title: result.reason || '源头 ATS 仍在招' });
+      setBadge('open', '🟢 Open at the source', { title: result.reason_en || result.reason || 'The source ATS still lists this posting as open' });
     } else if (result.status === 'closed') {
-      setBadge('closed', '⚠️ 源头已关闭 · 无需投递', { title: result.reason || '源头 ATS 已下架该岗位' });
+      setBadge('closed', "⚠️ Closed at the source · don't apply", { title: result.reason_en || result.reason || 'The source ATS has taken this posting down' });
     } else {
-      setBadge('unknown', '❓ 无法判定', { title: result.reason || '无法判定源头状态' });
+      setBadge('unknown', "❓ Can't determine", { title: result.reason_en || result.reason || 'The source status could not be determined' });
     }
   }
 
@@ -216,21 +216,22 @@
 
     card.appendChild(el('div', 'jd-row jd-strong', statusHeadline(result)));
 
-    if (result.reason) {
+    const reasonText = result.reason_en || result.reason;
+    if (reasonText) {
       const reasonRow = el('div', 'jd-row');
-      reasonRow.appendChild(el('span', 'jd-label', '原因：'));
-      reasonRow.appendChild(el('span', null, result.reason));
+      reasonRow.appendChild(el('span', 'jd-label', 'Verdict:'));
+      reasonRow.appendChild(el('span', null, reasonText));
       card.appendChild(reasonRow);
     }
 
     const atsRow = el('div', 'jd-row');
-    atsRow.appendChild(el('span', 'jd-label', '源头：'));
-    atsRow.appendChild(el('span', null, label || result.ats || '未知来源'));
+    atsRow.appendChild(el('span', 'jd-label', 'Source:'));
+    atsRow.appendChild(el('span', null, label || result.ats || 'Unknown source'));
     card.appendChild(atsRow);
 
     if (result.matched_title) {
       const row = el('div', 'jd-row');
-      row.appendChild(el('span', 'jd-label', '源头岗位：'));
+      row.appendChild(el('span', 'jd-label', 'Matched role:'));
       row.appendChild(el('span', null, result.matched_title));
       card.appendChild(row);
     }
@@ -239,12 +240,12 @@
     const alt = result.alternative;
     if (alt && alt.status === 'open') {
       const row = el('div', 'jd-row jd-muted');
-      row.appendChild(el('span', 'jd-label', '同类在招：'));
-      const text = alt.matched_title ? `“${alt.matched_title}”（${alt.ats || '源头'}）` : (alt.ats || '源头 ATS');
+      row.appendChild(el('span', 'jd-label', 'But this employer has a similar role still open: '));
+      const text = alt.matched_title ? `"${alt.matched_title}" (${alt.ats || 'source'})` : (alt.ats || 'source ATS');
       row.appendChild(el('span', null, text));
       const altUrl = alt.apply_url || alt.canonical_url;
       if (altUrl) {
-        const link = el('a', 'jd-link', '投这个 →');
+        const link = el('a', 'jd-link', ' Apply to this one →');
         link.href = altUrl;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
@@ -255,7 +256,7 @@
 
     if (result.canonical_url) {
       const row = el('div', 'jd-row');
-      row.appendChild(el('span', 'jd-label', '源头链接：'));
+      row.appendChild(el('span', 'jd-label', 'Source link:'));
       const link = el('a', 'jd-link', result.canonical_url);
       link.href = result.canonical_url;
       link.target = '_blank';
@@ -265,21 +266,21 @@
     }
 
     const timeRow = el('div', 'jd-row');
-    timeRow.appendChild(el('span', 'jd-label', '校验时间：'));
+    timeRow.appendChild(el('span', 'jd-label', 'Checked:'));
     timeRow.appendChild(el('span', null, fmtTime(result.checked_at) || '—'));
     if (result.status === 'closed' && result.posted_at) {
-      timeRow.appendChild(el('span', 'jd-label', ' · 关闭于：'));
+      timeRow.appendChild(el('span', 'jd-label', ' · Closed:'));
       timeRow.appendChild(el('span', null, result.posted_at));
     }
     card.appendChild(timeRow);
 
     if (degraded) {
-      card.appendChild(el('div', 'jd-row jd-muted', '后端不可用，当前结果由本地校验得出。'));
+      card.appendChild(el('div', 'jd-row jd-muted', 'Backend unreachable — this result came from the local checker.'));
     }
 
     /* --- actions --- */
     const actions = el('div', 'jd-actions');
-    const applyBtn = el('button', 'jd-btn jd-btn--primary', '直达源头投递 →');
+    const applyBtn = el('button', 'jd-btn jd-btn--primary', 'Apply at the source →');
     applyBtn.type = 'button';
     applyBtn.addEventListener('click', (event) => {
       event.preventDefault();
@@ -290,11 +291,11 @@
     actions.appendChild(applyBtn);
 
     const ghostEnabled = !degraded && (settingsCache ? settingsCache.showGhostButton !== false : true);
-    const ghostBtn = el('button', 'jd-btn', 'Ghost Job 风险分析');
+    const ghostBtn = el('button', 'jd-btn', 'Ghost job risk analysis');
     ghostBtn.type = 'button';
     if (!ghostEnabled) {
       ghostBtn.disabled = true;
-      ghostBtn.title = '需要后端服务';
+      ghostBtn.title = 'Backend required';
     }
     actions.appendChild(ghostBtn);
     card.appendChild(actions);
@@ -327,22 +328,22 @@
   function renderGhostResult(box, data) {
     box.replaceChildren();
     if (!data || typeof data !== 'object') {
-      box.appendChild(el('div', 'jd-err', 'Ghost Job 分析返回了空结果。'));
+      box.appendChild(el('div', 'jd-err', 'Ghost job analysis returned an empty result.'));
       return;
     }
     const oneLiner = data.one_liner || '';
     if (oneLiner) box.appendChild(el('div', 'jd-row jd-strong', oneLiner));
 
     const scoreRow = el('div', 'jd-row');
-    scoreRow.appendChild(el('span', 'jd-label', 'Ghost 风险分：'));
+    scoreRow.appendChild(el('span', 'jd-label', 'Ghost risk score:'));
     const score = Number(data.ghost_score);
     scoreRow.appendChild(el('span', 'jd-strong', Number.isFinite(score) ? `${Math.round(score)} / 100` : '—'));
-    if (data.is_ghost_job) scoreRow.appendChild(el('span', 'jd-err', ' · 疑似幽灵岗位'));
+    if (data.is_ghost_job) scoreRow.appendChild(el('span', 'jd-err', ' · High risk: likely a ghost job'));
     box.appendChild(scoreRow);
 
     const factors = Array.isArray(data.risk_factors) ? data.risk_factors : [];
     if (factors.length) {
-      box.appendChild(el('div', 'jd-row jd-label', '风险因素：'));
+      box.appendChild(el('div', 'jd-row jd-label', 'Risk factors:'));
       const list = el('ul', 'jd-factors');
       for (const factor of factors) list.appendChild(el('li', null, String(factor)));
       box.appendChild(list);
@@ -350,12 +351,12 @@
 
     if (data.recommendation) {
       const row = el('div', 'jd-row');
-      row.appendChild(el('span', 'jd-label', '建议：'));
+      row.appendChild(el('span', 'jd-label', 'Recommendation:'));
       row.appendChild(el('span', null, data.recommendation));
       box.appendChild(row);
     }
     if (data.provider) {
-      box.appendChild(el('div', 'jd-row jd-muted', `分析来源：${data.provider}${data.cached ? '（缓存）' : ''}`));
+      box.appendChild(el('div', 'jd-row jd-muted', `Analysis source: ${data.provider}${data.cached ? ' (cached)' : ''}`));
     }
   }
 
@@ -368,7 +369,7 @@
     ghostBox.style.display = 'block';
     const original = ghostBtn.textContent;
     ghostBtn.disabled = true;
-    ghostBtn.textContent = '分析中…';
+    ghostBtn.textContent = 'Analyzing…';
     try {
       const res = await chrome.runtime.sendMessage({
         type: 'GHOST_ANALYZE',
@@ -384,16 +385,16 @@
       if (res && res.ok) {
         renderGhostResult(ghostBox, res.data);
       } else {
-        renderGhostError(ghostBox, (res && res.error) || 'Ghost Job 分析失败，请稍后再试。');
+        renderGhostError(ghostBox, (res && res.error) || 'Ghost job analysis failed. Please try again later.');
         ghostBtn.disabled = true;
-        ghostBtn.title = '需要后端服务';
+        ghostBtn.title = 'Backend required';
       }
     } catch {
-      renderGhostError(ghostBox, '无法连接后端服务，请检查网络或后端地址设置。');
+      renderGhostError(ghostBox, 'Could not reach the backend. Check your network or the backend URL in Settings.');
       ghostBtn.disabled = true;
-      ghostBtn.title = '需要后端服务';
+      ghostBtn.title = 'Backend required';
     } finally {
-      ghostBtn.textContent = original || 'Ghost Job 风险分析';
+      ghostBtn.textContent = original || 'Ghost job risk analysis';
       if (!ghostBtn.title) ghostBtn.disabled = false;
     }
   }
@@ -453,7 +454,7 @@
             status: 'unknown',
             ats: 'unknown',
             confidence: 0,
-            reason: '扩展后台不可用，无法完成校验',
+            reason: 'The extension background worker is unavailable, so the check could not run',
             canonical_url: '',
             apply_url: '',
             matched_title: '',

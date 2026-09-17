@@ -2443,6 +2443,15 @@ def _cache_get(db, key: str, refresh: bool = False) -> Optional[Dict[str, Any]]:
         return None
     result = dict(doc.get("result") or {})
     result["cached"] = True
+    # Entries written before the bilingual split carry no reason_en — backfill it
+    # so a cache hit never renders Chinese on the English site.
+    if not result.get("reason_en"):
+        try:
+            from src.services.source_verify import to_english_reason
+
+            result["reason_en"] = to_english_reason(result.get("reason", ""))
+        except Exception:  # noqa: BLE001
+            result["reason_en"] = ""
     return result
 
 
@@ -2882,6 +2891,7 @@ def _ghost_cache_key(payload: Dict[str, Any]) -> str:
         str(payload.get("source_status") or ""),
         str(payload.get("source_type") or ""),
         str(payload.get("post_age_days") or ""),
+        str(payload.get("lang") or "zh"),
         str(payload.get("jd_text") or "")[:1500],
     ])
     return hashlib.md5(raw.encode("utf-8")).hexdigest()
@@ -2909,6 +2919,7 @@ def _ghost_analyze(payload: Dict[str, Any]) -> Dict[str, Any]:
         source_type=str(payload.get("source_type") or "unknown"),
         jd_text=str(payload.get("jd_text") or ""),
         source_status=str(payload.get("source_status") or "unknown"),
+        lang=str(payload.get("lang") or "zh"),
     ).to_dict()
 
     if db is not None:
@@ -2936,8 +2947,12 @@ async def api_ghost_analyze(request: Request):
         "source_type": "greenhouse",          // or unknown / agency / aggregator
         "jd_text": "....",
         "source_status": "open" | "closed" | "unknown",
-        "provider": "openrouter"              // optional override
+        "provider": "openrouter",             // optional override
+        "lang": "en"                          // "en" | "zh" (default "zh")
       }
+
+    Returns localised ``one_liner`` / ``risk_factors`` / ``recommendation`` plus a
+    stable ``recommendation_code`` (``apply`` | ``verify`` | ``ignore``).
     """
     await check_rate_limit(request, limit=20, window=60)
     payload = await request.json()
@@ -2954,6 +2969,7 @@ async def api_ghost_analyze_get(
     request: Request,
     job_id: str = Query(...),
     provider: str = Query(""),
+    lang: str = Query("zh"),
 ):
     """
     Convenience wrapper: score a job already stored in JobDetector by its id.
@@ -2974,6 +2990,7 @@ async def api_ghost_analyze_get(
         "jd_text": job.get("description", ""),
         "source_status": "unknown",
         "provider": provider or None,
+        "lang": lang or "zh",
     }
     return await run_in_threadpool(_ghost_analyze, payload)
 

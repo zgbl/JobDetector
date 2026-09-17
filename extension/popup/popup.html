@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>JobDetector</title>
@@ -8,7 +8,7 @@
   <body>
     <header class="jd-header">
       <div class="jd-brand">JobDetector</div>
-      <div class="jd-sub">岗位源头校验</div>
+      <div class="jd-sub">Job source check</div>
     </header>
 
     <main id="jd-main">
@@ -18,27 +18,27 @@
       </section>
 
       <section id="jd-status" class="jd-section">
-        <div id="jd-status-badge" class="jd-badge jd-badge--loading">校验中…</div>
+        <div id="jd-status-badge" class="jd-badge jd-badge--loading">Checking…</div>
         <div id="jd-status-reason" class="jd-reason"></div>
         <div id="jd-status-meta" class="jd-meta"></div>
         <div class="jd-actions">
-          <button id="jd-reverify" type="button" class="jd-btn jd-btn--primary">重新校验</button>
-          <button id="jd-open-source" type="button" class="jd-btn">直达源头投递 →</button>
+          <button id="jd-reverify" type="button" class="jd-btn jd-btn--primary">Re-check</button>
+          <button id="jd-open-source" type="button" class="jd-btn">Apply at the source →</button>
         </div>
       </section>
 
       <section id="jd-ghost" class="jd-section">
-        <button id="jd-ghost-btn" type="button" class="jd-btn jd-btn--wide">Ghost Job 风险分析</button>
+        <button id="jd-ghost-btn" type="button" class="jd-btn jd-btn--wide">Ghost job risk analysis</button>
         <div id="jd-ghost-result" class="jd-ghost-result"></div>
       </section>
 
       <section id="jd-unsupported" class="jd-section jd-hidden">
-        <div class="jd-empty">打开 LinkedIn / Indeed 职位页面即可自动校验</div>
+        <div class="jd-empty">Open a LinkedIn / Indeed job page to check it automatically</div>
       </section>
     </main>
 
     <footer class="jd-footer">
-      <a href="#" id="jd-options-link">设置</a>
+      <a href="#" id="jd-options-link">Settings</a>
     </footer>
 
     <script type="module" src="popup.js"></script>

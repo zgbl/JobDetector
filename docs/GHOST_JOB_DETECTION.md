@@ -131,7 +131,22 @@ curl -X POST https://jobdetector.blackrice.top/api/ghost/analyze \
 | `POST /api/ghost/analyze` | 任意职位文本 → 评分 |
 | `GET /api/ghost/analyze?job_id=<job_id>` | 直接对库里已抓取的岗位评分（自动取 posted_date / description / source） |
 
-结果按 `md5(title|company|source_status|source_type|age|jd[:1500])` 缓存 **24 小时**（集合 `ghost_analyses`），避免同一岗位反复烧 token。
+结果按 `md5(title|company|source_status|source_type|age|lang|jd[:1500])` 缓存 **24 小时**（集合 `ghost_analyses`），避免同一岗位反复烧 token。
+
+### 多语言
+
+请求体支持 `"lang": "en" | "zh"`（默认 `zh`）。英文时系统提示词、规则引擎理由、一句话结论全部输出英文；
+域名网页（`/verify.html`）传 `lang: "en"`，插件传 `lang: "en"`（插件 UI 为英文）。
+
+无论哪种语言，返回都带一个**稳定的机器可读枚举** `recommendation_code`（`apply` / `verify` / `ignore`），
+前端用它做样式判断，不要去 match 翻译后的文本：
+
+```json
+{ "ghost_score": 70, "is_ghost_job": true,
+  "recommendation": "Ignore it", "recommendation_code": "ignore",
+  "risk_factors": ["Posted 75 days ago — well past the 60-day red line", "..."],
+  "one_liner": "...", "lang": "en", "provider": "deepseek" }
+```
 
 ## 5. 模型降级链
 

@@ -7,9 +7,9 @@
  *
  * The logic is a JavaScript port of the Python reference
  * `src/services/source_verify.py` (functions `identify`, `_check_greenhouse`,
- * `_check_lever`, `_check_ashby`, `_check_generic`). Reason strings keep the
- * same Simplified-Chinese wording so that backend and local verdicts read the
- * same in the UI.
+ * `_check_lever`, `_check_ashby`, `_check_generic`). Reason strings reuse the
+ * English wording from the Python engine's `_REASON_EN_RULES` table so that
+ * backend and local verdicts read the same in the UI.
  */
 
 /* ------------------------------------------------------------------ *
@@ -42,8 +42,8 @@ export const ATS_LABELS = {
   recruitee: 'Recruitee',
   personio: 'Personio',
   teamtailor: 'Teamtailor',
-  careers_page: '企业招聘页',
-  unknown: '未知来源',
+  careers_page: 'Company careers page',
+  unknown: 'Unknown source',
 };
 
 /** Every ATS the identifier understands. */
@@ -430,7 +430,7 @@ async function checkGreenhouse(ref, out, timeoutMs) {
   const token = ref.token;
   const jobId = ref.jobId;
   if (!token) {
-    out.reason = '无法从 URL 解析 Greenhouse board token';
+    out.reason = 'Could not extract a Greenhouse board token from the URL';
     return;
   }
   const base = `https://boards-api.greenhouse.io/v1/boards/${token}`;
@@ -444,7 +444,7 @@ async function checkGreenhouse(ref, out, timeoutMs) {
     if (code === 200 && data && typeof data === 'object') {
       out.status = 'open';
       out.confidence = 0.98;
-      out.reason = 'Greenhouse 源头 API 返回该岗位仍在招';
+      out.reason = 'Greenhouse source API confirms this posting is still open';
       out.matched_title = str(data.title);
       const loc = data.location;
       out.location = loc && typeof loc === 'object' ? str(loc.name) : str(loc);
@@ -459,23 +459,23 @@ async function checkGreenhouse(ref, out, timeoutMs) {
       if (listed === true) {
         out.status = 'open';
         out.confidence = 0.75;
-        out.reason = '岗位详情 API 404，但在 board 列表中仍存在（unlisted job post）';
+        out.reason = 'Detail API returned 404, but the job id is still in the board list (unlisted job post)';
       } else if (listed === false) {
         out.status = 'closed';
         out.confidence = 0.97;
-        out.reason = 'Greenhouse 源头已下架该岗位（详情 404 且 board 列表无此 ID）';
+        out.reason = 'Greenhouse has taken this posting down (detail 404 and the job id is gone from the board list)';
       } else {
         out.status = 'closed';
         out.confidence = 0.8;
-        out.reason = 'Greenhouse 源头详情返回 404（board 列表二次确认失败）';
+        out.reason = 'Detail returned 404 but the board list could not be read to confirm (the board token may be wrong)';
       }
       return;
     }
     if (code === 401 || code === 403) {
-      out.reason = 'Greenhouse board 未公开或拒绝访问';
+      out.reason = 'The Greenhouse board is private or refused access';
       return;
     }
-    out.reason = `Greenhouse 详情请求异常 (HTTP ${code})`;
+    out.reason = `Greenhouse detail request failed (HTTP ${code})`;
     return;
   }
 
@@ -486,13 +486,13 @@ async function checkGreenhouse(ref, out, timeoutMs) {
     const jobs = Array.isArray(data.jobs) ? data.jobs : [];
     out.status = 'open';
     out.confidence = 0.4;
-    out.reason = `仅校验到 board 存在（${jobs.length} 个在招岗位），缺少 job id 无法判定单岗`;
+    out.reason = `Board exists (${jobs.length} open roles), but without a job id this posting cannot be judged`;
   } else if (code === 404 || code === 410) {
     out.status = 'closed';
     out.confidence = 0.8;
-    out.reason = 'Greenhouse board 不存在（400/404）';
+    out.reason = 'The Greenhouse board does not exist (400/404)';
   } else {
-    out.reason = `Greenhouse board 请求异常 (HTTP ${code})`;
+    out.reason = `Greenhouse board request failed (HTTP ${code})`;
   }
 }
 
@@ -511,7 +511,7 @@ function flagDeadline(data, out) {
   if (!Number.isNaN(dt.getTime()) && dt.getTime() < Date.now()) {
     out.status = 'closed';
     out.confidence = 0.9;
-    out.reason = `岗位申请截止日期已过 (${deadline})`;
+    out.reason = `The application deadline has passed (${deadline})`;
   }
 }
 
@@ -519,7 +519,7 @@ async function checkLever(ref, out, timeoutMs) {
   const token = ref.token;
   const jobId = ref.jobId;
   if (!token) {
-    out.reason = '无法从 URL 解析 Lever board token';
+    out.reason = 'Could not extract a Lever board token from the URL';
     return;
   }
   out.canonical_url = jobId
@@ -535,7 +535,7 @@ async function checkLever(ref, out, timeoutMs) {
     if (code === 200 && data && typeof data === 'object') {
       out.status = 'open';
       out.confidence = 0.97;
-      out.reason = 'Lever 源头 API 返回该岗位仍在招';
+      out.reason = 'Lever source API confirms this posting is still open';
       out.matched_title = str(data.text);
       const categories = data.categories;
       out.location = categories && typeof categories === 'object' ? str(categories.location) : '';
@@ -556,24 +556,24 @@ async function checkLever(ref, out, timeoutMs) {
         if (ids.has(str(jobId))) {
           out.status = 'open';
           out.confidence = 0.7;
-          out.reason = '详情接口 404，但 board 列表中仍存在该岗位';
+          out.reason = 'Detail endpoint returned 404, but the posting is still in the board list';
         } else {
           out.status = 'closed';
           out.confidence = 0.97;
-          out.reason = 'Lever 源头已下架该岗位（详情 404 且 board 无此 ID）';
+          out.reason = 'Lever has taken this posting down (detail 404 and the id is gone from the board list)';
         }
       } else {
         out.status = 'closed';
         out.confidence = 0.8;
-        out.reason = 'Lever 源头详情返回 404';
+        out.reason = 'Detail returned 404 but the Lever board list could not be read to confirm';
       }
       return;
     }
     if (code === 401 || code === 403) {
-      out.reason = 'Lever board 未公开或拒绝访问';
+      out.reason = 'The Lever board is private or refused access';
       return;
     }
-    out.reason = `Lever 详情请求异常 (HTTP ${code})`;
+    out.reason = `Lever detail request failed (HTTP ${code})`;
     return;
   }
 
@@ -585,13 +585,13 @@ async function checkLever(ref, out, timeoutMs) {
   if (code === 200 && Array.isArray(data)) {
     out.status = 'open';
     out.confidence = 0.4;
-    out.reason = `仅校验到 board 存在（${data.length} 个在招岗位），缺少 job id`;
+    out.reason = `Board exists (${data.length} open roles), but no job id was provided`;
   } else if (code === 404 || code === 410) {
     out.status = 'closed';
     out.confidence = 0.75;
-    out.reason = 'Lever board 不存在';
+    out.reason = 'The Lever board does not exist';
   } else {
-    out.reason = `Lever board 请求异常 (HTTP ${code})`;
+    out.reason = `Lever board request failed (HTTP ${code})`;
   }
 }
 
@@ -599,7 +599,7 @@ async function checkAshby(ref, out, timeoutMs) {
   const token = ref.token;
   const jobId = ref.jobId;
   if (!token) {
-    out.reason = '无法从 URL 解析 Ashby organization slug';
+    out.reason = 'Could not extract an Ashby organization slug from the URL';
     return;
   }
   out.canonical_url = jobId
@@ -615,9 +615,9 @@ async function checkAshby(ref, out, timeoutMs) {
     if (code === 404 || code === 410) {
       out.status = 'closed';
       out.confidence = 0.7;
-      out.reason = 'Ashby organization 不存在';
+      out.reason = 'The Ashby organization does not exist';
     } else {
-      out.reason = `Ashby board API 请求异常 (HTTP ${code})`;
+      out.reason = `Ashby API request failed (HTTP ${code})`;
     }
     return;
   }
@@ -626,7 +626,7 @@ async function checkAshby(ref, out, timeoutMs) {
   if (!jobId) {
     out.status = 'open';
     out.confidence = 0.4;
-    out.reason = `仅校验到 Ashby board 存在（${jobs.length} 个在招岗位），缺少 job id`;
+    out.reason = `Ashby board exists (${jobs.length} open roles), but no job id was provided`;
     return;
   }
 
@@ -634,21 +634,21 @@ async function checkAshby(ref, out, timeoutMs) {
   if (match) {
     out.status = 'open';
     out.confidence = 0.97;
-    out.reason = 'Ashby 源头 board 中仍存在该岗位';
+    out.reason = 'The posting is still present on the Ashby source board';
     out.matched_title = str(match.title);
     out.location = str(match.location);
     out.posted_at = str(match.publishedAt || match.updatedAt);
     out.apply_url = str(match.jobUrl || match.applyUrl) || out.canonical_url;
     if (match.isListed === false) {
       out.confidence = 0.6;
-      out.reason = '岗位在 Ashby 中仍存在但已取消公开列出（isListed=false）';
+      out.reason = 'Still present in Ashby but no longer publicly listed (isListed=false)';
     }
     return;
   }
 
   out.status = 'closed';
   out.confidence = 0.95;
-  out.reason = `Ashby 源头 board 已无此岗位（当前在招 ${jobs.length} 个）`;
+  out.reason = `Ashby no longer lists this posting (${jobs.length} roles currently open)`;
 }
 
 async function checkGeneric(url, out, timeoutMs) {
@@ -657,32 +657,32 @@ async function checkGeneric(url, out, timeoutMs) {
   out.http_status = code;
   out.canonical_url = finalUrl || url;
   if (code === null) {
-    out.reason = '无法访问该页面（网络错误/超时）';
+    out.reason = 'The page could not be reached (network error or timeout)';
     return;
   }
   if (code === 404 || code === 410) {
     out.status = 'closed';
     out.confidence = 0.7;
-    out.reason = `源页面返回 HTTP ${code}，岗位页面已不存在`;
+    out.reason = `The source page returned HTTP ${code} — the posting page no longer exists`;
     return;
   }
   if (code === 401 || code === 403) {
-    out.reason = `源页面拒绝访问 (HTTP ${code})，需登录或反爬`;
+    out.reason = `The source page denied access (HTTP ${code}) — login or bot protection`;
     return;
   }
   if (code >= 500) {
-    out.reason = `源站异常 (HTTP ${code})`;
+    out.reason = `The source site errored (HTTP ${code})`;
     return;
   }
   if (!text) {
-    out.reason = `源页面返回空内容 (HTTP ${code})`;
+    out.reason = `The source page returned an empty body (HTTP ${code})`;
     return;
   }
 
   if (collapsedToRoot(url, finalUrl)) {
     out.status = 'closed';
     out.confidence = 0.5;
-    out.reason = '原岗位 URL 被重定向到列表/首页，岗位详情页已不存在';
+    out.reason = 'The original URL redirects to a listing/home page — the detail page is gone';
     return;
   }
 
@@ -691,20 +691,20 @@ async function checkGeneric(url, out, timeoutMs) {
   if (phrase) {
     out.status = 'closed';
     out.confidence = 0.75;
-    out.reason = `页面出现失效提示文案: “${phrase}”`;
+    out.reason = `The page shows an expired-posting notice: "${phrase}"`;
     return;
   }
 
   if (OPEN_PHRASES.some((p) => lower.includes(p))) {
     out.status = 'open';
     out.confidence = 0.5;
-    out.reason = '页面仍包含申请入口文案，但无结构化数据佐证';
+    out.reason = 'The page still shows an apply entry point, but nothing structured backs it up';
     return;
   }
 
   out.status = 'unknown';
   out.confidence = 0.25;
-  out.reason = '页面可访问但未找到明确的在招/失效信号（可能是 JS 渲染页面）';
+  out.reason = 'The page loads but shows no clear open/closed signal (it may be JavaScript-rendered)';
 }
 
 function collapsedToRoot(original, finalUrl) {
@@ -748,7 +748,7 @@ export async function verifyLocal(rawUrl, options = {}) {
   } catch (err) {
     result.status = 'unknown';
     result.confidence = 0;
-    result.reason = `校验过程异常: ${err && err.message ? err.message : err}`;
+    result.reason = `Verification raised an error: ${err && err.message ? err.message : err}`;
   }
 
   if (!result.apply_url) result.apply_url = result.canonical_url || result.input_url || url;

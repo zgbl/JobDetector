@@ -347,13 +347,13 @@
       if (unit === 'week') return n * 7;
       if (unit === 'month') return n * 30;
     }
-    const zh = text.match(/(\d+)\s*(天|周|个月|小时)前/);
+    const zh = text.match(/(\d+)\s*(\u5929|\u5468|\u4e2a\u6708|\u5c0f\u65f6)\u524d/);
     if (zh) {
       const n = Number(zh[1]);
-      if (zh[2] === '小时') return Math.floor(n / 24);
-      if (zh[2] === '天') return n;
-      if (zh[2] === '周') return n * 7;
-      if (zh[2] === '个月') return n * 30;
+      if (zh[2] === '\u5c0f\u65f6') return Math.floor(n / 24);
+      if (zh[2] === '\u5929') return n;
+      if (zh[2] === '\u5468') return n * 7;
+      if (zh[2] === '\u4e2a\u6708') return n * 30;
     }
     return null;
   }
