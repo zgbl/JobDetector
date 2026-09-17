@@ -2425,6 +2425,24 @@ def _cache_key_for_url(url: str) -> str:
     return "url|" + hashlib.md5((url or "").encode("utf-8")).hexdigest()
 
 
+def _with_reason_en(result: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Ensure a stored/hand-built result carries ``reason_en``.
+
+    Entries written before the bilingual split only have the Chinese ``reason``,
+    so every read path must backfill it — otherwise Chinese leaks onto the
+    English site through the shared cache.
+    """
+    if not result.get("reason_en"):
+        try:
+            from src.services.source_verify import to_english_reason
+
+            result["reason_en"] = to_english_reason(result.get("reason", ""))
+        except Exception:  # noqa: BLE001
+            result["reason_en"] = ""
+    return result
+
+
 def _cache_get(db, key: str, refresh: bool = False) -> Optional[Dict[str, Any]]:
     if db is None or refresh:
         return None
@@ -2441,17 +2459,8 @@ def _cache_get(db, key: str, refresh: bool = False) -> Optional[Dict[str, Any]]:
     age_hours = (datetime.utcnow() - checked_at).total_seconds() / 3600.0
     if age_hours > ttl:
         return None
-    result = dict(doc.get("result") or {})
+    result = _with_reason_en(dict(doc.get("result") or {}))
     result["cached"] = True
-    # Entries written before the bilingual split carry no reason_en — backfill it
-    # so a cache hit never renders Chinese on the English site.
-    if not result.get("reason_en"):
-        try:
-            from src.services.source_verify import to_english_reason
-
-            result["reason_en"] = to_english_reason(result.get("reason", ""))
-        except Exception:  # noqa: BLE001
-            result["reason_en"] = ""
     return result
 
 
@@ -3023,8 +3032,8 @@ async def api_verify_stats(request: Request):
                 "key": row.get("key"),
                 "ats": row.get("ats"),
                 "checked_at": _serialize_dt(row.get("checked_at")),
-                "reason": (row.get("result") or {}).get("reason"),
-                "reason_en": (row.get("result") or {}).get("reason_en"),
+                "reason": _with_reason_en(dict(row.get("result") or {})).get("reason"),
+                "reason_en": _with_reason_en(dict(row.get("result") or {})).get("reason_en"),
                 "url": (row.get("result") or {}).get("input_url"),
             }
             for row in recent
