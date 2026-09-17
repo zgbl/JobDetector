@@ -1,0 +1,24 @@
+/*
+ * content/content.css — host-level styles only.
+ *
+ * The badge internals live inside a Shadow DOM (see content.js), so page CSS
+ * cannot leak in and this file only has to position the host element.
+ */
+
+#jobdetector-badge-host {
+  display: inline-block;
+  margin-left: 8px;
+  vertical-align: middle;
+  /* Keep the anchor above decorative overlays without stealing layout. */
+  position: relative;
+  z-index: 5;
+}
+
+/* Fallback used when no job-title anchor could be located: pin to top-right. */
+#jobdetector-badge-host.jd-badge-host--fixed {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  margin-left: 0;
+  z-index: 2147483000;
+}

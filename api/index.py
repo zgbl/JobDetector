@@ -2352,6 +2352,656 @@ async def update_alert_settings(request: Request):
     return {"status": "success", "message": status_msg, "keywords_count": len(keywords)}
 
 
+# ============================================================================
+# Source verification & Ghost Job detection
+# ----------------------------------------------------------------------------
+# Powers the JobDetector browser extension: verify whether the ORIGINAL posting
+# on the employer's ATS is still live, and score ghost-job risk.
+# ============================================================================
+import hashlib
+
+try:
+    from fastapi.concurrency import run_in_threadpool
+    from src.services.source_verify import (
+        SourceVerifier,
+        identify as identify_source,
+        extract_ats_urls,
+        board_ref_from_company,
+        STATUS_OPEN,
+        STATUS_CLOSED,
+        STATUS_UNKNOWN,
+    )
+    from src.services.ghost_score import GhostAnalyzer, days_since as _days_since
+    SOURCE_VERIFY_AVAILABLE = True
+except Exception as _verify_import_error:  # pragma: no cover - defensive
+    SOURCE_VERIFY_AVAILABLE = False
+    _VERIFY_IMPORT_MSG = str(_verify_import_error)
+
+VERIFY_CACHE_COLLECTION = "source_checks"
+GHOST_CACHE_COLLECTION = "ghost_analyses"
+VERIFY_CACHE_TTL_HOURS = (
+    {STATUS_OPEN: 12, STATUS_CLOSED: 24, STATUS_UNKNOWN: 1} if SOURCE_VERIFY_AVAILABLE else {}
+)
+
+_company_index_cache: Dict[str, Any] = {"built_at": None, "by_name": {}, "by_domain": {}}
+
+
+def _require_verify_engine():
+    if not SOURCE_VERIFY_AVAILABLE:
+        raise HTTPException(status_code=503, detail=f"source verification engine unavailable: {_VERIFY_IMPORT_MSG}")
+
+
+def _norm_text(value: Any) -> str:
+    """Lowercase, strip legal suffixes / punctuation — used for fuzzy matching."""
+    text = re.sub(r"[^a-z0-9\u4e00-\u9fff ]+", " ", str(value or "").lower())
+    text = re.sub(
+        r"\b(inc|llc|ltd|limited|corp|corporation|co|gmbh|plc|sa|ag|bv|oy|pte|group|holdings)\b",
+        " ",
+        text,
+    )
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _title_similarity(a: str, b: str) -> float:
+    ta, tb = set(_norm_text(a).split()), set(_norm_text(b).split())
+    if not ta or not tb:
+        return 0.0
+    return len(ta & tb) / len(ta | tb)
+
+
+def _cache_key_for_url(url: str) -> str:
+    ref = identify_source(url)
+    if ref.get("ats") and ref["ats"] != "unknown":
+        return f"{ref['ats']}|{ref.get('token') or '-'}|{ref.get('job_id') or '-'}"
+    return "url|" + hashlib.md5((url or "").encode("utf-8")).hexdigest()
+
+
+def _cache_get(db, key: str, refresh: bool = False) -> Optional[Dict[str, Any]]:
+    if db is None or refresh:
+        return None
+    try:
+        doc = db[VERIFY_CACHE_COLLECTION].find_one({"key": key})
+    except Exception:  # noqa: BLE001
+        return None
+    if not doc:
+        return None
+    checked_at = doc.get("checked_at")
+    if not isinstance(checked_at, datetime):
+        return None
+    ttl = VERIFY_CACHE_TTL_HOURS.get(doc.get("status"), 6)
+    age_hours = (datetime.utcnow() - checked_at).total_seconds() / 3600.0
+    if age_hours > ttl:
+        return None
+    result = dict(doc.get("result") or {})
+    result["cached"] = True
+    return result
+
+
+def _cache_put(db, key: str, result: Dict[str, Any]) -> None:
+    if db is None:
+        return
+    try:
+        db[VERIFY_CACHE_COLLECTION].update_one(
+            {"key": key},
+            {
+                "$set": {
+                    "key": key,
+                    "status": result.get("status"),
+                    "ats": result.get("ats"),
+                    "result": {k: v for k, v in result.items() if k != "cached"},
+                    "checked_at": datetime.utcnow(),
+                },
+                "$inc": {"hits": 1},
+            },
+            upsert=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️  source_checks cache write failed: {exc}")
+
+
+def _verified_url(db, verifier, url: str, refresh: bool, hint_title: str = "",
+                  hint_company: str = "", token_hint: Optional[str] = None) -> Dict[str, Any]:
+    """Verify one URL with the shared MongoDB cache in front of it."""
+    key = _cache_key_for_url(url)
+    cached = _cache_get(db, key, refresh=refresh)
+    if cached:
+        return cached
+    result = verifier.verify(
+        url, hint_title=hint_title, hint_company=hint_company, token_hint=token_hint
+    ).to_dict()
+    _cache_put(db, key, result)
+    return result
+
+
+def _company_index(db) -> Dict[str, Any]:
+    """Lazily index companies by normalized name / domain (10 min TTL)."""
+    now = datetime.utcnow()
+    built = _company_index_cache.get("built_at")
+    if built and (now - built).total_seconds() < 600:
+        return _company_index_cache
+    by_name: Dict[str, Dict[str, Any]] = {}
+    by_domain: Dict[str, Dict[str, Any]] = {}
+    try:
+        for doc in db.companies.find(
+            {}, {"name": 1, "domain": 1, "ats_url": 1, "ats_system": 1, "location": 1}
+        ):
+            key = _norm_text(doc.get("name"))
+            if key and key not in by_name:
+                by_name[key] = doc
+            domain = str(doc.get("domain") or "").lower().strip()
+            if domain and domain not in by_domain:
+                by_domain[domain] = doc
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️  company index build failed: {exc}")
+    _company_index_cache.update({"built_at": now, "by_name": by_name, "by_domain": by_domain})
+    return _company_index_cache
+
+
+def _find_company_doc(db, company: str) -> Optional[Dict[str, Any]]:
+    if not company:
+        return None
+    index = _company_index(db)
+    norm = _norm_text(company)
+    if not norm:
+        return None
+    doc = index["by_name"].get(norm)
+    if doc:
+        return doc
+    simple = str(company).lower().strip()
+    if simple in index["by_domain"]:
+        return index["by_domain"][simple]
+    # Containment match, closest length wins (avoids noisy substring hits)
+    candidates = [
+        (len(key), value)
+        for key, value in index["by_name"].items()
+        if key and (key in norm or norm in key) and abs(len(key) - len(norm)) <= 12
+    ]
+    if candidates:
+        candidates.sort(key=lambda item: item[0])
+        return candidates[0][1]
+    return None
+
+
+def _company_board_ref(doc: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Extract (ats, token) for a company document (see source_verify)."""
+    return board_ref_from_company(doc)
+
+
+def _fetch_board_jobs(http, ats: str, token: str) -> List[Dict[str, Any]]:
+    """Return a normalized [{job_id, title, location, url}] list for a board."""
+    out: List[Dict[str, Any]] = []
+    try:
+        if ats == "greenhouse":
+            data, code = http.get_json(f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs")
+            if code == 200 and isinstance(data, dict):
+                for j in data.get("jobs", []):
+                    loc = j.get("location") or {}
+                    out.append({
+                        "job_id": str(j.get("id")),
+                        "title": j.get("title", ""),
+                        "location": loc.get("name", "") if isinstance(loc, dict) else "",
+                        "url": j.get("absolute_url") or f"https://job-boards.greenhouse.io/{token}/jobs/{j.get('id')}",
+                    })
+        elif ats == "lever":
+            data, code = http.get_json(f"https://api.lever.co/v0/postings/{token}?mode=json")
+            if code == 200 and isinstance(data, list):
+                for j in data:
+                    cats = j.get("categories") or {}
+                    out.append({
+                        "job_id": str(j.get("id")),
+                        "title": j.get("text", ""),
+                        "location": cats.get("location", "") if isinstance(cats, dict) else "",
+                        "url": j.get("hostedUrl") or f"https://jobs.lever.co/{token}/{j.get('id')}",
+                    })
+        elif ats == "ashby":
+            data, code = http.get_json(f"https://api.ashbyhq.com/posting-api/job-board/{token}")
+            if code == 200 and isinstance(data, dict):
+                for j in data.get("jobs", []):
+                    out.append({
+                        "job_id": str(j.get("id")),
+                        "title": j.get("title", ""),
+                        "location": j.get("location", "") or "",
+                        "url": j.get("jobUrl") or f"https://jobs.ashbyhq.com/{token}/{j.get('id')}",
+                    })
+        elif ats == "workable":
+            data, code = http.get_json(
+                f"https://apply.workable.com/api/v1/widget/accounts/{token}?details=true"
+            )
+            if code == 200 and isinstance(data, dict):
+                for j in data.get("jobs", []):
+                    out.append({
+                        "job_id": str(j.get("shortcode")),
+                        "title": j.get("title", ""),
+                        "location": j.get("city", "") or "",
+                        "url": j.get("url") or f"https://apply.workable.com/{token}/j/{j.get('shortcode')}/",
+                    })
+        elif ats == "smartrecruiters":
+            data, code = http.get_json(
+                f"https://api.smartrecruiters.com/v1/companies/{token}/postings?limit=100"
+            )
+            if code == 200 and isinstance(data, dict):
+                for j in data.get("content", []):
+                    loc = j.get("location") or {}
+                    out.append({
+                        "job_id": str(j.get("id")),
+                        "title": j.get("name", ""),
+                        "location": ", ".join(str(v) for v in (loc.get("city"), loc.get("country")) if v)
+                        if isinstance(loc, dict) else "",
+                        "url": f"https://jobs.smartrecruiters.com/{token}/{j.get('id')}",
+                    })
+        elif ats == "recruitee":
+            data, code = http.get_json(f"https://{token}.recruitee.com/api/offers/")
+            if code == 200 and isinstance(data, dict):
+                for j in data.get("offers", []):
+                    out.append({
+                        "job_id": str(j.get("slug") or j.get("id")),
+                        "title": j.get("title", ""),
+                        "location": j.get("location", "") or "",
+                        "url": j.get("careers_url") or f"https://{token}.recruitee.com/o/{j.get('slug')}",
+                    })
+        elif ats == "breezy":
+            data, code = http.get_json(f"https://{token}.breezy.hr/json")
+            if code == 200 and isinstance(data, list):
+                for j in data:
+                    loc = j.get("location") or {}
+                    out.append({
+                        "job_id": str(j.get("id") or j.get("_id") or ""),
+                        "title": j.get("name", ""),
+                        "location": loc.get("name", "") if isinstance(loc, dict) else "",
+                        "url": j.get("url") or f"https://{token}.breezy.hr/p/{j.get('id')}",
+                    })
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️  board fetch failed ({ats}/{token}): {exc}")
+    return out
+
+
+def _lookup_from_database(db, verifier, company: str, title: str,
+                          refresh: bool = False) -> Optional[Dict[str, Any]]:
+    """Shared-cache play: if JobDetector already scraped this job, we know its ATS URL."""
+    if not company:
+        return None
+    try:
+        query: Dict[str, Any] = {
+            "$or": [
+                {"company": company},
+                {"company": {"$regex": f"^{re.escape(company)}$", "$options": "i"}},
+            ]
+        }
+        docs = list(db.jobs.find(
+            query,
+            {"title": 1, "source_url": 1, "source": 1, "company": 1, "location": 1},
+        ).limit(200))
+    except Exception:  # noqa: BLE001
+        return None
+    if not docs:
+        return None
+    best, best_score = None, 0.0
+    for doc in docs:
+        score = _title_similarity(title, doc.get("title", ""))
+        if score > best_score:
+            best, best_score = doc, score
+    if not best or best_score < 0.55 or not best.get("source_url"):
+        return None
+    result = _verified_url(db, verifier, best["source_url"], refresh,
+                           hint_title=title, hint_company=company)
+    result["matched_title"] = result.get("matched_title") or best.get("title", "")
+    result["company"] = result.get("company") or company
+    result["match_score"] = round(best_score, 2)
+    result["match_source"] = "jobdetector_db"
+    return result
+
+
+def _lookup_from_board(db, verifier, company_doc: Dict[str, Any], company: str,
+                       title: str, refresh: bool = False) -> Optional[Dict[str, Any]]:
+    """Ask the company's live ATS board whether a matching requisition exists."""
+    ref = _company_board_ref(company_doc)
+    if not ref or not title:
+        return None
+    jobs = _fetch_board_jobs(verifier.http, ref["ats"], ref["token"])
+    if not jobs:
+        return None
+    best, best_score = None, 0.0
+    for job in jobs:
+        score = _title_similarity(title, job.get("title", ""))
+        if score > best_score:
+            best, best_score = job, score
+    if best and best_score >= 0.55:
+        result = _verified_url(db, verifier, best["url"], refresh,
+                               hint_title=title, hint_company=company, token_hint=ref["token"])
+        result["matched_title"] = result.get("matched_title") or best.get("title", "")
+        result["match_score"] = round(best_score, 2)
+        result["match_source"] = f"{ref['ats']}_board"
+        return result
+    # The board is alive but has no such role → strong-ish evidence of a stale listing
+    return {
+        "input_url": company_doc.get("ats_url") or "",
+        "status": STATUS_CLOSED,
+        "ats": ref["ats"],
+        "confidence": 0.6,
+        "reason": (
+            f"{company} 的 {ref['ats']} 官方 board 当前在招 {len(jobs)} 个岗位，"
+            f"但未找到与“{title}”匹配的职位，疑似已下架或标题被聚合站改写"
+        ),
+        "canonical_url": company_doc.get("ats_url") or "",
+        "apply_url": company_doc.get("ats_url") or "",
+        "matched_title": "",
+        "company": company,
+        "location": "",
+        "posted_at": "",
+        "http_status": 200,
+        "checked_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "elapsed_ms": 0,
+        "cached": False,
+        "match_score": 0.0,
+        "match_source": f"{ref['ats']}_board",
+    }
+
+
+def _lookup_company_job(db, verifier, company_doc: Optional[Dict[str, Any]], company: str,
+                        title: str, refresh: bool = False) -> Optional[Dict[str, Any]]:
+    """
+    Resolve "company + title" → a verified source posting.
+
+    Both paths are tried and an **open** match always wins: the JobDetector DB
+    may hold a stale record for the same title while the employer's board has a
+    slightly different, still-open requisition. Reporting "closed" in that case
+    would be a false negative.
+    """
+    db_result = _lookup_from_database(db, verifier, company, title, refresh)
+    board_result = (
+        _lookup_from_board(db, verifier, company_doc, company, title, refresh)
+        if company_doc is not None else None
+    )
+
+    candidates = [r for r in (db_result, board_result) if r]
+    if not candidates:
+        return None
+    open_matches = [r for r in candidates if r.get("status") == STATUS_OPEN]
+    if open_matches:
+        return max(open_matches, key=lambda r: r.get("match_score") or 0)
+    return max(candidates, key=lambda r: r.get("match_score") or 0)
+
+
+def _verify_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Blocking worker: verify every candidate URL + optional company/title lookup."""
+    db = get_db()
+    verifier = SourceVerifier()
+    urls: List[str] = []
+    raw_urls = payload.get("urls")
+    if isinstance(raw_urls, str):
+        urls = [raw_urls]
+    elif isinstance(raw_urls, list):
+        urls = [str(u) for u in raw_urls if u]
+    if payload.get("url"):
+        urls.insert(0, str(payload["url"]))
+
+    company = (payload.get("company") or "").strip()
+    title = (payload.get("title") or "").strip()
+    refresh = bool(payload.get("refresh"))
+    include_lookup = payload.get("include_lookup", True)
+
+    # De-duplicate, keep ATS-looking URLs first, cap the fan-out
+    seen = set()
+    ordered: List[str] = []
+    for url in extract_ats_urls(urls) + urls:
+        if url and url not in seen:
+            seen.add(url)
+            ordered.append(url)
+    ordered = ordered[:6]
+
+    company_doc = _find_company_doc(db, company) if company else None
+    board_ref = _company_board_ref(company_doc) if company_doc else None
+    results: List[Dict[str, Any]] = [
+        _verified_url(db, verifier, url, refresh, hint_title=title, hint_company=company,
+                      token_hint=board_ref)
+        for url in ordered
+    ]
+
+    lookup: Optional[Dict[str, Any]] = None
+    if include_lookup and company_doc is not None:
+        if not any(r.get("status") == STATUS_OPEN for r in results):
+            lookup = _lookup_company_job(db, verifier, company_doc, company, title, refresh)
+
+    # Pick the verdict the badge shows. An explicit, high-confidence result for
+    # the exact URL on the page always beats a fuzzy company+title match — but we
+    # keep that match around as `alternative` so the user can still see it.
+    definitive = [
+        r for r in results
+        if r.get("status") in (STATUS_OPEN, STATUS_CLOSED) and (r.get("confidence") or 0) >= 0.85
+    ]
+    alternative = None
+    if definitive:
+        best = max(definitive, key=lambda r: ((r.get("status") == STATUS_OPEN), r.get("confidence") or 0))
+        if lookup and lookup.get("status") == STATUS_OPEN and best.get("status") == STATUS_CLOSED:
+            alternative = lookup
+    else:
+        best = None
+        for candidate in ([lookup] if lookup else []) + results:
+            if not candidate:
+                continue
+            rank = (
+                {"open": 2, "closed": 1}.get(candidate.get("status"), 0),
+                candidate.get("confidence") or 0,
+            )
+            if best is None or rank > best[0]:
+                best = (rank, candidate)
+        best = best[1] if best else None
+
+    return {
+        "count": len(results),
+        "results": results,
+        "lookup": lookup,
+        "best": best,
+        "alternative": alternative,
+        "company_known": company_doc is not None,
+        "engine": "source_verify",
+    }
+
+
+@app.post("/api/verify/source")
+async def api_verify_source(request: Request):
+    """
+    Verify whether a job posting is still live on the employer's own ATS.
+
+    Body (JSON):
+      {
+        "urls":    ["https://jobs.lever.co/acme/<uuid>", ...],  // candidate apply links
+        "url":     "https://...",                               // convenience single URL
+        "company": "Acme",                                      // enables the DB board lookup
+        "title":   "Senior Platform Engineer",
+        "refresh": false,                                       // bypass the shared cache
+        "include_lookup": true
+      }
+    """
+    _require_verify_engine()
+    await check_rate_limit(request, limit=90, window=60)
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="JSON object body required")
+    return await run_in_threadpool(_verify_payload, payload)
+
+
+@app.get("/api/verify/source")
+async def api_verify_source_get(
+    request: Request,
+    url: str = Query(...),
+    company: str = Query(""),
+    title: str = Query(""),
+    refresh: bool = Query(False),
+):
+    """GET convenience wrapper around POST /api/verify/source (single URL)."""
+    _require_verify_engine()
+    await check_rate_limit(request, limit=90, window=60)
+    payload = {"urls": [url], "company": company, "title": title, "refresh": refresh}
+    return await run_in_threadpool(_verify_payload, payload)
+
+
+@app.post("/api/verify/lookup")
+async def api_verify_lookup(request: Request):
+    """
+    Find a posting by company + title and verify it against the source ATS.
+
+    Body (JSON): { "company": "Stripe", "title": "Software Engineer", "refresh": false }
+    """
+    _require_verify_engine()
+    await check_rate_limit(request, limit=60, window=60)
+    payload = await request.json()
+    company = (payload.get("company") or "").strip()
+    title = (payload.get("title") or "").strip()
+    refresh = bool(payload.get("refresh"))
+    if not company:
+        raise HTTPException(status_code=400, detail="company is required")
+
+    def _work() -> Dict[str, Any]:
+        db = get_db()
+        verifier = SourceVerifier()
+        doc = _find_company_doc(db, company)
+        result = _lookup_company_job(db, verifier, doc, company, title, refresh)
+        return {"result": result, "company_known": doc is not None}
+
+    return await run_in_threadpool(_work)
+
+
+def _ghost_cache_key(payload: Dict[str, Any]) -> str:
+    raw = "|".join([
+        str(payload.get("job_title") or ""),
+        str(payload.get("company_name") or ""),
+        str(payload.get("source_status") or ""),
+        str(payload.get("source_type") or ""),
+        str(payload.get("post_age_days") or ""),
+        str(payload.get("jd_text") or "")[:1500],
+    ])
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+
+def _ghost_analyze(payload: Dict[str, Any]) -> Dict[str, Any]:
+    db = get_db()
+    key = _ghost_cache_key(payload)
+    refresh = bool(payload.get("refresh"))
+    if db is not None and not refresh:
+        try:
+            doc = db[GHOST_CACHE_COLLECTION].find_one({"key": key})
+            if doc and isinstance(doc.get("analyzed_at"), datetime):
+                if (datetime.utcnow() - doc["analyzed_at"]).total_seconds() < 24 * 3600:
+                    result = dict(doc.get("result") or {})
+                    result["cached"] = True
+                    return result
+        except Exception:  # noqa: BLE001
+            pass
+
+    verdict = GhostAnalyzer(provider=payload.get("provider")).analyze(
+        job_title=str(payload.get("job_title") or ""),
+        company_name=str(payload.get("company_name") or ""),
+        post_age_days=payload.get("post_age_days"),
+        source_type=str(payload.get("source_type") or "unknown"),
+        jd_text=str(payload.get("jd_text") or ""),
+        source_status=str(payload.get("source_status") or "unknown"),
+    ).to_dict()
+
+    if db is not None:
+        try:
+            db[GHOST_CACHE_COLLECTION].update_one(
+                {"key": key},
+                {"$set": {"key": key, "result": verdict, "analyzed_at": datetime.utcnow()}},
+                upsert=True,
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠️  ghost cache write failed: {exc}")
+    return verdict
+
+
+@app.post("/api/ghost/analyze")
+async def api_ghost_analyze(request: Request):
+    """
+    Score a posting for ghost-job risk (LLM with heuristic fallback).
+
+    Body (JSON):
+      {
+        "job_title": "Senior Platform Engineer",
+        "company_name": "Acme",
+        "post_age_days": 45,
+        "source_type": "greenhouse",          // or unknown / agency / aggregator
+        "jd_text": "....",
+        "source_status": "open" | "closed" | "unknown",
+        "provider": "openrouter"              // optional override
+      }
+    """
+    await check_rate_limit(request, limit=20, window=60)
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="JSON object body required")
+    jd = str(payload.get("jd_text") or "")
+    if len(jd) > 20000:
+        payload["jd_text"] = jd[:20000]
+    return await run_in_threadpool(_ghost_analyze, payload)
+
+
+@app.get("/api/ghost/analyze")
+async def api_ghost_analyze_get(
+    request: Request,
+    job_id: str = Query(...),
+    provider: str = Query(""),
+):
+    """
+    Convenience wrapper: score a job already stored in JobDetector by its id.
+
+    The job's posted age, description and source ATS are pulled from MongoDB.
+    """
+    await check_rate_limit(request, limit=20, window=60)
+    db = get_db()
+    job = db.jobs.find_one({"job_id": job_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="job not found")
+
+    payload = {
+        "job_title": job.get("title", ""),
+        "company_name": job.get("company", ""),
+        "post_age_days": _days_since(job.get("posted_date") or job.get("scraped_at")),
+        "source_type": job.get("source", "unknown"),
+        "jd_text": job.get("description", ""),
+        "source_status": "unknown",
+        "provider": provider or None,
+    }
+    return await run_in_threadpool(_ghost_analyze, payload)
+
+
+@app.get("/api/verify/stats")
+async def api_verify_stats(request: Request):
+    """Small operational overview for the extension / admin dashboard."""
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="database unavailable")
+    total = db[VERIFY_CACHE_COLLECTION].count_documents({})
+    by_status = {
+        status: db[VERIFY_CACHE_COLLECTION].count_documents({"status": status})
+        for status in ("open", "closed", "unknown")
+    }
+    by_ats = list(db[VERIFY_CACHE_COLLECTION].aggregate([
+        {"$group": {"_id": "$ats", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 12},
+    ]))
+    recent = list(db[VERIFY_CACHE_COLLECTION].find(
+        {"status": "closed"}, {"key": 1, "ats": 1, "checked_at": 1, "result": 1}
+    ).sort("checked_at", -1).limit(10))
+    return {
+        "cached_checks": total,
+        "by_status": by_status,
+        "by_ats": [{"ats": row["_id"], "count": row["count"]} for row in by_ats],
+        "recently_closed": [
+            {
+                "key": row.get("key"),
+                "ats": row.get("ats"),
+                "checked_at": _serialize_dt(row.get("checked_at")),
+                "reason": (row.get("result") or {}).get("reason"),
+                "url": (row.get("result") or {}).get("input_url"),
+            }
+            for row in recent
+        ],
+        "ghost_analyses": db[GHOST_CACHE_COLLECTION].count_documents({}),
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     port = 8123

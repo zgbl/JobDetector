@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "JobDetector — 岗位源头校验",
+  "version": "0.1.0",
+  "description": "在 LinkedIn / Indeed 职位页面上校验雇主 ATS 的原始岗位是否仍在招聘，并提供直达源头投递与 Ghost Job 风险分析。",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://*.linkedin.com/*",
+    "https://*.indeed.com/*",
+    "https://boards-api.greenhouse.io/*",
+    "https://api.lever.co/*",
+    "https://api.ashbyhq.com/*",
+    "https://apply.workable.com/*",
+    "https://api.smartrecruiters.com/*",
+    "https://*.myworkdayjobs.com/*",
+    "https://jobdetector.blackrice.top/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.linkedin.com/jobs/*",
+        "https://*.indeed.com/*",
+        "https://*.indeed.com/viewjob*"
+      ],
+      "js": ["content/extract.js", "content/content.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "JobDetector — 岗位源头校验"
+  },
+  "options_page": "options/options.html"
+}

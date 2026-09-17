@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>JobDetector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="jd-header">
+      <div class="jd-brand">JobDetector</div>
+      <div class="jd-sub">岗位源头校验</div>
+    </header>
+
+    <main id="jd-main">
+      <section id="jd-job" class="jd-section jd-hidden">
+        <div id="jd-job-title" class="jd-job-title"></div>
+        <div id="jd-job-company" class="jd-job-company"></div>
+      </section>
+
+      <section id="jd-status" class="jd-section">
+        <div id="jd-status-badge" class="jd-badge jd-badge--loading">校验中…</div>
+        <div id="jd-status-reason" class="jd-reason"></div>
+        <div id="jd-status-meta" class="jd-meta"></div>
+        <div class="jd-actions">
+          <button id="jd-reverify" type="button" class="jd-btn jd-btn--primary">重新校验</button>
+          <button id="jd-open-source" type="button" class="jd-btn">直达源头投递 →</button>
+        </div>
+      </section>
+
+      <section id="jd-ghost" class="jd-section">
+        <button id="jd-ghost-btn" type="button" class="jd-btn jd-btn--wide">Ghost Job 风险分析</button>
+        <div id="jd-ghost-result" class="jd-ghost-result"></div>
+      </section>
+
+      <section id="jd-unsupported" class="jd-section jd-hidden">
+        <div class="jd-empty">打开 LinkedIn / Indeed 职位页面即可自动校验</div>
+      </section>
+    </main>
+
+    <footer class="jd-footer">
+      <a href="#" id="jd-options-link">设置</a>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

@@ -10,6 +10,34 @@ Automated job scraping and notification system that monitors company career webs
 - 📧 Email notifications for matching jobs
 - 🗄️ MongoDB storage with efficient indexing
 - ⏰ Automated scheduling with APScheduler
+- 🧭 **源头校验层 (New)**: ask the employer's own ATS whether a posting is still live
+- 🧩 **Chrome 插件 (New)**: annotate Indeed / LinkedIn with 🟢 源头在招 / ⚠️ 源头已关闭
+- 👻 **反 Ghost Job (New)**: rule engine + LLM scoring for stale / agency-scraped listings
+
+## 反 Ghost Job / 源头校验（对外能力）
+
+| 能力 | 入口 | 文档 |
+| --- | --- | --- |
+| 校验岗位在源头 ATS 是否还在招（10 家 ATS + 兜底页探测） | `POST /api/verify/source`、`GET /api/verify/source` | [docs/SOURCE_VERIFICATION.md](docs/SOURCE_VERIFICATION.md) |
+| 只有公司名+职位名也能定位岗位（查自家库 + 实时 board 模糊匹配） | `POST /api/verify/lookup` | 同上 |
+| Ghost Job 风险评分（规则引擎 → LLM 降级链） | `POST /api/ghost/analyze` | [docs/GHOST_JOB_DETECTION.md](docs/GHOST_JOB_DETECTION.md) |
+| 浏览器实时标注插件 | `extension/` | [extension/README.md](extension/README.md) |
+| 批量复检、把已失效岗位下线 | `scripts/verify_active_jobs.py` | [docs/SOURCE_VERIFICATION.md](docs/SOURCE_VERIFICATION.md) §6 |
+
+```bash
+# 校验一条岗位（插件用的就是它）
+curl -X POST https://jobdetector.blackrice.top/api/verify/source \
+  -H 'Content-Type: application/json' \
+  -d '{"urls":["https://job-boards.greenhouse.io/stripe/jobs/999999999"],
+       "company":"Stripe","title":"Abuse Investigator"}'
+
+# 批量复检：源头关掉的岗位自动 is_active=false
+python scripts/verify_active_jobs.py --limit 200 --dry-run
+
+# 本地引擎体检（打真实 ATS 接口）
+python scripts/verify_source_smoke.py
+pytest tests/ -q
+```
 
 ## Tech Stack
 
@@ -195,5 +223,5 @@ For questions or suggestions, please open an issue.
 ---
 
 **Status**: 🚧 In Development (Scrapers Phase)  
-**Last Updated**: 2026-02-23
+**Last Updated**: 2026-09-17
 
