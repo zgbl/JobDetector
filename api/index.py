@@ -2691,6 +2691,10 @@ def _lookup_from_board(db, verifier, company_doc: Dict[str, Any], company: str,
             f"{company} 的 {ref['ats']} 官方 board 当前在招 {len(jobs)} 个岗位，"
             f"但未找到与“{title}”匹配的职位，疑似已下架或标题被聚合站改写"
         ),
+        "reason_en": (
+            f"{company}'s official {ref['ats']} board currently lists {len(jobs)} open roles, "
+            f"but none match “{title}” — it was probably taken down, or an aggregator rewrote the title"
+        ),
         "canonical_url": company_doc.get("ats_url") or "",
         "apply_url": company_doc.get("ats_url") or "",
         "matched_title": "",
@@ -3003,6 +3007,7 @@ async def api_verify_stats(request: Request):
                 "ats": row.get("ats"),
                 "checked_at": _serialize_dt(row.get("checked_at")),
                 "reason": (row.get("result") or {}).get("reason"),
+                "reason_en": (row.get("result") or {}).get("reason_en"),
                 "url": (row.get("result") or {}).get("input_url"),
             }
             for row in recent

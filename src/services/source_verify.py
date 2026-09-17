@@ -93,6 +93,7 @@ class VerifyResult:
     ats: str = "unknown"
     confidence: float = 0.0
     reason: str = ""
+    reason_en: str = ""
     canonical_url: str = ""
     apply_url: str = ""
     matched_title: str = ""
@@ -108,6 +109,8 @@ class VerifyResult:
         data = asdict(self)
         if not data.get("checked_at"):
             data["checked_at"] = _now_iso()
+        if not data.get("reason_en"):
+            data["reason_en"] = to_english_reason(data.get("reason", ""))
         return data
 
     @property
@@ -121,6 +124,178 @@ class VerifyResult:
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+# ---------------------------------------------------------------------------
+# Reason localisation
+# ---------------------------------------------------------------------------
+# The engine is used by two front-ends: the Chinese browser extension and the
+# English website.  ``reason`` stays Chinese (extension contract, unchanged);
+# ``reason_en`` is derived here so the English site never renders Chinese.
+# ``tests/test_source_verify.py`` scans this module for every reason literal and
+# fails if one of them has no rule — keep the two in sync.
+_REASON_EN_RULES: List[Tuple[str, str]] = [
+    # -- Greenhouse --------------------------------------------------------
+    (r"^无法从 URL 解析 Greenhouse board token$",
+     "Could not extract a Greenhouse board token from the URL"),
+    (r"^Greenhouse 源头 API 返回该岗位仍在招$",
+     "Greenhouse source API confirms this posting is still open"),
+    (r"^岗位详情 API 404，但在 board 列表中仍存在（unlisted job post）$",
+     "Detail API returned 404, but the job id is still in the board list (unlisted job post)"),
+    (r"^Greenhouse 源头已下架该岗位（详情 404 且 board 列表无此 ID）$",
+     "Greenhouse has taken this posting down (detail 404 and the job id is gone from the board list)"),
+    (r"^岗位详情 404，但无法读取 board 列表二次确认（board token 可能不匹配）$",
+     "Detail returned 404 but the board list could not be read to confirm (the board token may be wrong)"),
+    (r"^Greenhouse board 未公开或拒绝访问$", "The Greenhouse board is private or refused access"),
+    (r"^Greenhouse board 不存在（400/404）$", "The Greenhouse board does not exist (400/404)"),
+
+    # -- Lever -------------------------------------------------------------
+    (r"^无法从 URL 解析 Lever board token$",
+     "Could not extract a Lever board token from the URL"),
+    (r"^Lever 源头 API 返回该岗位仍在招$",
+     "Lever source API confirms this posting is still open"),
+    (r"^详情接口 404，但 board 列表中仍存在该岗位$",
+     "Detail endpoint returned 404, but the posting is still in the board list"),
+    (r"^Lever 源头已下架该岗位（详情 404 且 board 无此 ID）$",
+     "Lever has taken this posting down (detail 404 and the id is gone from the board list)"),
+    (r"^岗位详情 404，但无法读取 Lever board 列表二次确认$",
+     "Detail returned 404 but the Lever board list could not be read to confirm"),
+    (r"^Lever board 未公开或拒绝访问$", "The Lever board is private or refused access"),
+    (r"^Lever board 不存在$", "The Lever board does not exist"),
+
+    # -- Ashby -------------------------------------------------------------
+    (r"^无法从 URL 解析 Ashby organization slug$",
+     "Could not extract an Ashby organization slug from the URL"),
+    (r"^Ashby organization 不存在$", "The Ashby organization does not exist"),
+    (r"^Ashby 源头 board 中仍存在该岗位$",
+     "The posting is still present on the Ashby source board"),
+    (r"^岗位在 Ashby 中仍存在但已取消公开列出（isListed=false）$",
+     "Still present in Ashby but no longer publicly listed (isListed=false)"),
+    (r"^Ashby 源头 board 已无此岗位（当前在招 (\d+) 个）$",
+     r"Ashby no longer lists this posting (\1 roles currently open)"),
+
+    # -- Workable ----------------------------------------------------------
+    (r"^无法解析 Workable account token$", "Could not resolve the Workable account token"),
+    (r"^Workable 已将岗位短链重定向到失效页 \(/oops\)$",
+     "Workable redirects this short link to its expired-posting page (/oops)"),
+    (r"^Workable account 不存在$", "The Workable account does not exist"),
+    (r"^Workable 源头仍在招该岗位$", "Workable still lists this posting as open"),
+    (r"^Workable 源头已无此岗位（当前在招 (\d+) 个）$",
+     r"Workable no longer lists this posting (\1 roles currently open)"),
+
+    # -- SmartRecruiters ---------------------------------------------------
+    (r"^缺少 SmartRecruiters company 或 posting id$",
+     "Missing the SmartRecruiters company or posting id"),
+    (r"^SmartRecruiters 源头 API 返回该岗位仍在招$",
+     "SmartRecruiters source API confirms this posting is still open"),
+    (r"^SmartRecruiters 源头已下架该岗位 \(404\)$",
+     "SmartRecruiters has taken this posting down (404)"),
+    (r"^SmartRecruiters 拒绝访问 \(HTTP (\d+)\)$",
+     r"SmartRecruiters denied access (HTTP \1)"),
+    (r"^SmartRecruiters 请求异常 \(HTTP (\d+)\)$",
+     r"SmartRecruiters request failed (HTTP \1)"),
+
+    # -- Workday -----------------------------------------------------------
+    (r"^Workday URL 缺少 site 或 job 路径，无法精确定位$",
+     "The Workday URL has no site or job path, so the posting cannot be located"),
+    (r"^Workday 源头 API 返回该岗位仍在招$",
+     "Workday source API confirms this posting is still open"),
+    (r"^Workday 岗位截止日期已过 \((.+)\)$",
+     r"The Workday closing date has passed (\1)"),
+    (r"^Workday 源头已下架该岗位 \(404\)$",
+     "Workday has taken this posting down (404)"),
+
+    # -- Breezy / Recruitee / Personio / Teamtailor ------------------------
+    (r"^无法解析 Breezy 子域名$", "Could not resolve the Breezy subdomain"),
+    (r"^无法解析 Recruitee 子域名$", "Could not resolve the Recruitee subdomain"),
+    (r"^无法解析 Personio 子域名$", "Could not resolve the Personio subdomain"),
+    (r"^无法解析 Teamtailor 子域名$", "Could not resolve the Teamtailor subdomain"),
+    (r"^Breezy 源头仍在招该岗位$", "Breezy still lists this posting as open"),
+    (r"^Recruitee 源头仍在招该岗位$", "Recruitee still lists this posting as open"),
+    (r"^Personio 源头 XML feed 中仍存在该岗位$",
+     "The posting is still present in the Personio XML feed"),
+    (r"^Teamtailor 源头仍存在该岗位$", "The posting still exists on Teamtailor"),
+    (r"^Breezy 源头已无此岗位（当前在招 (\d+) 个）$",
+     r"Breezy no longer lists this posting (\1 roles currently open)"),
+    (r"^Recruitee 源头已无此岗位（当前在招 (\d+) 个）$",
+     r"Recruitee no longer lists this posting (\1 roles currently open)"),
+    (r"^Personio 源头 feed 已无此岗位（当前 (\d+) 个）$",
+     r"The Personio feed no longer lists this posting (\1 roles in total)"),
+    (r"^Teamtailor 源头已无此岗位（当前 (\d+) 个）$",
+     r"Teamtailor no longer lists this posting (\1 roles in total)"),
+    (r"^Breezy board 不存在$", "The Breezy board does not exist"),
+    (r"^Recruitee board 不存在$", "The Recruitee board does not exist"),
+    (r"^Breezy 请求异常 \(HTTP (\d+)\)$", r"Breezy request failed (HTTP \1)"),
+    (r"^Recruitee 请求异常 \(HTTP (\d+)\)$", r"Recruitee request failed (HTTP \1)"),
+    (r"^Personio feed 请求异常 \(HTTP (\d+)\)$", r"Personio feed request failed (HTTP \1)"),
+
+    # -- Board-only checks -------------------------------------------------
+    (r"^仅校验到 board 存在（(\d+) 个在招岗位），缺少 job id 无法判定单岗$",
+     r"Board exists (\1 open roles), but without a job id this posting cannot be judged"),
+    (r"^仅校验到 board 存在（(\d+) 个在招岗位），缺少 job id$",
+     r"Board exists (\1 open roles), but no job id was provided"),
+    (r"^仅校验到 Ashby board 存在（(\d+) 个在招岗位），缺少 job id$",
+     r"Ashby board exists (\1 open roles), but no job id was provided"),
+    (r"^仅校验到 Breezy board 存在（(\d+) 个在招岗位）$",
+     r"Breezy board exists (\1 open roles)"),
+    (r"^仅校验到 Recruitee board 存在（(\d+) 个在招岗位）$",
+     r"Recruitee board exists (\1 open roles)"),
+    (r"^仅校验到 Workable account 存在（(\d+) 个在招岗位）$",
+     r"Workable account exists (\1 open roles)"),
+    (r"^仅校验到 Personio board 存在（(\d+) 个岗位）$",
+     r"Personio board exists (\1 roles)"),
+    (r"^仅校验到 Teamtailor site 存在（(\d+) 个岗位）$",
+     r"Teamtailor site exists (\1 roles)"),
+
+    # -- Generic careers page ---------------------------------------------
+    (r"^页面存在有效的 JobPosting 结构化数据（Google 索引用）$",
+     "The page carries valid JobPosting structured data (used for Google indexing)"),
+    (r"^原岗位 URL 被重定向到列表/首页，岗位详情页已不存在$",
+     "The original URL redirects to a listing/home page — the detail page is gone"),
+    (r"^页面仍包含申请入口文案，但无结构化数据佐证$",
+     "The page still shows an apply entry point, but nothing structured backs it up"),
+    (r"^页面可访问但未找到明确的在招/失效信号（可能是 JS 渲染页面）$",
+     "The page loads but shows no clear open/closed signal (it may be JavaScript-rendered)"),
+    (r"^无法访问该页面（网络错误/超时）$",
+     "The page could not be reached (network error or timeout)"),
+    (r"^源页面返回 HTTP (\d+)，岗位页面已不存在$",
+     r"The source page returned HTTP \1 — the posting page no longer exists"),
+    (r"^源页面拒绝访问 \(HTTP (\d+)\)，需登录或反爬$",
+     r"The source page denied access (HTTP \1) — login or bot protection"),
+    (r"^源站异常 \(HTTP (\d+)\)$", r"The source site errored (HTTP \1)"),
+    (r"^源页面返回空内容 \(HTTP (\d+)\)$", r"The source page returned an empty body (HTTP \1)"),
+    (r"^页面出现失效提示文案: “(.+)”$",
+     r"The page shows an expired-posting notice: \"\1\""),
+    (r"^结构化数据 validThrough 已过期 \((.+)\)$",
+     r"Structured data marks validThrough as passed (\1)"),
+    (r"^岗位申请截止日期已过 \((.+)\)$",
+     r"The application deadline has passed (\1)"),
+
+    # -- Generic ATS request failures (keep last: broadest patterns) -------
+    (r"^(\w[\w ]*?) 详情请求异常 \(HTTP (\d+)\)$", r"\1 detail request failed (HTTP \2)"),
+    (r"^(\w[\w ]*?) board 请求异常 \(HTTP (\d+)\)$", r"\1 board request failed (HTTP \2)"),
+    (r"^(\w[\w ]*?) API 请求异常 \(HTTP (\d+)\)$", r"\1 API request failed (HTTP \2)"),
+    (r"^(\w[\w ]*?) 请求异常 \(HTTP (\d+)\)$", r"\1 request failed (HTTP \2)"),
+
+    # -- Internal error ----------------------------------------------------
+    (r"^校验过程异常: (.+)$", r"Verification raised an error: \1"),
+]
+
+
+def to_english_reason(reason: str) -> str:
+    """
+    Translate an engine reason string into English.
+
+    Falls back to the input unchanged when no rule matches — the unit test
+    ``test_every_reason_has_an_english_rule`` scans the module source and fails
+    in that case, so a missing rule is caught in CI rather than in production.
+    """
+    if not reason:
+        return ""
+    for pattern, replacement in _REASON_EN_RULES:
+        if re.match(pattern, reason):
+            return re.sub(pattern, replacement, reason)
+    return reason
 
 
 # ---------------------------------------------------------------------------

@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>岗位真伪校验 · Source Verification | JobDetector</title>
+    <title>Source Verification · Is this job still open? | JobDetector</title>
 
     <meta name="description"
-        content="粘贴任意职位链接，直接比对雇主 ATS 源头状态：岗位是否仍在招聘、是否已被下架，并给出 Ghost Job 风险评分。">
+        content="Paste any job link and we check the employer's own ATS directly: is the posting still live, or has it already been taken down? Includes a ghost-job risk score.">
+    <meta name="author" content="Tuxy">
 
     <link rel="icon" type="image/svg+xml" href="/favicon.ico">
     <link rel="stylesheet" href="css/style.css">
@@ -240,7 +241,7 @@
 
         .kv {
             display: grid;
-            grid-template-columns: 108px 1fr;
+            grid-template-columns: 118px 1fr;
             gap: 0.5rem 1rem;
             font-size: 0.93rem;
             line-height: 1.7;
@@ -451,12 +452,12 @@
     <nav class="glass-nav">
         <div class="nav-container">
             <a href="/" class="logo">
-                <span class="logo-icon">◆</span>
+                <i class="fas fa-satellite-dish"></i>
                 <span>JobDetector</span>
             </a>
             <div class="nav-links">
                 <a href="/" class="nav-item">Jobs</a>
-                <a href="/verify.html" class="nav-item active">真伪校验</a>
+                <a href="/verify.html" class="nav-item active">Verify Job</a>
                 <a href="/favorites.html" class="nav-item">Favorites</a>
                 <a href="/?view=companies" class="nav-item">Companies</a>
                 <a href="/my_digest.html" class="nav-item">🎯 My Digest</a>
@@ -469,43 +470,44 @@
     <main class="verify-wrap">
         <section class="verify-hero">
             <div class="eyebrow">Source Verification</div>
-            <h1>这个岗位，源头还在招吗？</h1>
+            <h1>Is this job still open at the source?</h1>
             <p>
-                粘贴职位链接（或只填公司名 + 职位名），我们绕过 Indeed / LinkedIn，
-                直接问雇主自己的招聘系统（Greenhouse / Lever / Ashby / Workday …）。
-                源头已下架 = 不用投了。
+                Paste a job link — or just a company and a title — and we skip Indeed and LinkedIn
+                entirely to ask the employer's own applicant tracking system
+                (Greenhouse, Lever, Ashby, Workday and more).
+                If the source has already dropped it, don't waste your time.
             </p>
         </section>
 
         <section class="panel">
-            <label class="field-label" for="urls">职位链接（每行一条，可留空）</label>
+            <label class="field-label" for="urls">Job links (one per line, optional)</label>
             <textarea id="urls" class="verify-textarea"
-                placeholder="https://jobs.lever.co/acme/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx&#10;https://boards.greenhouse.io/acme/jobs/1234567&#10;https://www.linkedin.com/redir/redirect?url=...  （LinkedIn 外链也支持）"></textarea>
+                placeholder="https://jobs.lever.co/acme/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx&#10;https://boards.greenhouse.io/acme/jobs/1234567&#10;https://www.linkedin.com/redir/redirect?url=...   (wrapped LinkedIn links work too)"></textarea>
 
             <div class="row-2 mt">
                 <div>
-                    <label class="field-label" for="company">公司名</label>
-                    <input id="company" class="verify-input" placeholder="例如 Stripe" autocomplete="off">
+                    <label class="field-label" for="company">Company</label>
+                    <input id="company" class="verify-input" placeholder="e.g. Stripe" autocomplete="off">
                 </div>
                 <div>
-                    <label class="field-label" for="title">职位名</label>
-                    <input id="title" class="verify-input" placeholder="例如 Software Engineer" autocomplete="off">
+                    <label class="field-label" for="title">Job title</label>
+                    <input id="title" class="verify-input" placeholder="e.g. Software Engineer" autocomplete="off">
                 </div>
             </div>
 
             <div class="actions">
                 <button id="verifyBtn" class="btn btn-primary" type="button">
-                    <i class="fa-solid fa-magnifying-glass"></i> 校验源头状态
+                    <i class="fa-solid fa-magnifying-glass"></i> Check source status
                 </button>
-                <button id="clearBtn" class="btn btn-ghost" type="button">清空</button>
-                <span class="meta-line">链接和公司名至少填一个</span>
+                <button id="clearBtn" class="btn btn-ghost" type="button">Clear</button>
+                <span class="meta-line">Provide a link or a company name</span>
             </div>
 
             <div class="samples">
-                <span class="meta-line" style="align-self:center;margin-right:0.3rem;">试试：</span>
-                <button class="sample-chip" type="button" data-demo="closed">一个已下架的岗位</button>
-                <button class="sample-chip" type="button" data-demo="open">一个仍在招的岗位</button>
-                <button class="sample-chip" type="button" data-demo="lookup">只有公司名+职位名</button>
+                <span class="meta-line" style="align-self:center;margin-right:0.3rem;">Try:</span>
+                <button class="sample-chip" type="button" data-demo="closed">A closed posting</button>
+                <button class="sample-chip" type="button" data-demo="open">An open posting</button>
+                <button class="sample-chip" type="button" data-demo="lookup">Company + title only</button>
             </div>
 
             <div id="error" class="err" style="display:none;"></div>
@@ -523,10 +525,10 @@
 
             <div class="actions">
                 <button id="applyBtn" class="btn btn-primary" type="button" style="display:none;">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> 直达源头投递
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Apply at the source
                 </button>
                 <button id="ghostBtn" class="btn btn-ghost" type="button">
-                    <i class="fa-solid fa-ghost"></i> Ghost Job 风险分析
+                    <i class="fa-solid fa-ghost"></i> Ghost job risk analysis
                 </button>
             </div>
 
@@ -535,49 +537,52 @@
             <div id="ghostPanel" class="ghost-panel">
                 <div class="row-3">
                     <div>
-                        <label class="field-label" for="ghostTitle">职位名</label>
+                        <label class="field-label" for="ghostTitle">Job title</label>
                         <input id="ghostTitle" class="verify-input">
                     </div>
                     <div>
-                        <label class="field-label" for="ghostCompany">公司名</label>
+                        <label class="field-label" for="ghostCompany">Company</label>
                         <input id="ghostCompany" class="verify-input">
                     </div>
                     <div>
-                        <label class="field-label" for="ghostAge">挂单天数</label>
-                        <input id="ghostAge" class="verify-input" type="number" min="0" placeholder="可留空">
+                        <label class="field-label" for="ghostAge">Days posted</label>
+                        <input id="ghostAge" class="verify-input" type="number" min="0" placeholder="optional">
                     </div>
                 </div>
                 <div class="mt">
-                    <label class="field-label" for="ghostJd">职位描述（可选，填了判定更准）</label>
-                    <textarea id="ghostJd" class="verify-textarea" placeholder="粘贴 JD 原文…"></textarea>
+                    <label class="field-label" for="ghostJd">Job description (optional, improves accuracy)</label>
+                    <textarea id="ghostJd" class="verify-textarea" placeholder="Paste the job description here…"></textarea>
                 </div>
                 <div class="actions">
-                    <button id="ghostRunBtn" class="btn btn-primary" type="button">开始分析</button>
-                    <span class="meta-line">规则引擎 + LLM，超过 50 分即视为高风险</span>
+                    <button id="ghostRunBtn" class="btn btn-primary" type="button">Analyze</button>
+                    <span class="meta-line">Rule engine + LLM. Anything above 50 is high risk.</span>
                 </div>
                 <div id="ghostResult" class="mt"></div>
             </div>
         </section>
 
         <section class="panel">
-            <label class="field-label">最近被判定为“源头已关闭”的岗位</label>
-            <div id="recent">加载中…</div>
+            <label class="field-label">Recently confirmed as closed at the source</label>
+            <div id="recent">Loading…</div>
             <p class="hint">
-                数据来自全站共享校验缓存：任何人在插件或本页面校验过的岗位，其他人再次查询时毫秒级返回。
+                Served from a shared verification cache: once anyone checks a posting — here or via the
+                browser extension — everyone else gets the answer in milliseconds.
             </p>
         </section>
 
         <section class="panel">
-            <label class="field-label">想边刷 LinkedIn / Indeed 边自动标注？装浏览器插件</label>
+            <label class="field-label">Want automatic badges while you browse LinkedIn or Indeed?</label>
             <ol class="install-steps">
-                <li>打开 Chrome，地址栏输入 <code>chrome://extensions</code></li>
-                <li>右上角打开 <strong>开发者模式</strong></li>
-                <li>点 <strong>加载已解压的扩展程序</strong>，选择项目里的 <code>extension/</code> 目录</li>
-                <li>打开任意 LinkedIn / Indeed 职位页，职位标题下方会自动出现状态徽章</li>
+                <li>Open Chrome and go to <code>chrome://extensions</code></li>
+                <li>Turn on <strong>Developer mode</strong> in the top right</li>
+                <li>Click <strong>Load unpacked</strong> and select the <code>extension/</code> folder in this project</li>
+                <li>Open any LinkedIn or Indeed job page — a status badge appears under the job title</li>
             </ol>
             <p class="hint">
-                插件默认后端就是本站（<code>https://jobdetector.blackrice.top</code>），无需额外配置。
-                徽章含义：🟢 源头在招 · ⚠️ 源头已关闭（无需投递）· ❓ 无法判定 · 🟠 后端不可用（本地校验）。
+                The extension points at this site by default (<code>https://jobdetector.blackrice.top</code>) and
+                needs no extra configuration. Badge meanings: 🟢 Open at the source ·
+                ⚠️ Closed at the source (don't apply) · ❓ Can't determine ·
+                🟠 Backend unreachable (checked locally).
             </p>
         </section>
     </main>
@@ -632,9 +637,9 @@
             };
 
             var STATUS_TEXT = {
-                open: '🟢 源头在招',
-                closed: '⚠️ 源头已关闭 · 无需投递',
-                unknown: '❓ 无法判定'
+                open: '🟢 Open at the source',
+                closed: '⚠️ Closed at the source · don\'t apply',
+                unknown: '❓ Can\'t determine'
             };
 
             function setError(message) {
@@ -676,14 +681,14 @@
                 if (!iso) return '';
                 var d = new Date(iso);
                 if (isNaN(d.getTime())) return String(iso);
-                return d.toLocaleString('zh-CN', { hour12: false });
+                return d.toLocaleString(undefined, { hour12: false });
             }
 
             function renderVerdict(data) {
                 var best = data.best || (data.lookup || null);
                 if (!best && data.results && data.results.length) best = data.results[0];
                 if (!best) {
-                    setError('没有找到可判定的源头信息。试试补上公司名，或直接粘贴雇主官网的申请链接。');
+                    setError('No source information found. Try adding the company name, or paste the employer\u2019s own apply link.');
                     els.verdict.classList.remove('show');
                     return;
                 }
@@ -694,18 +699,18 @@
 
                 var conf = Math.round((Number(best.confidence) || 0) * 100);
                 els.metaLine.textContent =
-                    '来源 ' + (best.ats || '未知') +
-                    ' · 置信度 ' + conf + '%' +
-                    (best.cached ? ' · 命中缓存' : '') +
-                    ' · 校验于 ' + fmtTime(best.checked_at);
+                    'Source ' + (best.ats || 'unknown') +
+                    ' · confidence ' + conf + '%' +
+                    (best.cached ? ' · cached' : '') +
+                    ' · checked ' + fmtTime(best.checked_at);
 
                 els.kv.replaceChildren();
                 [
-                    row('判定理由', best.reason),
-                    row('源头岗位', best.matched_title),
-                    row('地点', best.location),
-                    row('源头链接', best.canonical_url, best.canonical_url),
-                    row('匹配方式', best.match_source)
+                    row('Verdict', best.reason_en || best.reason),
+                    row('Matched role', best.matched_title),
+                    row('Location', best.location),
+                    row('Source link', best.canonical_url, best.canonical_url),
+                    row('Matched via', best.match_source)
                 ].forEach(function (pair) {
                     if (!pair) return;
                     els.kv.appendChild(pair[0]);
@@ -717,16 +722,16 @@
                     els.altBox.style.display = 'block';
                     els.altBox.replaceChildren();
                     var strong = document.createElement('strong');
-                    strong.textContent = '但该雇主有同类岗位仍在招：';
+                    strong.textContent = 'But this employer has a similar role still open: ';
                     els.altBox.appendChild(strong);
                     els.altBox.appendChild(document.createTextNode(
-                        (alt.matched_title ? '“' + alt.matched_title + '”' : (alt.ats || '源头 ATS'))
+                        alt.matched_title ? '\u201c' + alt.matched_title + '\u201d' : (alt.ats || 'source ATS')
                     ));
                     var link = document.createElement('a');
                     link.href = alt.apply_url || alt.canonical_url || '#';
                     link.target = '_blank';
                     link.rel = 'noopener noreferrer';
-                    link.textContent = ' 投这个 →';
+                    link.textContent = ' Apply to this one →';
                     link.style.color = 'var(--accent-blue)';
                     els.altBox.appendChild(link);
                 } else {
@@ -750,7 +755,7 @@
                     var head = document.createElement('div');
                     head.className = 'meta-line';
                     head.style.marginBottom = '0.4rem';
-                    head.textContent = '本次校验的链接（' + list.length + '）';
+                    head.textContent = 'Links checked (' + list.length + ')';
                     els.candidates.appendChild(head);
                     list.forEach(function (r) {
                         var item = document.createElement('div');
@@ -767,10 +772,9 @@
                     els.candidates.style.display = 'none';
                 }
 
-                // prefill the ghost panel from what we know
+                // prefill the ghost panel with what we already know
                 if (!els.ghostTitle.value) els.ghostTitle.value = best.matched_title || els.title.value || '';
                 if (!els.ghostCompany.value) els.ghostCompany.value = els.company.value || best.company || '';
-                els.ghostJd.value = els.ghostJd.value || '';
 
                 els.verdict.classList.add('show');
                 els.verdict.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -782,12 +786,12 @@
                 var company = els.company.value.trim();
                 var title = els.title.value.trim();
                 if (!urls.length && !company) {
-                    setError('请至少粘贴一个职位链接，或填写公司名。');
+                    setError('Paste a job link, or enter a company name.');
                     return;
                 }
 
                 els.verifyBtn.disabled = true;
-                els.verifyBtn.innerHTML = '<span class="spinner"></span>校验中…';
+                els.verifyBtn.innerHTML = '<span class="spinner"></span>Checking…';
                 try {
                     var resp = await fetch('/api/verify/source', {
                         method: 'POST',
@@ -797,10 +801,11 @@
                     if (!resp.ok) throw new Error('HTTP ' + resp.status);
                     renderVerdict(await resp.json());
                 } catch (err) {
-                    setError('校验失败：' + (err && err.message ? err.message : '网络错误') + '（服务可能正忙，稍后重试）');
+                    setError('Check failed: ' + (err && err.message ? err.message : 'network error') +
+                        ' — the service may be busy, please retry in a moment.');
                 } finally {
                     els.verifyBtn.disabled = false;
-                    els.verifyBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> 校验源头状态';
+                    els.verifyBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Check source status';
                 }
             }
 
@@ -822,8 +827,9 @@
                 var verdictLine = document.createElement('div');
                 verdictLine.style.fontWeight = '700';
                 verdictLine.style.marginBottom = '0.35rem';
-                verdictLine.textContent = (v.is_ghost_job ? '👻 高风险：疑似 Ghost Job' : '✅ 暂未发现明显幽灵岗特征') +
-                    ' · 建议：' + (v.recommendation || '—');
+                verdictLine.textContent =
+                    (v.is_ghost_job ? '👻 High risk: likely a ghost job' : '✅ No obvious ghost-job signals') +
+                    ' · ' + (v.recommendation || '—');
                 textWrap.appendChild(verdictLine);
 
                 var oneLiner = document.createElement('div');
@@ -847,7 +853,7 @@
 
                 var meta = document.createElement('div');
                 meta.className = 'meta-line mt';
-                meta.textContent = '模型：' + (v.provider || '—') + (v.cached ? ' · 命中缓存' : '');
+                meta.textContent = 'Model: ' + (v.provider || '—') + (v.cached ? ' · cached' : '');
                 els.ghostResult.appendChild(meta);
             }
 
@@ -861,7 +867,7 @@
                     source_status: current ? (current.status || 'unknown') : 'unknown'
                 };
                 els.ghostRunBtn.disabled = true;
-                els.ghostRunBtn.innerHTML = '<span class="spinner"></span>分析中…';
+                els.ghostRunBtn.innerHTML = '<span class="spinner"></span>Analyzing…';
                 els.ghostResult.textContent = '';
                 try {
                     var resp = await fetch('/api/ghost/analyze', {
@@ -874,11 +880,11 @@
                 } catch (err) {
                     var div = document.createElement('div');
                     div.className = 'err';
-                    div.textContent = '分析失败：' + (err && err.message ? err.message : '网络错误');
+                    div.textContent = 'Analysis failed: ' + (err && err.message ? err.message : 'network error');
                     els.ghostResult.replaceChildren(div);
                 } finally {
                     els.ghostRunBtn.disabled = false;
-                    els.ghostRunBtn.textContent = '开始分析';
+                    els.ghostRunBtn.textContent = 'Analyze';
                 }
             }
 
@@ -890,14 +896,14 @@
                     var items = data.recently_closed || [];
                     els.recent.replaceChildren();
                     if (!items.length) {
-                        els.recent.textContent = '还没有记录 —— 你校验的第一个已关闭岗位会出现在这里。';
+                        els.recent.textContent = 'No entries yet — the first closed posting you check will show up here.';
                         return;
                     }
                     items.slice(0, 8).forEach(function (item) {
                         var rowEl = document.createElement('div');
                         rowEl.className = 'recent-item';
                         var left = document.createElement('span');
-                        left.textContent = (item.ats || '—') + ' · ' + (item.reason || '');
+                        left.textContent = (item.ats || '—') + ' · ' + (item.reason_en || item.reason || '');
                         var right = document.createElement('span');
                         right.textContent = fmtTime(item.checked_at);
                         rowEl.appendChild(left);
@@ -905,7 +911,7 @@
                         els.recent.appendChild(rowEl);
                     });
                 } catch (err) {
-                    els.recent.textContent = '统计数据暂时不可用。';
+                    els.recent.textContent = 'Stats are temporarily unavailable.';
                 }
             }
 
@@ -931,7 +937,6 @@
                     els.company.value = demo.company;
                     els.title.value = demo.title;
                     els.ghostPanel.classList.remove('show');
-                    els.title.value = demo.title;
                     runVerify();
                 });
             });

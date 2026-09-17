@@ -10,34 +10,38 @@ Automated job scraping and notification system that monitors company career webs
 - 📧 Email notifications for matching jobs
 - 🗄️ MongoDB storage with efficient indexing
 - ⏰ Automated scheduling with APScheduler
-- 🧭 **源头校验层 (New)**: ask the employer's own ATS whether a posting is still live
-- 🧩 **Chrome 插件 (New)**: annotate Indeed / LinkedIn with 🟢 源头在招 / ⚠️ 源头已关闭
-- 👻 **反 Ghost Job (New)**: rule engine + LLM scoring for stale / agency-scraped listings
+- 🧭 **Source verification (New)**: ask the employer's own ATS whether a posting is still live
+- 🧩 **Chrome extension (New)**: annotate Indeed / LinkedIn with 🟢 open / ⚠️ closed at the source
+- 👻 **Anti ghost-job (New)**: rule engine + LLM scoring for stale / agency-scraped listings
 
-## 反 Ghost Job / 源头校验（对外能力）
+## Source verification & anti ghost-job
 
-| 能力 | 入口 | 文档 |
+| Capability | Entry point | Docs |
 | --- | --- | --- |
-| 校验岗位在源头 ATS 是否还在招（10 家 ATS + 兜底页探测） | `POST /api/verify/source`、`GET /api/verify/source` | [docs/SOURCE_VERIFICATION.md](docs/SOURCE_VERIFICATION.md) |
-| 只有公司名+职位名也能定位岗位（查自家库 + 实时 board 模糊匹配） | `POST /api/verify/lookup` | 同上 |
-| Ghost Job 风险评分（规则引擎 → LLM 降级链） | `POST /api/ghost/analyze` | [docs/GHOST_JOB_DETECTION.md](docs/GHOST_JOB_DETECTION.md) |
-| 浏览器实时标注插件 | `extension/` | [extension/README.md](extension/README.md) |
-| 批量复检、把已失效岗位下线 | `scripts/verify_active_jobs.py` | [docs/SOURCE_VERIFICATION.md](docs/SOURCE_VERIFICATION.md) §6 |
+| Is a posting still live on the source ATS (10 ATS + generic page probe) | `POST /api/verify/source`, `GET /api/verify/source` | [docs/SOURCE_VERIFICATION.md](docs/SOURCE_VERIFICATION.md) |
+| Locate a posting from company + title alone (own DB, then live board match) | `POST /api/verify/lookup` | same |
+| Ghost-job risk score (rule engine → LLM fallback chain) | `POST /api/ghost/analyze` | [docs/GHOST_JOB_DETECTION.md](docs/GHOST_JOB_DETECTION.md) |
+| Web UI — paste a link, get the verdict | `/verify.html` | this file |
+| Live annotation in the browser | `extension/` | [extension/README.md](extension/README.md) |
+| Bulk re-check — deactivate postings whose source is gone | `scripts/verify_active_jobs.py` | [docs/SOURCE_VERIFICATION.md](docs/SOURCE_VERIFICATION.md) §6 |
 
 ```bash
-# 校验一条岗位（插件用的就是它）
+# Verify one posting (this is what the extension calls)
 curl -X POST https://jobdetector.blackrice.top/api/verify/source \
   -H 'Content-Type: application/json' \
   -d '{"urls":["https://job-boards.greenhouse.io/stripe/jobs/999999999"],
        "company":"Stripe","title":"Abuse Investigator"}'
 
-# 批量复检：源头关掉的岗位自动 is_active=false
+# Bulk re-check: postings whose source is gone get is_active=false
 python scripts/verify_active_jobs.py --limit 200 --dry-run
 
-# 本地引擎体检（打真实 ATS 接口）
+# Engine health check against the real ATS APIs
 python scripts/verify_source_smoke.py
 pytest tests/ -q
 ```
+
+> API responses carry both `reason` (Chinese, used by the extension) and
+> `reason_en` (used by the English web UI).
 
 ## Tech Stack
 

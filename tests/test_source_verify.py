@@ -8,6 +8,8 @@ Run: ``pytest tests/test_source_verify.py -q``
 """
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from src.services.source_verify import (
@@ -16,6 +18,7 @@ from src.services.source_verify import (
     board_ref_from_urls,
     identify,
     unwrap_redirect,
+    to_english_reason,
     STATUS_CLOSED,
     STATUS_OPEN,
 )
@@ -189,3 +192,90 @@ def test_best_picks_open_over_closed():
     opened = VerifyResult(status=STATUS_OPEN, confidence=0.6)
     unknown = VerifyResult(status="unknown", confidence=0.1)
     assert verifier.best([closed, unknown, opened]) is opened
+
+
+# ---------------------------------------------------------------------------
+# Localisation
+# ---------------------------------------------------------------------------
+CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+
+# Sample values substituted into the engine's f-string placeholders so the
+# translation rules can be exercised without running a real verification.
+PLACEHOLDER_SAMPLES = {
+    "{code}": "404",
+    "{deadline}": "2026-01-01",
+    "{exc}": "boom",
+    "{phrase}": "no longer accepting applications",
+    "{valid_through}": "2026-01-01",
+}
+
+
+def _fill_placeholders(template: str) -> str:
+    out = template
+    for key, value in PLACEHOLDER_SAMPLES.items():
+        out = out.replace(key, value)
+    # any remaining {len(...)} / {n} style placeholder → 3
+    return re.sub(r"\{[^{}]*\}", "3", out)
+
+
+def test_every_reason_has_an_english_rule():
+    """
+    Every Chinese reason literal in the engine must translate to English.
+
+    This is the guard that keeps the English website from rendering Chinese:
+    a newly added ``out.reason = "..."`` without a matching rule fails here.
+    """
+    import pathlib
+
+    from src.services import source_verify
+
+    source = pathlib.Path(source_verify.__file__).read_text(encoding="utf-8")
+    templates = {
+        m.group(1)
+        for m in re.finditer(r'\.reason\s*=\s*f?"([^"]*)"', source)
+    }
+    assert templates, "no reason literals found — did the regex stop matching?"
+
+    untranslated = []
+    for template in sorted(templates):
+        if not CJK_RE.search(template):
+            continue  # already English
+        sample = _fill_placeholders(template)
+        english = to_english_reason(sample)
+        if english == sample or CJK_RE.search(english):
+            untranslated.append(template)
+
+    assert not untranslated, "missing English rules for:\n" + "\n".join(untranslated)
+
+
+@pytest.mark.parametrize(
+    "reason,expected_fragment",
+    [
+        ("Greenhouse 源头已下架该岗位（详情 404 且 board 列表无此 ID）",
+         "Greenhouse has taken this posting down"),
+        ("Lever 源头 API 返回该岗位仍在招", "Lever source API confirms"),
+        ("Ashby 源头 board 已无此岗位（当前在招 346 个）", "346 roles currently open"),
+        ("Workday 详情请求异常 (HTTP 500)", "Workday detail request failed (HTTP 500)"),
+        ("无法访问该页面（网络错误/超时）", "could not be reached"),
+        ("校验过程异常: boom", "Verification raised an error: boom"),
+    ],
+)
+def test_to_english_reason(reason, expected_fragment):
+    english = to_english_reason(reason)
+    assert expected_fragment.lower() in english.lower()
+    assert not CJK_RE.search(english)
+
+
+def test_verify_result_dict_carries_reason_en():
+    from src.services.source_verify import VerifyResult
+
+    result = VerifyResult(reason="Greenhouse 源头 API 返回该岗位仍在招")
+    data = result.to_dict()
+    assert data["reason"].startswith("Greenhouse 源头")
+    assert "still open" in data["reason_en"]
+    assert not CJK_RE.search(data["reason_en"])
+
+
+def test_to_english_reason_is_idempotent_for_english_input():
+    assert to_english_reason("Already English") == "Already English"
+    assert to_english_reason("") == ""
