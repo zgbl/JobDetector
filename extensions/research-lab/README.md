@@ -1,11 +1,9 @@
-# JobDetector Research Lab (experimental)
+# JobDetector Research Lab v0.2
 
-1. Unzip this folder. Open chrome://extensions in Chrome.
-2. Enable Developer mode, choose Load unpacked, and select this folder.
-3. Sign in to JobDetector with an active Plus/trial or Tuxy VIP account.
-4. Open a LinkedIn search/feed page, expand the desired post, and click this extension's toolbar icon once to enable research buttons on the current tab.
-5. Click Research this job on the chosen post. The report opens in JobDetector.
+One-time setup: unzip, open chrome://extensions, enable Developer mode, Load unpacked this folder. For an old installation replace the folder contents and reload the extension. Refresh existing LinkedIn tabs after installing/updating. Sign into JobDetector with Plus/trial or VIP.
 
-No post permalink or JobDetector job-database record is required. Only the selected post's visible text, professional author heading, public links and source page URL are transferred after clicking Research. The payload uses a URL fragment, not a query string. No LinkedIn cookies, password, browsing history or other posts are sent. No network host permission or automatic background crawling is requested. Uninstall or reload the LinkedIn tab to remove the injected buttons.
+Research buttons appear automatically on LinkedIn posts. Click one post's “Research this job” button: it expands supported collapsed posts, captures that post, opens JobDetector, and automatically generates the report. No toolbar activation, copying, form filling, permalink or second confirmation is required. If signed out, signing in resumes the pending research.
 
-LinkedIn's DOM changes. Some post layouts may not receive a button; copy the expanded post text into the lab as a fallback. This prototype has not been published to the Chrome Web Store.
+Only the clicked post's visible text, public author heading and links are submitted. No cookies, credentials or browsing history are accessed. Capture travels through extension session storage, bound to the report tab, with a ten-minute lifetime; it is not placed in the report URL. The report page cannot read another tab's capture. Button insertion runs locally and does not send other posts.
+
+The extension needs permission to run on LinkedIn and the JobDetector report page, plus session storage. It is experimental, not published to the Chrome Web Store. LinkedIn layout changes may require an update. Reports use the post and accessible linked sources, not general web search. Uninstall the extension and refresh LinkedIn to remove the buttons.
