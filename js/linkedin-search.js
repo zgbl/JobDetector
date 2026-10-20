@@ -1,9 +1,9 @@
-import { GROUPS, SIGNALS, PRESETS, ALL_PRESETS, buildLinkedInUrl } from './linkedin-presets.js';
+import { GROUPS, SIGNALS, PRESETS, ALL_PRESETS, buildLinkedInUrl } from './linkedin-presets.js?v=20261019_dates';
 
 const STORAGE_KEY = 'jobdetector-linkedin-console-v1';
 const byId = new Map(ALL_PRESETS.map(preset => [preset.id, preset]));
 const groupById = new Map(GROUPS.map(group => [group.id, group]));
-const state = { view: 'all', text: '', destination: 'posts', location: 'any', date: 'all', sort: 'relevant', favorites: [], recent: [], counts: {} };
+const state = { view: 'all', text: '', destination: 'posts', location: 'any', date: 'week', sort: 'relevant', favorites: [], recent: [], counts: {} };
 try {
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
   state.favorites = Array.isArray(saved.favorites) ? saved.favorites.filter(id => byId.has(id)) : [];
@@ -23,7 +23,7 @@ function toast(message) {
 }
 
 function linkFor(preset, broad = false) {
-  return buildLinkedInUrl(broad ? preset.broadQuery : preset.query, state.destination, state.location);
+  return buildLinkedInUrl(broad ? preset.broadQuery : preset.query, state.destination, state.location, state.date);
 }
 
 function searchCard(preset) {
@@ -83,17 +83,13 @@ function render() {
   $('signalsSection').hidden = !visibleSignals.length;
   $('signalsGrid').innerHTML = visibleSignals.map(signalCard).join('');
   const total = sections.reduce((sum, group) => sum + group.items.length, 0) + visibleSignals.length;
-  $('resultSummary').textContent = `${total} search${total === 1 ? '' : 'es'} shown · ${state.destination === 'posts' ? 'Hiring posts' : 'Job listings'} destination · ${state.location === 'any' ? 'No location keywords' : $('locationSelect').selectedOptions[0].textContent + ' keywords'}`;
+  $('resultSummary').textContent = `${total} search${total === 1 ? '' : 'es'} shown · ${state.destination === 'posts' ? 'Hiring posts' : 'Job listings'} destination · ${$('dateSelect').selectedOptions[0].textContent} · ${state.location === 'any' ? 'No location keywords' : $('locationSelect').selectedOptions[0].textContent + ' keywords'}`;
   $('emptyState').hidden = total !== 0;
   updateFilterExplainer();
 }
 
 function updateFilterExplainer() {
-  const dates = { all: '', day: 'Past 24 hours', week: 'Past week', month: 'Past month' };
-  const steps = [];
-  if (state.date !== 'all') steps.push(`choose Date posted → ${dates[state.date]}`);
-  if (state.sort === 'recent') steps.push('choose Sort by → Most recent, if offered');
-  $('filterExplainer').innerHTML = `<i class="fas fa-circle-info" aria-hidden="true"></i> ${steps.length ? `After LinkedIn opens, ${steps.join('; ')}. ` : ''}Date and sort are set on LinkedIn. Location adds keywords to the query; it does not verify eligibility or apply a LinkedIn location filter.`;
+  $('filterExplainer').innerHTML = `<i class="fas fa-circle-info" aria-hidden="true"></i> ${state.date === 'all' ? 'No date restriction.' : `${$('dateSelect').selectedOptions[0].textContent} is included in every LinkedIn search link.`} ${state.sort === 'recent' ? 'On LinkedIn, choose Sort by → Most recent, if offered. ' : 'Sort is set on LinkedIn. '}Location adds keywords; it does not verify eligibility or apply a LinkedIn location filter.`;
 }
 
 function setView(view) { state.view = view; render(); document.querySelector('.results-toolbar').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
@@ -103,7 +99,7 @@ document.addEventListener('click', async event => {
   const locationButton = event.target.closest('[data-location]');
   if (locationButton) { state.location = locationButton.dataset.location; $('locationSelect').value = state.location; render(); return; }
   const dateButton = event.target.closest('[data-date]');
-  if (dateButton) { state.date = dateButton.dataset.date; state.destination = 'posts'; $('dateSelect').value = state.date; document.querySelector('input[name="destination"][value="posts"]').checked = true; render(); toast('Open a post search, then set Past 24 hours on LinkedIn.'); return; }
+  if (dateButton) { state.date = dateButton.dataset.date; state.destination = 'posts'; $('dateSelect').value = state.date; document.querySelector('input[name="destination"][value="posts"]').checked = true; render(); toast('Every search link now includes Past 24 hours.'); return; }
   const action = event.target.closest('[data-action]');
   if (!action) return;
   const preset = byId.get(action.dataset.id);
@@ -115,7 +111,7 @@ document.addEventListener('click', async event => {
     save(); renderNav();
     const countLabel = action.closest('.search-card')?.querySelector('.use-count');
     if (countLabel) { countLabel.textContent = `${state.counts[preset.id]}×`; countLabel.title = `Opened ${state.counts[preset.id]} times`; }
-    if (state.date !== 'all' || state.sort === 'recent') toast('On LinkedIn, apply the selected date and sort options from its filters.');
+    if (state.sort === 'recent') toast('On LinkedIn, choose Sort by → Most recent, if offered.');
   } else if (action.dataset.action === 'favorite') {
     state.favorites = state.favorites.includes(preset.id) ? state.favorites.filter(id => id !== preset.id) : [...state.favorites, preset.id];
     save(); render();

@@ -48,14 +48,14 @@
         <div class="control-field"><label for="locationSelect">Location keywords</label><select id="locationSelect">
           <option value="any">Anywhere</option><option value="us">United States</option><option value="ny">New York / New Jersey</option><option value="remote">Remote-friendly</option>
         </select></div>
-        <div class="control-field"><label for="dateSelect">Date preference <span class="manual-tag">set on LinkedIn</span></label><select id="dateSelect">
-          <option value="all">All available dates</option><option value="day">Past 24 hours</option><option value="week">Past week</option><option value="month">Past month</option>
+        <div class="control-field"><label for="dateSelect">Date range <span class="manual-tag">included in links</span></label><select id="dateSelect">
+          <option value="all">All available dates</option><option value="day">Past 24 hours</option><option value="week" selected>Past week</option><option value="month">Past month</option>
         </select></div>
         <div class="control-field"><label for="sortSelect">Sort preference <span class="manual-tag">set on LinkedIn</span></label><select id="sortSelect">
           <option value="relevant">Most relevant</option><option value="recent">Most recent</option>
         </select></div>
       </div>
-      <p class="filter-explainer" id="filterExplainer"><i class="fas fa-circle-info" aria-hidden="true"></i> Date and sort are applied on LinkedIn after opening results. Location adds search keywords; it does not verify eligibility.</p>
+      <p class="filter-explainer" id="filterExplainer"><i class="fas fa-circle-info" aria-hidden="true"></i> Past week is included in every search link. Change the date range above to update all searches.</p>
     </section>
 
     <section class="search-workspace" aria-label="Search presets">
@@ -88,6 +88,6 @@
     <footer class="console-footer">Searches open on LinkedIn. LinkedIn controls the results, ranking, and available filters. <a href="/verify.html">Verify a job at its source <i class="fas fa-arrow-right" aria-hidden="true"></i></a></footer>
   </main>
   <div id="toast" class="console-toast" role="status" aria-live="polite"></div>
-  <script type="module" src="/js/linkedin-search.js"></script>
+  <script type="module" src="/js/linkedin-search.js?v=20261019_dates"></script>
 </body>
 </html>

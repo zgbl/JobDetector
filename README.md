@@ -23,7 +23,7 @@ Automated job scraping and notification system that monitors company career webs
 | Locate a posting from company + title alone (own DB, then live board match) | `POST /api/verify/lookup` | same |
 | Ghost-job risk score (rule engine → LLM fallback chain) | `POST /api/ghost/analyze` | [docs/GHOST_JOB_DETECTION.md](docs/GHOST_JOB_DETECTION.md) |
 | Web UI — paste a link, get the verdict | `/verify.html` | this file |
-| One-click LinkedIn searches | `/linkedin-search.html` | `js/linkedin-presets.js`; date and sort preferences are applied on LinkedIn |
+| One-click LinkedIn searches | `/linkedin-search.html` | `js/linkedin-presets.js`; defaults to past week, date range updates all links; sorting is set on LinkedIn |
 | Live annotation in the browser | `extension/` | [extension/README.md](extension/README.md) |
 | Bulk re-check — deactivate postings whose source is gone | `scripts/verify_active_jobs.py` | [docs/SOURCE_VERIFICATION.md](docs/SOURCE_VERIFICATION.md) §6 |
 | Auto-discover companies that are not in the DB yet (staged for review) | `scripts/discover_companies.py` | [docs/COMPANY_DISCOVERY.md](docs/COMPANY_DISCOVERY.md) |

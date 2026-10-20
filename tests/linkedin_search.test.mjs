@@ -23,9 +23,21 @@ test('every preset produces a correctly encoded LinkedIn URL in both modes', () 
       assert.equal(url.origin, 'https://www.linkedin.com');
       assert.equal(url.pathname, destination === 'posts' ? '/search/results/content/' : '/jobs/search/');
       assert.equal(url.searchParams.get('keywords'), ALL_PRESETS[i].query);
-      assert.deepEqual([...url.searchParams.keys()], ['keywords']);
+      assert.deepEqual([...url.searchParams.keys()], ['keywords', destination === 'posts' ? 'datePosted' : 'f_TPR']);
+      assert.equal(url.searchParams.get(destination === 'posts' ? 'datePosted' : 'f_TPR'), destination === 'posts' ? '"past-week"' : 'r604800');
     }
   }
+});
+
+test('the shared date range applies to both destinations and broadened signals', () => {
+  for (const [range, posts, jobs] of [['day', 'past-24h', 'r86400'], ['week', 'past-week', 'r604800'], ['month', 'past-month', 'r2592000']]) {
+    for (const query of [...ALL_PRESETS.map(preset => preset.query), ...SIGNALS.map(signal => signal.broadQuery)]) {
+      assert.equal(new URL(buildLinkedInUrl(query, 'posts', 'any', range)).searchParams.get('datePosted'), JSON.stringify(posts));
+      assert.equal(new URL(buildLinkedInUrl(query, 'jobs', 'any', range)).searchParams.get('f_TPR'), jobs);
+    }
+  }
+  for (const mode of ['posts', 'jobs']) assert.deepEqual([...new URL(buildLinkedInUrl('AI', mode, 'any', 'all')).searchParams.keys()], ['keywords']);
+  assert.throws(() => buildLinkedInUrl('AI', 'posts', 'any', 'invalid'));
 });
 
 test('location shortcuts add explicit keywords without fabricating LinkedIn filters', () => {
