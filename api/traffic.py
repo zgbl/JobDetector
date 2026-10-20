@@ -98,7 +98,7 @@ def traffic_report(request: Request, response: Response, days: int = Query(30, g
     first = events.find_one({}, sort=[("timestamp", 1)])
     return {
         "days": days, "timezone": "America/New_York", "generated_at": now.isoformat(), "include_owner": include_owner,
-        "tracking_since": first["timestamp"].isoformat() if first else None,
+        "tracking_since": first["timestamp"].replace(tzinfo=timezone.utc).isoformat() if first else None,
         "summary": {
             "page_views": events.count_documents(views),
             "unique_visitors": len(events.distinct("visitor_id", views)),

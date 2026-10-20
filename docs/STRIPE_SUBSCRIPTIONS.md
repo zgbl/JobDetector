@@ -14,7 +14,7 @@ These IDs are not secrets. The backend verifies product, amount, currency, and i
 
 1. Add `STRIPE_SECRET_KEY` to Vercel's Production environment for project `job-detector`.
    Use the key from the same account/mode as the prices. Never put it in source, chat, or frontend code.
-2. In Stripe Workbench, create a webhook endpoint at
+2. In Stripe Workbench, choose **Create an event destination**, **Your account**, and **Snapshot** payloads. Create a webhook endpoint at
    `https://jobdetector.blackrice.top/api/billing/webhook` with:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
