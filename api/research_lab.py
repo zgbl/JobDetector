@@ -98,7 +98,7 @@ Company website/ATS must match the linked employer; do not confuse the staffing 
 Salary must preserve exact currency, period, location scope and whether base or total is specified. Unknown if absent; never estimate.
 Confirmed means an explicit supporting statement in a fetched web source, not just user-provided text.
 Every non-unknown field needs at least one exact short quote and a source_id. Quotes must occur verbatim in source text.
-Output schema: {"summary":"brief overall conclusion", "fields": {FIELD_KEY:{"value":"concise finding", "status":"confirmed|inferred|reported|unknown", "evidence":[{"source_id":"S1","quote":"exact short quote"}]}}, "questions":["important unresolved question"], "outreach_draft":"short professional English message; do not send it"}.
+Output schema: {"summary":"brief overall conclusion", "fields": {FIELD_KEY:{"value":"concise finding", "status":"confirmed|inferred|reported|unknown", "evidence":[{"source_id":"S1","quote":"exact short quote"}]}}, "questions":["important unresolved question"], "outreach_draft":"short professional English message; do not invent any candidate experience or skills; do not send it"}.
 FIELD_KEYs: poster_role, poster_location, employer, company_business, company_type, job_title, location, salary, requirements, restrictions.
 Use unknown and value 未找到可靠信息 when evidence is missing. No numeric confidence percentages. Do not recommend contacting unrelated same-name people. Never claim a job is still open merely because a page loads.'''
 
@@ -148,9 +148,13 @@ def grounded_report(raw, sources):
         fields[key]={'label':label,'value':str(field.get('value','未找到可靠信息'))[:1200] if status!='unknown' else '未找到可靠信息', 'status':status,'evidence':evidence}
     # A generated overview cannot bypass evidence validation; compose it from validated fields.
     summary=' · '.join(fields[key]['value'] for key in ('job_title','company_type','location') if fields[key]['status']!='unknown')
+    draft = 'Hi, I saw your hiring post and would be interested in learning more about the role. Are you the best person to ask about the team’s priorities and reporting line?'
+    if fields['location']['status']=='unknown':draft += ' Could you clarify the eligible work locations?'
+    if fields['salary']['status']=='unknown':draft += ' Is there a published compensation range?'
+    draft += ' I would be happy to share my background if helpful. Thank you.'
     return {'summary':summary or '现有资料不足，请补充帖子正文或官方职位链接。','fields':fields,
             'questions':[str(q)[:300] for q in raw.get('questions',[])[:6]] if isinstance(raw.get('questions'),list) else [],
-            'outreach_draft':str(raw.get('outreach_draft',''))[:1800],
+            'outreach_draft':draft,
             'sources':[{k:s[k] for k in ('id','kind','url','title','text')} for s in sources],
             'generated_at':datetime.now(timezone.utc).isoformat(),
             'scope':'只分析选中帖子及本次列出的公开网页；未访问作者登录后资料，未进行全网搜索。'}

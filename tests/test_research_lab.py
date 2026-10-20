@@ -33,13 +33,14 @@ def test_unmatched_quotes_and_capture_claims_cannot_become_verified_facts():
         'salary':{'value':'$500,000','status':'confirmed','evidence':[{'source_id':'S2','quote':'Pays $500,000'}]},
         'location':{'value':'United States remote','status':'confirmed','evidence':[{'source_id':'S2','quote':'Remote in the United States.'}]},
         'company_type':{'value':'Direct employer','status':'confirmed','evidence':[{'source_id':'S1','quote':"I'm hiring!"}]}},
-         'summary':'Do not trust this ungrounded generated overview','questions':[]}
+         'summary':'Do not trust this ungrounded generated overview','questions':[], 'outreach_draft':'I have ten years of experience at Basis.'}
     result=lab.grounded_report(raw,sources)
     assert result['fields']['salary']['status']=='unknown' and '$500,000' not in result['fields']['salary']['value']
     assert result['fields']['poster_role']['status']!='confirmed'
     assert result['fields']['company_type']['status']=='reported'
     assert result['fields']['location']['status']=='confirmed'
     assert 'ungrounded' not in result['summary']
+    assert 'ten years' not in result['outreach_draft']
 
 
 def test_sources_are_only_provided_links_and_the_ats_employer_homepage(monkeypatch):
