@@ -96,3 +96,20 @@ node --test tests/linkedin_search.test.mjs
 
 The automated tests mock Stripe and MongoDB and validate signed-webhook handling using the official SDK.
 They do not prove that live credentials, webhooks, Customer Portal, or a real payment are configured.
+
+## Owner subscription ledger
+
+`/admin-traffic.html#subscriptions` reads current Stripe subscription data through
+`GET /api/billing/admin/subscriptions`, restricted to the verified configured owner.
+It displays customer email/name, monthly/annual amount, status/access, latest invoice amount paid,
+start date, renewal/end date, scheduled cancellation, and links to Stripe management.
+Search, status/plan filters, pagination and CSV export work over the returned records.
+`GET /api/billing/admin/subscriptions/{id}/invoices` provides paginated bill history after
+checking that the subscription contains a configured JobDetector price. Other products are excluded.
+The scan is capped at 2,000 account subscriptions with an explicit incomplete-report warning.
+No report response is publicly cached. Expected MRR uses renewing active subscriptions at list price,
+annual prices divided by 12, before discounts/tax/refunds; it is not cash revenue.
+
+Stripe Python 16 uses API version 2026-09-30.endive: do not send `payment_method_types`
+to Checkout Session creation. Payment methods follow the account's Dashboard settings.
+The request idempotency namespace was bumped to v2 to avoid replaying older failed requests.

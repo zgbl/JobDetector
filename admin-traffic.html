@@ -4,14 +4,30 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow"><title>Traffic & Subscriptions · JobDetector</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="/css/style.css?v=20261019_billing"><link rel="stylesheet" href="/css/admin-traffic.css?v=20261019_billing">
+  <link rel="stylesheet" href="/css/style.css?v=20261020_subscriptions"><link rel="stylesheet" href="/css/admin-traffic.css?v=20261020_subscriptions">
 </head>
 <body>
-  <nav class="traffic-nav" aria-label="Site navigation"><a href="/">JobDetector</a><a href="/linkedin-search.html">Search Console</a><a href="/admin_stats.html">Product analytics</a></nav>
+  <nav class="traffic-nav" aria-label="Site navigation"><a href="/">JobDetector</a><a href="/linkedin-search.html">Search Console</a><a href="#subscriptions">Subscriptions</a><a href="/admin_stats.html">Product analytics</a></nav>
   <main class="traffic-shell">
     <header><p class="traffic-eyebrow">PRIVATE · TUXY ONLY</p><h1>Traffic & subscriptions</h1><p>Understand who visits, which searches get used, and whether visitors subscribe.</p></header>
     <section id="trafficGate" class="traffic-panel"><h2>Checking access…</h2><p>Only the configured Tuxy account can view this report.</p></section>
     <section id="trafficReport" hidden>
+      <section id="subscriptions" class="traffic-panel subscription-ledger">
+        <div class="traffic-section-heading"><div><p class="traffic-eyebrow">JOBDETECTOR · BILLING</p><h2>订阅管理</h2></div><button id="refreshSubscriptions" class="stripe-check">刷新 Stripe 数据</button></div>
+        <p id="subscriptionUpdated" role="status" aria-live="polite">正在读取订阅…</p>
+        <div id="subscriptionMetrics" class="traffic-metrics"></div>
+        <div class="traffic-toolbar subscription-filters">
+          <label>搜索用户<input id="subscriptionSearch" type="search" placeholder="邮箱、姓名或订阅 ID"></label>
+          <label>状态<select id="subscriptionStatus"><option value="all">全部状态</option><option value="active">有效订阅</option><option value="ending">已取消续费</option><option value="due">7 天内到期／续费</option><option value="issues">付款异常</option><option value="canceled">已结束</option></select></label>
+          <label>套餐<select id="subscriptionPlan"><option value="all">全部套餐</option><option value="monthly">月付</option><option value="annual">年付</option></select></label>
+          <button id="exportSubscriptions" disabled>导出筛选结果 CSV</button>
+        </div>
+        <p id="subscriptionCount"></p>
+        <div class="subscription-table-scroll"><table class="subscription-table"><thead><tr><th>订阅用户</th><th>套餐 / 金额</th><th>状态 / 权限</th><th>最近账单实收</th><th>开始日期</th><th>到期 / 下次续费</th><th>管理</th></tr></thead><tbody id="subscriptionRows"><tr><td colspan="7">正在读取 Stripe…</td></tr></tbody></table></div>
+        <div class="subscription-pagination"><button id="previousSubscriptions" disabled>上一页</button><button id="nextSubscriptions" disabled>下一页</button></div>
+        <p class="subscription-note">直接读取当前 Stripe 数据；金额为 USD。月度经常性收入按正常续费订阅标价折算，年付除以 12，未扣折扣、税费或退款，不代表实收。账单实收以账单记录为准。日期显示纽约时间。</p>
+      </section>
+      <dialog id="subscriptionInvoices" class="subscription-dialog" aria-labelledby="invoiceHeading"><div class="traffic-section-heading"><h2 id="invoiceHeading">账单记录</h2><button id="closeInvoices" aria-label="关闭账单记录">关闭</button></div><p id="invoiceUser"></p><div class="subscription-table-scroll"><table><thead><tr><th>账单 / 日期</th><th>状态</th><th>账单总额</th><th>实收</th><th>待付</th><th>查看</th></tr></thead><tbody id="invoiceRows"></tbody></table></div><p id="invoiceStatus" role="status" aria-live="polite"></p><button id="moreInvoices" hidden>加载更早账单</button></dialog>
       <div class="traffic-toolbar"><label>Report period<select id="trafficDays"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></label><label class="owner-toggle"><input type="checkbox" id="includeOwner">Include my activity</label><button id="refreshTraffic">Refresh</button><span id="trafficUpdated" role="status" aria-live="polite"></span></div>
       <div id="trafficMetrics" class="traffic-metrics"></div>
       <section class="traffic-panel"><div class="traffic-section-heading"><h2>Daily activity</h2><span>Page views / Search clicks · New York time</span></div><div id="trafficTrend" class="traffic-trend"></div></section>
@@ -21,6 +37,7 @@
       <section class="traffic-panel traffic-notes"><h2>How to read these numbers</h2><p>Visitors are estimated using a random ID saved in the browser. Clearing browser storage or using another device can count as a new visitor. Sessions expire after 30 minutes without activity. Your signed-in owner activity is excluded by default.</p><p>Checkout starts and paying users come from the server and Stripe. Test-mode subscriptions are excluded. Active subscribers is the current total; new paying users is measured within the selected period. Counts are activity totals, not a tracked user-by-user conversion funnel.</p><p id="trackingSince"></p><p><a href="https://dashboard.stripe.com/subscriptions" target="_blank" rel="noopener noreferrer">Open Stripe subscriptions ↗</a></p></section>
     </section>
   </main>
-  <script src="/js/admin-traffic.js?v=20261019_billing" defer></script>
+  <script src="/js/admin-subscriptions.js?v=20261020_subscriptions" defer></script>
+  <script src="/js/admin-traffic.js?v=20261020_subscriptions" defer></script>
 </body>
 </html>

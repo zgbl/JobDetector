@@ -44,6 +44,8 @@ from api.billing import router as billing_router
 app.include_router(billing_router)
 from api.traffic import router as traffic_router
 app.include_router(traffic_router)
+from api.subscriptions_admin import router as subscriptions_admin_router
+app.include_router(subscriptions_admin_router)
 
 # Enable CORS for local development
 app.add_middleware(

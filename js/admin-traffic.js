@@ -14,6 +14,7 @@ async function load() {
     const token = localStorage.getItem('token');
     const query = new URLSearchParams({days: $('trafficDays').value, include_owner: $('includeOwner').checked});
     const response = await fetch(`/api/traffic/admin?${query}`, {headers: token ? {Authorization:`Bearer ${token}`} : {}, cache:'no-store'});
+    if (!response.ok && ![401,403].includes(response.status)) throw new Error('Report unavailable');
     if (!response.ok) {
       $('trafficReport').hidden = true; $('trafficGate').hidden = false;
       $('trafficGate').innerHTML = response.status === 401 ? '<h2>Sign in as Tuxy</h2><p>Sign in on JobDetector, then return to this page.</p><a href="/">Open JobDetector sign in</a>' : '<h2>Access denied</h2><p>This dashboard is private to the configured Tuxy account.</p>';
@@ -21,6 +22,7 @@ async function load() {
     }
     const data = await response.json();
     $('trafficGate').hidden = true; $('trafficReport').hidden = false;
+    window.dispatchEvent(new Event('owner-report-ready'));
     const summary = data.summary;
     const metrics = [['Page views',summary.page_views,'Selected period'],['Unique visitors',summary.unique_visitors,'Estimated browser IDs'],['Sessions',summary.sessions,'30-minute activity window'],['Search clicks',summary.search_clicks,'LinkedIn searches opened'],['Subscribe clicks',summary.subscribe_clicks,'Intent to subscribe'],['Checkout starts',summary.checkouts_started,'Live Stripe sessions'],['New paying users',summary.new_paying_users,'First paid subscription in period'],['Active subscribers',summary.active_subscribers,`${summary.monthly_subscribers} monthly · ${summary.annual_subscribers} annual`]];
     $('trafficMetrics').innerHTML = metrics.map(([label,value,note])=>`<article class="traffic-metric"><span>${label}</span><strong>${number(value)}</strong><small>${escapeHtml(note)}</small></article>`).join('');
