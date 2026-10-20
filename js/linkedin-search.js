@@ -1,4 +1,7 @@
-import { GROUPS, SIGNALS, PRESETS, ALL_PRESETS, buildLinkedInUrl } from './linkedin-presets.js?v=20261019_data_bi_leads';
+import { buildLinkedInUrl } from './linkedin-presets.js?v=20261019_billing';
+
+let GROUPS = [], SIGNALS = [], PRESETS = [], ALL_PRESETS = [];
+let fullAccess = true;
 
 const STORAGE_KEY = 'jobdetector-linkedin-console-v1';
 const byId = new Map(ALL_PRESETS.map(preset => [preset.id, preset]));
@@ -6,8 +9,8 @@ const groupById = new Map(GROUPS.map(group => [group.id, group]));
 const state = { view: 'all', text: '', destination: 'posts', location: 'any', date: 'week', sort: 'relevant', favorites: [], recent: [], counts: {} };
 try {
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  state.favorites = Array.isArray(saved.favorites) ? saved.favorites.filter(id => byId.has(id)) : [];
-  state.recent = Array.isArray(saved.recent) ? saved.recent.filter(id => byId.has(id)).slice(0, 12) : [];
+  state.favorites = Array.isArray(saved.favorites) ? saved.favorites.filter(id => typeof id === 'string') : [];
+  state.recent = Array.isArray(saved.recent) ? saved.recent.filter(id => typeof id === 'string').slice(0, 12) : [];
   state.counts = saved.counts && typeof saved.counts === 'object' ? saved.counts : {};
 } catch { /* Private browsing or disabled storage should not stop searches. */ }
 
@@ -51,7 +54,7 @@ function matches(preset) {
 }
 
 function renderNav() {
-  const entries = [{ id: 'all', label: 'All searches', count: PRESETS.length, icon: 'fa-layer-group' }, ...GROUPS.map(group => ({ id: group.id, label: group.short, count: group.items.length, icon: 'fa-arrow-right' })), { id: 'signals', label: 'Hiring signals', count: SIGNALS.length, icon: 'fa-bolt' }];
+  const entries = [{ id: 'all', label: fullAccess ? 'All searches' : 'Free preview', count: PRESETS.length, icon: 'fa-layer-group' }, ...GROUPS.map(group => ({ id: group.id, label: group.short, count: group.total ?? group.items.length, icon: 'fa-arrow-right' })), { id: 'signals', label: 'Hiring signals', count: 10, icon: 'fa-bolt' }];
   $('categoryNav').innerHTML = entries.map(entry => `<button data-view="${entry.id}" class="category-item ${state.view === entry.id ? 'active' : ''}" ${state.view === entry.id ? 'aria-current="true"' : ''}><i class="fas ${entry.icon}" aria-hidden="true"></i><span>${escapeHtml(entry.label)}</span><small>${entry.count}</small></button>`).join('');
   $('favoriteCount').textContent = state.favorites.length;
   $('recentCount').textContent = state.recent.length;
@@ -76,7 +79,7 @@ function render() {
     const isPeopleSubset = state.view === 'recruiters' || state.view === 'eng-leaders';
     sections = GROUPS.filter(group => state.view === 'all' || state.view === group.id || (isPeopleSubset && group.id === 'leaders')).map(group => ({ ...group, items: PRESETS.filter(preset => preset.category === group.id && matches(preset) && (!isPeopleSubset || (state.view === 'recruiters' ? ['leaders-recruiter-ai', 'leaders-recruiter-fde', 'leaders-talent'].includes(preset.id) : !['leaders-recruiter-ai', 'leaders-recruiter-fde', 'leaders-talent'].includes(preset.id)))) })).filter(group => group.items.length);
   }
-  $('presetGroups').innerHTML = sections.map(group => `<section class="preset-section" aria-labelledby="heading-${group.id}"><div class="group-heading"><div><span class="group-mark"></span><h3 id="heading-${group.id}">${escapeHtml(group.name)}</h3></div><span>${group.items.length} search${group.items.length === 1 ? '' : 'es'}</span></div><div class="preset-grid">${group.items.map(searchCard).join('')}</div></section>`).join('');
+  $('presetGroups').innerHTML = sections.map(group => `<section class="preset-section" aria-labelledby="heading-${group.id}"><div class="group-heading"><div><span class="group-mark"></span><h3 id="heading-${group.id}">${escapeHtml(group.name)}</h3></div><span>${group.items.length} search${group.items.length === 1 ? '' : 'es'}${!fullAccess && group.total ? ` of ${group.total}` : ''}</span></div><div class="preset-grid">${group.items.map(searchCard).join('')}</div>${!fullAccess && group.total > group.items.length ? `<div class="locked-group"><span>${group.total - group.items.length} more searches in this category</span><button data-subscribe>Unlock full library</button></div>` : ''}</section>`).join('');
 
   const showSignals = state.view === 'all' || state.view === 'signals';
   const visibleSignals = showSignals ? SIGNALS.filter(matches) : [];
@@ -85,6 +88,8 @@ function render() {
   const total = sections.reduce((sum, group) => sum + group.items.length, 0) + visibleSignals.length;
   $('resultSummary').textContent = `${total} search${total === 1 ? '' : 'es'} shown · ${state.destination === 'posts' ? 'Hiring posts' : 'Job listings'} destination · ${$('dateSelect').selectedOptions[0].textContent} · ${state.location === 'any' ? 'No location keywords' : $('locationSelect').selectedOptions[0].textContent + ' keywords'}`;
   $('emptyState').hidden = total !== 0;
+  $('emptyState').querySelector('h3').textContent = !fullAccess && state.view === 'signals' ? 'Unlock Direct Hiring Signals' : 'No matching searches';
+  $('emptyState').querySelector('p').textContent = !fullAccess ? 'You are viewing free preview searches. Subscribe above to search the full library.' : 'Try another title or keyword, or clear your filter.';
   updateFilterExplainer();
 }
 
@@ -128,5 +133,31 @@ $('sortSelect').addEventListener('change', event => { state.sort = event.target.
 $('filterInput').addEventListener('input', event => { state.text = event.target.value.trim(); render(); });
 $('clearFilter').addEventListener('click', () => { state.text = ''; $('filterInput').value = ''; render(); $('filterInput').focus(); });
 document.addEventListener('keydown', event => { if (event.key === '/' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); $('filterInput').focus(); } });
-$('presetTotal').textContent = `${PRESETS.length + SIGNALS.length}`;
-render();
+async function loadCatalog() {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/linkedin/presets', {headers: token ? {Authorization: `Bearer ${token}`} : {}, cache: 'no-store'});
+    if (!response.ok) throw new Error(response.status === 401 ? 'Please sign in again to load your searches.' : 'Searches could not be loaded. Please refresh and try again.');
+    const catalog = await response.json();
+    GROUPS = catalog.groups;
+    SIGNALS = catalog.signals;
+    PRESETS = GROUPS.flatMap(group => group.items.map(([id, label, query]) => ({id: `${group.id}-${id}`, label, query, category: group.id})));
+    ALL_PRESETS = [...PRESETS, ...SIGNALS];
+    fullAccess = catalog.full_access;
+    byId.clear(); groupById.clear();
+    ALL_PRESETS.forEach(preset => byId.set(preset.id, preset));
+    GROUPS.forEach(group => groupById.set(group.id, group));
+    $('presetTotal').textContent = catalog.total;
+    $('clearFilter').hidden = false;
+    render();
+  } catch (error) {
+    $('presetGroups').replaceChildren();
+    $('signalsSection').hidden = true;
+    $('emptyState').hidden = false;
+    $('emptyState').querySelector('h3').textContent = 'Searches unavailable';
+    $('emptyState').querySelector('p').textContent = error.message;
+    $('clearFilter').hidden = true;
+  }
+}
+document.addEventListener('billingchange', loadCatalog);
+loadCatalog();

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow"><title>Traffic & Subscriptions · JobDetector</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=20261019_billing"><link rel="stylesheet" href="/css/admin-traffic.css?v=20261019_billing">
+</head>
+<body>
+  <nav class="traffic-nav" aria-label="Site navigation"><a href="/">JobDetector</a><a href="/linkedin-search.html">Search Console</a><a href="/admin_stats.html">Product analytics</a></nav>
+  <main class="traffic-shell">
+    <header><p class="traffic-eyebrow">PRIVATE · TUXY ONLY</p><h1>Traffic & subscriptions</h1><p>Understand who visits, which searches get used, and whether visitors subscribe.</p></header>
+    <section id="trafficGate" class="traffic-panel"><h2>Checking access…</h2><p>Only the configured Tuxy account can view this report.</p></section>
+    <section id="trafficReport" hidden>
+      <div class="traffic-toolbar"><label>Report period<select id="trafficDays"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></label><label class="owner-toggle"><input type="checkbox" id="includeOwner">Include my activity</label><button id="refreshTraffic">Refresh</button><span id="trafficUpdated" role="status" aria-live="polite"></span></div>
+      <div id="trafficMetrics" class="traffic-metrics"></div>
+      <section class="traffic-panel"><div class="traffic-section-heading"><h2>Daily activity</h2><span>Page views / Search clicks · New York time</span></div><div id="trafficTrend" class="traffic-trend"></div></section>
+      <div class="traffic-tables"><section class="traffic-panel"><h2>Top pages</h2><table><thead><tr><th>Page</th><th>Views</th></tr></thead><tbody id="trafficPages"></tbody></table></section><section class="traffic-panel"><h2>Traffic sources</h2><table><thead><tr><th>Source</th><th>Views</th></tr></thead><tbody id="trafficSources"></tbody></table></section></div>
+      <section class="traffic-panel"><h2>Most used searches</h2><table><thead><tr><th>Search preset</th><th>Clicks</th></tr></thead><tbody id="trafficSearches"></tbody></table></section>
+      <section class="traffic-panel"><h2>Stripe connection</h2><p>Verify the account and both subscription prices without creating a payment.</p><button id="checkStripe" class="stripe-check">Check Stripe setup</button><p id="stripeCheckResult" role="status" aria-live="polite"></p></section>
+      <section class="traffic-panel traffic-notes"><h2>How to read these numbers</h2><p>Visitors are estimated using a random ID saved in the browser. Clearing browser storage or using another device can count as a new visitor. Sessions expire after 30 minutes without activity. Your signed-in owner activity is excluded by default.</p><p>Checkout starts and paying users come from the server and Stripe. Test-mode subscriptions are excluded. Active subscribers is the current total; new paying users is measured within the selected period. Counts are activity totals, not a tracked user-by-user conversion funnel.</p><p id="trackingSince"></p><p><a href="https://dashboard.stripe.com/subscriptions" target="_blank" rel="noopener noreferrer">Open Stripe subscriptions ↗</a></p></section>
+    </section>
+  </main>
+  <script src="/js/admin-traffic.js?v=20261019_billing" defer></script>
+</body>
+</html>

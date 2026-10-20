@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GROUPS, PRESETS, SIGNALS, ALL_PRESETS, buildLinkedInUrl } from '../js/linkedin-presets.js';
+import { readFileSync } from 'node:fs';
+import { buildLinkedInUrl } from '../js/linkedin-presets.js';
+const {groups: GROUPS, signals: SIGNALS} = JSON.parse(readFileSync(new URL('../data/linkedin_search_presets.json', import.meta.url)));
+const PRESETS = GROUPS.flatMap(group => group.items.map(([id, label, query]) => ({id: `${group.id}-${id}`, label, query, category: group.id})));
+const ALL_PRESETS = [...PRESETS, ...SIGNALS];
 
 test('all requested groups and direct hiring signals are ready to use', () => {
   assert.deepEqual(GROUPS.map(group => group.items.length), [6, 12, 10, 8, 12, 10, 10, 10, 23, 20]);

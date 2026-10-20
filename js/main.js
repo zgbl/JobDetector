@@ -1323,6 +1323,8 @@ async function handleRegister(e) {
 }
 
 function updateAuthUI() {
+    const trafficLink = document.getElementById('navTraffic');
+    if (trafficLink) trafficLink.hidden = !currentUser?.is_owner;
     const adminLink = document.getElementById('adminNavLink');
     const requestLink = document.getElementById('navRequestCompany');
     const digestLink = document.getElementById('navMyDigest');

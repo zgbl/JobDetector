@@ -7,7 +7,7 @@
   <title>LinkedIn Search Console · JobDetector</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
   <link rel="stylesheet" href="/css/style.css?v=20261019_linkedin">
-  <link rel="stylesheet" href="/css/linkedin-search.css?v=20261019_linkedin">
+  <link rel="stylesheet" href="/css/linkedin-search.css?v=20261019_billing">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,6 +24,7 @@
         <a href="/favorites.html" class="nav-item">Favorites</a>
         <a href="/?view=companies" class="nav-item">Companies</a>
         <a href="/about.html" class="nav-item">About</a>
+        <a href="/admin-traffic.html" class="nav-item" id="trafficNavLink" hidden>Traffic</a>
       </div>
     </div>
   </nav>
@@ -37,6 +38,15 @@
       </div>
       <div class="header-aside" aria-label="Search collection size"><strong id="presetTotal">—</strong><span>ready-to-run searches</span></div>
     </header>
+
+    <section id="billingPanel" class="billing-panel" aria-labelledby="billingTitle" hidden>
+      <div class="billing-copy"><p class="eyebrow">SEARCH CONSOLE PLUS</p><h2 id="billingTitle">Try a few searches. Unlock the full library.</h2><p id="billingDescription">Every role, hiring signal, and search shortcut. Choose monthly or annual billing.</p><p id="billingAccount" class="billing-account"></p></div>
+      <div class="billing-purchase"><fieldset id="billingPlans" class="billing-plans"><legend class="sr-only">Billing cycle</legend>
+        <label><input type="radio" name="billingPlan" value="monthly" checked><span><strong>$1</strong> / month</span></label>
+        <label><input type="radio" name="billingPlan" value="annual"><span><strong>$9.99</strong> / year</span></label>
+      </fieldset><div class="billing-actions"><button id="subscribeButton" class="open-link" data-subscribe>Subscribe · $1/month</button><button id="billingSignIn" class="billing-secondary">Sign in</button><button id="manageSubscription" class="billing-secondary" hidden>Manage subscription</button><button id="billingSignOut" class="billing-secondary" hidden>Sign out</button></div><p id="billingTerms" class="billing-terms">USD. Renews automatically at your selected interval. Cancel anytime in Manage subscription.</p></div>
+      <p id="billingMessage" class="billing-message" role="status" aria-live="polite"></p>
+    </section>
 
     <section class="control-panel" aria-labelledby="controlsTitle">
       <div class="panel-topline"><h2 id="controlsTitle">Search controls</h2><span>Applies to every search below</span></div>
@@ -88,6 +98,17 @@
     <footer class="console-footer">Searches open on LinkedIn. LinkedIn controls the results, ranking, and available filters. <a href="/verify.html">Verify a job at its source <i class="fas fa-arrow-right" aria-hidden="true"></i></a></footer>
   </main>
   <div id="toast" class="console-toast" role="status" aria-live="polite"></div>
-  <script type="module" src="/js/linkedin-search.js?v=20261019_data_bi_leads"></script>
+  <dialog id="billingAuthDialog" class="billing-auth-dialog" aria-labelledby="billingAuthTitle">
+    <button id="closeBillingAuth" class="dialog-close" aria-label="Close sign in">×</button>
+    <h2 id="billingAuthTitle">Sign in to subscribe</h2><p class="dialog-intro">Use your JobDetector account to keep your subscription connected to you.</p>
+    <form id="billingAuthForm"><label id="billingNameField" hidden>Full name<input id="billingAuthName" autocomplete="name"></label>
+      <label>Email<input id="billingAuthEmail" type="email" autocomplete="email" required></label>
+      <label>Password<input id="billingAuthPassword" type="password" autocomplete="current-password" required></label>
+      <button id="billingAuthSubmit" class="open-link" type="submit">Sign in</button>
+    </form><p id="billingAuthMessage" role="status" aria-live="polite"></p><button id="toggleBillingAuth" class="billing-secondary">New here? Create an account</button>
+  </dialog>
+  <script type="module" src="/js/linkedin-search.js?v=20261019_billing"></script>
+  <script type="module" src="/js/linkedin-billing.js?v=20261019_billing"></script>
+  <script src="/js/traffic.js?v=20261019_billing" defer></script>
 </body>
 </html>

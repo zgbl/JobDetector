@@ -230,6 +230,7 @@
                         and where the product needs better instrumentation after launch.
                     </p>
                     <p class="status-line" id="lastUpdated"></p>
+                    <a id="trafficOwnerLink" href="/admin-traffic.html" hidden>Traffic & subscriptions →</a>
                 </div>
                 <div class="admin-badge"><i class="fas fa-lock"></i> Tuxy only</div>
             </div>
@@ -390,6 +391,7 @@
             const content = document.getElementById('analyticsContent');
 
             const user = await checkAuth();
+            document.getElementById('trafficOwnerLink').hidden = !user?.is_owner;
             if (!user) {
                 gate.innerHTML = `<h1>Sign in required</h1>
                     <p class="status-line">Please sign in as Tuxy to view product analytics.</p>
