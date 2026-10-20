@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { GROUPS, PRESETS, SIGNALS, ALL_PRESETS, buildLinkedInUrl } from '../js/linkedin-presets.js';
 
 test('all requested groups and direct hiring signals are ready to use', () => {
-  assert.deepEqual(GROUPS.map(group => group.items.length), [6, 12, 10, 8, 12, 10, 10, 10]);
-  assert.equal(PRESETS.length, 78);
+  assert.deepEqual(GROUPS.map(group => group.items.length), [6, 12, 10, 8, 12, 10, 10, 10, 16, 14]);
+  assert.equal(PRESETS.length, 108);
   assert.equal(SIGNALS.length, 10);
   assert.equal(new Set(ALL_PRESETS.map(preset => preset.id)).size, ALL_PRESETS.length);
   for (const preset of ALL_PRESETS) {

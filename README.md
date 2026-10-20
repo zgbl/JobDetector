@@ -12,7 +12,7 @@ Automated job scraping and notification system that monitors company career webs
 - ⏰ Automated scheduling with APScheduler
 - 🧭 **Source verification (New)**: ask the employer's own ATS whether a posting is still live
 - 🧩 **Chrome extension (New)**: annotate Indeed / LinkedIn with 🟢 open / ⚠️ closed at the source
-- 🔎 **LinkedIn Search Console**: 88 ready-to-run searches for AI roles, hiring posts, founders, recruiters, and direct hiring signals at `/linkedin-search.html`
+- 🔎 **LinkedIn Search Console**: 118 ready-to-run searches for AI, Data Engineer, BI roles, hiring posts, founders, recruiters, and direct hiring signals at `/linkedin-search.html`
 - 👻 **Anti ghost-job (New)**: rule engine + LLM scoring for stale / agency-scraped listings
 
 ## Source verification & anti ghost-job

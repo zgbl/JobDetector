@@ -94,6 +94,40 @@ export const GROUPS = [
     ['distributed', 'Distributed Systems Engineer', '"Distributed Systems Engineer" AI'],
     ['native', 'Cloud Native + AI', '"Cloud Native" AI engineer'],
     ['devops', 'DevOps Engineer + AI', '"DevOps Engineer" AI platform']
+  ] },
+  { id: 'data', name: 'Data Engineering', short: 'Data Engineer', description: 'Data platforms, pipelines, warehouses, and cloud data engineering', items: [
+    ['engineer', 'Data Engineer', '"Data Engineer" hiring'],
+    ['senior', 'Senior Data Engineer', '"Senior Data Engineer" hiring'],
+    ['staff', 'Staff Data Engineer', '"Staff Data Engineer" hiring'],
+    ['lead', 'Lead Data Engineer', '"Lead Data Engineer" hiring'],
+    ['platform', 'Data Platform Engineer', '"Data Platform Engineer" hiring'],
+    ['analytics', 'Analytics Engineer', '"Analytics Engineer" hiring'],
+    ['etl', 'ETL Developer', '"ETL Developer" hiring'],
+    ['pipeline', 'Data Pipeline Engineer', '"Data Pipeline" engineer hiring'],
+    ['warehouse', 'Data Warehouse Engineer', '"Data Warehouse" engineer hiring'],
+    ['spark', 'Spark Data Engineer', '"Data Engineer" Spark hiring'],
+    ['databricks', 'Databricks Data Engineer', '"Data Engineer" Databricks hiring'],
+    ['snowflake', 'Snowflake Data Engineer', '"Data Engineer" Snowflake hiring'],
+    ['dbt', 'dbt Analytics Engineer', '"Analytics Engineer" dbt hiring'],
+    ['azure', 'Azure Data Engineer', '"Azure Data Engineer" hiring'],
+    ['aws', 'AWS Data Engineer', '"Data Engineer" AWS hiring'],
+    ['founder', 'Founders hiring data engineers', 'founder "Data Engineer" hiring']
+  ] },
+  { id: 'bi', name: 'BI & Business Intelligence', short: 'BI / Analytics', description: 'Business intelligence, dashboards, reporting, Power BI, Tableau, and Looker', items: [
+    ['business-analyst', 'Business Intelligence Analyst', '"Business Intelligence Analyst" hiring'],
+    ['analyst', 'BI Analyst', '"BI Analyst" hiring'],
+    ['developer', 'BI Developer', '"BI Developer" hiring'],
+    ['engineer', 'BI Engineer', '"BI Engineer" hiring'],
+    ['senior', 'Senior BI Analyst', '"Senior BI Analyst" hiring'],
+    ['business-developer', 'Business Intelligence Developer', '"Business Intelligence Developer" hiring'],
+    ['powerbi-developer', 'Power BI Developer', '"Power BI Developer" hiring'],
+    ['powerbi-analyst', 'Power BI Analyst', '"Power BI" analyst hiring'],
+    ['tableau-developer', 'Tableau Developer', '"Tableau Developer" hiring'],
+    ['tableau-analyst', 'Tableau Analyst', 'Tableau "Data Analyst" hiring'],
+    ['looker', 'Looker Developer', 'Looker developer hiring'],
+    ['consultant', 'BI Consultant', '"Business Intelligence Consultant" hiring'],
+    ['reporting', 'Reporting Analyst', '"Reporting Analyst" hiring'],
+    ['manager', 'Business Intelligence Manager', '"Business Intelligence Manager" hiring']
   ] }
 ];
 
