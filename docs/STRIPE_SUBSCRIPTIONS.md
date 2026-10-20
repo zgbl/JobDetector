@@ -121,3 +121,21 @@ Owner identity also supports the configured `ADMIN_EMAIL`. Public registration c
 Lifetime access does not expire, does not require Stripe, and cannot create paid Checkout Sessions.
 Display names never grant permissions. The account entry shows Lifetime VIP; pricing is presented
 in an on-demand dialog rather than a banner above the search controls.
+
+## Seven-day welcome Plus
+
+Visitors are prompted to register before payment. Successful email verification grants exactly
+7 × 24 hours of Plus using server-side UTC timestamps (`plus_trial_started_at`, `plus_trial_ends_at`).
+The grant is conditional on no previous start timestamp, so verification retries, logins and
+refreshes never extend it. It needs no Stripe customer, card, subscription or automatic charge.
+New Console signups return to `/linkedin-search.html?verified=true` after verification.
+
+Within the trial, all 131 searches are available and new paid checkout is refused. At expiry,
+access automatically returns to the limited preview unless a paid subscription or lifetime VIP
+applies; the user chooses $1/month or $9.99/year to continue full access. The open page refreshes
+access at the expiry boundary as well. Paid subscription renewals follow Stripe's normal settings.
+Tuxy's lifetime VIP has no trial expiry. Existing accounts are not retroactively given a new trial.
+
+The owner dashboard includes paginated trial-member records, start/end dates, active/expired
+counts and current paid status through `GET /api/billing/admin/trials`. Trial users are not counted
+as paid Stripe subscribers or revenue.

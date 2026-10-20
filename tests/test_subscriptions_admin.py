@@ -88,3 +88,15 @@ def test_real_owner_policy_rejects_other_admin(setup,monkeypatch):
     monkeypatch.setattr(traffic,'_user',lambda req:{'email':'other@example.test','is_admin':True})
     assert setup.http.get('/api/billing/admin/subscriptions',headers=setup.headers).status_code==403
     setup.stripe.v1.subscriptions.list.assert_not_called()
+
+
+def test_trial_members_are_owner_only_paginated_and_never_require_stripe(setup):
+    assert setup.http.get('/api/billing/admin/trials').status_code==403
+    setup.db.users.count_documents.return_value=51
+    setup.db.users.find.return_value=MagicMock()
+    setup.db.users.find.return_value.sort.return_value.skip.return_value.limit.return_value=[]
+    response=setup.http.get('/api/billing/admin/trials?page=2',headers=setup.headers)
+    assert response.status_code==200 and response.headers['cache-control']=='private, no-store'
+    assert response.json()['page']==2 and not response.json()['has_more']
+    setup.db.users.find.return_value.sort.return_value.skip.assert_called_with(50)
+    setup.stripe.v1.subscriptions.list.assert_not_called()

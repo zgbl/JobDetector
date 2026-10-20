@@ -201,3 +201,35 @@ def test_display_name_or_string_flags_do_not_grant_vip(setup):
     setup.user.update({'full_name':'tuxy','username':'tuxy','vip_lifetime':'true','is_owner':'true'})
     result = setup.client.get('/api/billing/status', headers=setup.headers).json()
     assert not result['vip_lifetime'] and not result['is_owner'] and not result['full_access']
+
+
+def test_verified_trial_unlocks_and_checkout_waits_until_expiry(setup):
+    from datetime import datetime, timedelta, timezone
+    now=datetime.now(timezone.utc)
+    setup.user.update({'plus_trial_started_at':now,'plus_trial_ends_at':now+timedelta(days=7)})
+    status=setup.client.get('/api/billing/status',headers=setup.headers).json()
+    assert status['trial_active'] and status['full_access'] and not status['subscribed']
+    catalog=setup.client.get('/api/linkedin/presets',headers=setup.headers).json()
+    assert sum(len(g['items']) for g in catalog['groups'])+len(catalog['signals'])==131
+    assert setup.client.post('/api/billing/checkout',headers=setup.headers,json={'plan':'annual'}).status_code==409
+    setup.stripe.v1.subscriptions.list.assert_not_called()
+    setup.stripe.v1.checkout.sessions.create.assert_not_called()
+
+
+def test_expired_trial_returns_preview_and_allows_paid_checkout(setup):
+    from datetime import datetime, timedelta, timezone
+    now=datetime.now(timezone.utc)
+    setup.user.update({'plus_trial_started_at':now-timedelta(days=8),'plus_trial_ends_at':now-timedelta(days=1)})
+    status=setup.client.get('/api/billing/status',headers=setup.headers).json()
+    assert status['trial_expired'] and not status['trial_active'] and not status['full_access']
+    assert not setup.client.get('/api/linkedin/presets',headers=setup.headers).json()['full_access']
+    assert setup.client.post('/api/billing/checkout',headers=setup.headers,json={'plan':'monthly'}).status_code==200
+
+
+def test_paid_membership_takes_over_after_trial_expiry(setup):
+    from datetime import datetime, timedelta, timezone
+    now=datetime.now(timezone.utc)
+    setup.user.update({'plus_trial_started_at':now-timedelta(days=8),'plus_trial_ends_at':now-timedelta(days=1)})
+    setup.stripe.v1.subscriptions.list.return_value.auto_paging_iter.return_value=[subscription()]
+    result=setup.client.get('/api/billing/status',headers=setup.headers).json()
+    assert result['trial_expired'] and result['subscribed'] and result['full_access']

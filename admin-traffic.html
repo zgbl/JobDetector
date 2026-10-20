@@ -4,7 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow"><title>Traffic & Subscriptions · JobDetector</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="/css/style.css?v=20261020_subscriptions"><link rel="stylesheet" href="/css/admin-traffic.css?v=20261020_subscriptions">
+  <link rel="stylesheet" href="/css/style.css?v=20261020_trial"><link rel="stylesheet" href="/css/admin-traffic.css?v=20261020_trial">
 </head>
 <body>
   <nav class="traffic-nav" aria-label="Site navigation"><a href="/">JobDetector</a><a href="/linkedin-search.html">Search Console</a><a href="#subscriptions">Subscriptions</a><a href="/admin_stats.html">Product analytics</a></nav>
@@ -27,6 +27,7 @@
         <div class="subscription-pagination"><button id="previousSubscriptions" disabled>上一页</button><button id="nextSubscriptions" disabled>下一页</button></div>
         <p class="subscription-note">直接读取当前 Stripe 数据；金额为 USD。月度经常性收入按正常续费订阅标价折算，年付除以 12，未扣折扣、税费或退款，不代表实收。账单实收以账单记录为准。日期显示纽约时间。</p>
       </section>
+      <section class="traffic-panel"><h2>7 天 Plus 试用会员</h2><p id="trialSummary" role="status">正在读取试用记录…</p><div class="subscription-table-scroll"><table><thead><tr><th>用户</th><th>状态</th><th>试用开始（纽约时间）</th><th>试用到期（纽约时间）</th></tr></thead><tbody id="trialRows"></tbody></table></div><div class="subscription-pagination"><button id="previousTrials" disabled>上一页</button><button id="nextTrials" disabled>下一页</button></div></section>
       <dialog id="subscriptionInvoices" class="subscription-dialog" aria-labelledby="invoiceHeading"><div class="traffic-section-heading"><h2 id="invoiceHeading">账单记录</h2><button id="closeInvoices" aria-label="关闭账单记录">关闭</button></div><p id="invoiceUser"></p><div class="subscription-table-scroll"><table><thead><tr><th>账单 / 日期</th><th>状态</th><th>账单总额</th><th>实收</th><th>待付</th><th>查看</th></tr></thead><tbody id="invoiceRows"></tbody></table></div><p id="invoiceStatus" role="status" aria-live="polite"></p><button id="moreInvoices" hidden>加载更早账单</button></dialog>
       <div class="traffic-toolbar"><label>Report period<select id="trafficDays"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></label><label class="owner-toggle"><input type="checkbox" id="includeOwner">Include my activity</label><button id="refreshTraffic">Refresh</button><span id="trafficUpdated" role="status" aria-live="polite"></span></div>
       <div id="trafficMetrics" class="traffic-metrics"></div>
@@ -37,7 +38,7 @@
       <section class="traffic-panel traffic-notes"><h2>How to read these numbers</h2><p>Visitors are estimated using a random ID saved in the browser. Clearing browser storage or using another device can count as a new visitor. Sessions expire after 30 minutes without activity. Your signed-in owner activity is excluded by default.</p><p>Checkout starts and paying users come from the server and Stripe. Test-mode subscriptions are excluded. Active subscribers is the current total; new paying users is measured within the selected period. Counts are activity totals, not a tracked user-by-user conversion funnel.</p><p id="trackingSince"></p><p><a href="https://dashboard.stripe.com/subscriptions" target="_blank" rel="noopener noreferrer">Open Stripe subscriptions ↗</a></p></section>
     </section>
   </main>
-  <script src="/js/admin-subscriptions.js?v=20261020_subscriptions" defer></script>
-  <script src="/js/admin-traffic.js?v=20261020_subscriptions" defer></script>
+  <script src="/js/admin-subscriptions.js?v=20261020_trial" defer></script>
+  <script src="/js/admin-traffic.js?v=20261020_trial" defer></script>
 </body>
 </html>

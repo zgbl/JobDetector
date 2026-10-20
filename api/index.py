@@ -42,6 +42,7 @@ app = FastAPI(title="JobDetector Dashboard")
 
 from api.billing import router as billing_router, _owner as _billing_owner
 app.include_router(billing_router)
+from api.plus_access import grant_welcome_trial
 from api.traffic import router as traffic_router
 app.include_router(traffic_router)
 from api.subscriptions_admin import router as subscriptions_admin_router
@@ -401,6 +402,7 @@ async def register(request: Request):
         "is_active": True,
         "is_verified": False,
         "verification_token": verification_token,
+        "verification_redirect": "/linkedin-search.html" if data.get("signup_source") == "linkedin-search" else "/",
         "verification_token_expires": verification_expires
     }
     
@@ -471,8 +473,10 @@ async def verify_email(token: str = Query(...)):
         }
     )
     
-    # Redirect to login page with success message
-    return RedirectResponse(url="/?verified=true", status_code=302)
+    grant_welcome_trial(db.users, user)
+    # Only server-selected local destinations are accepted.
+    destination = "/linkedin-search.html" if user.get("verification_redirect") == "/linkedin-search.html" else "/"
+    return RedirectResponse(url=destination + "?verified=true", status_code=302)
 
 @app.post("/api/auth/forgot-password")
 async def forgot_password(request: Request):

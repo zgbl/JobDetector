@@ -46,7 +46,7 @@ def _row(sub, users):
     return {
         'id': sub['id'], 'customer_id': customer.get('id'),
         'email': user.get('email') or customer.get('email') or '',
-        'name': user.get('name') or user.get('username') or customer.get('name') or '',
+        'name': user.get('full_name') or user.get('name') or user.get('username') or customer.get('name') or '',
         'registered': bool(user), 'plan': plan, 'unit_amount': amount,
         'currency': price.get('currency', 'usd'), 'status': sub.get('status'),
         'created': sub.get('created'), 'period_start': period_start or None,
@@ -82,7 +82,7 @@ def subscriptions(request: Request, response: Response):
     raw, truncated = _stripe_call(collect)
     ids = [s['customer']['id'] if isinstance(s.get('customer'), dict) else s.get('customer') for s in raw]
     users = {u['stripe_customer_id']: u for u in _db().users.find(
-        {'stripe_customer_id': {'$in': ids}}, {'email': 1, 'name': 1, 'username': 1, 'stripe_customer_id': 1})} if ids else {}
+        {'stripe_customer_id': {'$in': ids}}, {'email': 1, 'full_name': 1, 'name': 1, 'username': 1, 'stripe_customer_id': 1})} if ids else {}
     rows = [_row(s, users) for s in raw]
     now = int(datetime.now(timezone.utc).timestamp())
     active = [r for r in rows if r['status'] == 'active']
@@ -124,3 +124,20 @@ def subscription_invoices(subscription_id: str, request: Request, response: Resp
     rows = [_invoice(row) for row in data['data']]
     return {'rows': rows, 'has_more': bool(data['has_more']),
             'next_cursor': rows[-1]['id'] if rows and data['has_more'] else None}
+
+
+@router.get('/api/billing/admin/trials')
+def trial_members(request: Request, response: Response, page: int = Query(1, ge=1, le=100000)):
+    from api.plus_access import trial_status
+    require_owner(request)
+    response.headers['Cache-Control'] = 'private, no-store'
+    users = _db().users
+    query = {'is_verified': True, 'plus_trial_started_at': {'$exists': True}, 'vip_lifetime': {'$ne': True}, 'is_owner': {'$ne': True}}
+    now = datetime.now(timezone.utc)
+    total = users.count_documents(query)
+    cursor = users.find(query, {'email': 1, 'full_name': 1, 'plus_trial_started_at': 1, 'plus_trial_ends_at': 1, 'is_verified': 1, 'billing.status': 1}).sort('plus_trial_started_at', -1).skip((page-1)*50).limit(50)
+    rows = [{'email': user.get('email', ''), 'name': user.get('full_name', ''),
+             **trial_status(user, now), 'converted': (user.get('billing') or {}).get('status') == 'active'} for user in cursor]
+    return {'rows': rows, 'total': total, 'page': page, 'has_more': page*50 < total,
+            'active': users.count_documents({**query, 'plus_trial_ends_at': {'$gt': now}}),
+            'expired': users.count_documents({**query, 'plus_trial_ends_at': {'$lte': now}})}

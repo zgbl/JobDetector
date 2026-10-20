@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from api.auth_utils import decode_access_token
+from api.plus_access import trial_status
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -179,6 +180,8 @@ def _sync_customer(client, customer_id):
 def access_for(user):
     if not _enabled() or _admin(user) or _lifetime_vip(user):
         return True
+    if trial_status(user)["trial_active"]:
+        return True
     if not user or not _ready() or not user.get("stripe_customer_id"):
         return False
     return _sync_customer(_client(), user["stripe_customer_id"])["subscribed"]
@@ -188,12 +191,13 @@ def access_for(user):
 def billing_status(request: Request, response: Response):
     response.headers["Cache-Control"] = "private, no-store"
     user = _user(request, required=False)
-    result = {"enabled": _enabled(), "checkout_available": _ready(), "authenticated": bool(user),
+    trial = trial_status(user)
+    result = {**trial, "enabled": _enabled(), "checkout_available": _ready(), "authenticated": bool(user),
               "is_owner": _owner(user), "test_mode": bool(os.getenv("STRIPE_SECRET_KEY", "").startswith(("sk_test_", "rk_test_"))),
-              "full_access": not _enabled() or _admin(user) or _lifetime_vip(user), "vip_lifetime": _lifetime_vip(user), "subscribed": False,
+              "full_access": not _enabled() or _admin(user) or _lifetime_vip(user) or trial["trial_active"], "vip_lifetime": _lifetime_vip(user), "subscribed": False,
               "plans": {name: {"unit_amount": plan["amount"], "currency": "usd", "interval": plan["interval"]} for name, plan in PLANS.items()},
               "status": "none", "cancel_at_period_end": False, "period_end": None}
-    if user and not _lifetime_vip(user) and _ready() and user.get("stripe_customer_id"):
+    if user and not _lifetime_vip(user) and not trial["trial_active"] and _ready() and user.get("stripe_customer_id"):
         result.update(_sync_customer(_client(), user["stripe_customer_id"]))
         result["full_access"] = result["subscribed"] or _admin(user)
     return result
@@ -204,6 +208,8 @@ def create_checkout(request: Request, selection: CheckoutPlan):
     user = _user(request)
     if _lifetime_vip(user):
         raise HTTPException(409, "Your lifetime VIP account already has permanent full access. No subscription is needed.")
+    if trial_status(user)["trial_active"]:
+        raise HTTPException(409, "Your free Plus trial is active. Subscribe after it ends; no payment is needed now.")
     client = _client()
     plan = selection.plan
     _validate_price(client, plan)

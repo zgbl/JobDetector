@@ -7,7 +7,7 @@
   <title>LinkedIn Search Console · JobDetector</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
   <link rel="stylesheet" href="/css/style.css?v=20261019_linkedin">
-  <link rel="stylesheet" href="/css/linkedin-search.css?v=20261020_vip">
+  <link rel="stylesheet" href="/css/linkedin-search.css?v=20261020_trial">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,6 +42,7 @@
 
 
 
+    <aside id="welcomePlus" class="welcome-plus" hidden><p id="welcomePlusText"></p><button id="welcomePlusAction" class="billing-secondary">Create account</button></aside>
     <section class="control-panel" aria-labelledby="controlsTitle">
       <div class="panel-topline"><h2 id="controlsTitle">Search controls</h2><span>Applies to every search below</span></div>
       <div class="controls-grid">
@@ -103,15 +104,15 @@
   <div id="toast" class="console-toast" role="status" aria-live="polite"></div>
   <dialog id="billingAuthDialog" class="billing-auth-dialog" aria-labelledby="billingAuthTitle">
     <button id="closeBillingAuth" class="dialog-close" aria-label="Close sign in">×</button>
-    <h2 id="billingAuthTitle">Sign in to subscribe</h2><p class="dialog-intro">Use your JobDetector account to keep your subscription connected to you.</p>
+    <h2 id="billingAuthTitle">Sign in to subscribe</h2><p class="dialog-intro" id="billingAuthIntro">Verify your email to get 7 days of Plus. No card required.</p>
     <form id="billingAuthForm"><label id="billingNameField" hidden>Full name<input id="billingAuthName" autocomplete="name"></label>
       <label>Email<input id="billingAuthEmail" type="email" autocomplete="email" required></label>
       <label>Password<input id="billingAuthPassword" type="password" autocomplete="current-password" required></label>
       <button id="billingAuthSubmit" class="open-link" type="submit">Sign in</button>
     </form><p id="billingAuthMessage" role="status" aria-live="polite"></p><button id="toggleBillingAuth" class="billing-secondary">New here? Create an account</button>
   </dialog>
-  <script type="module" src="/js/linkedin-search.js?v=20261020_vip"></script>
-  <script type="module" src="/js/linkedin-billing.js?v=20261020_vip"></script>
-  <script src="/js/traffic.js?v=20261020_vip" defer></script>
+  <script type="module" src="/js/linkedin-search.js?v=20261020_trial"></script>
+  <script type="module" src="/js/linkedin-billing.js?v=20261020_trial"></script>
+  <script src="/js/traffic.js?v=20261020_trial" defer></script>
 </body>
 </html>

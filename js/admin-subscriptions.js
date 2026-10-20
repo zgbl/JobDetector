@@ -4,6 +4,7 @@
   const money = cents => cents == null ? '—' : new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);
   const date = seconds => seconds ? new Intl.DateTimeFormat('zh-CN',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(seconds*1000)) : '—';
   const labels = {active:'有效',trialing:'试用中',past_due:'付款逾期',unpaid:'未付款',incomplete:'首次付款未完成',incomplete_expired:'首次付款已过期',canceled:'已结束',paused:'已暂停',paid:'已支付',open:'待付款',draft:'草稿',void:'已作废',uncollectible:'无法收款'};
+  let trialPage = 1;
   let rows = [], loading = false, loaded = false, testMode = false, page = 0, invoiceId = '', invoiceCursor = '', invoiceLoading = false;
   const issue = r => ['past_due','unpaid','incomplete','paused'].includes(r.status);
   const stripeLink = (kind,id) => `https://dashboard.stripe.com/${testMode?'test/':''}${kind}/${encodeURIComponent(id)}`;
@@ -59,7 +60,18 @@
     } catch(error){if(selected===invoiceId)el('invoiceStatus').textContent=error.message;}
     finally{invoiceLoading=false;el('moreInvoices').disabled=false;}
   }
-  el('refreshSubscriptions').addEventListener('click',load);
+  async function loadTrials() {
+    el('trialSummary').textContent='正在读取试用记录…';
+    try {
+      const data=await api(`/api/billing/admin/trials?page=${trialPage}`);
+      el('trialSummary').textContent=`${data.total} 位试用用户 · ${data.active} 位在试用期内 · ${data.expired} 位试用已结束 · 第 ${trialPage} 页`;
+      el('trialRows').innerHTML=data.rows.map(r=>`<tr><td>${esc(r.email)}<small>${esc(r.name)}</small></td><td>${r.converted?'已订阅':r.trial_active?'试用中':'试用已结束'}</td><td>${date(r.trial_started_at)}</td><td>${date(r.trial_ends_at)}</td></tr>`).join('')||'<tr><td colspan="4">暂无试用会员。新用户验证邮箱后会出现在这里。</td></tr>';
+      el('previousTrials').disabled=trialPage===1;el('nextTrials').disabled=!data.has_more;
+    } catch(error) { el('trialSummary').textContent=error.message; }
+  }
+  el('previousTrials').addEventListener('click',()=>{trialPage--;loadTrials();});
+  el('nextTrials').addEventListener('click',()=>{trialPage++;loadTrials();});
+  el('refreshSubscriptions').addEventListener('click',()=>{load();loadTrials();});
   ['subscriptionSearch','subscriptionStatus','subscriptionPlan'].forEach(id=>el(id).addEventListener(id==='subscriptionSearch'?'input':'change',()=>{page=0;render();}));
   el('previousSubscriptions').addEventListener('click',()=>{page--;render();});el('nextSubscriptions').addEventListener('click',()=>{page++;render();});
   el('subscriptionRows').addEventListener('click',event=>{
@@ -75,5 +87,5 @@
     const url=URL.createObjectURL(new Blob(['\uFEFF'+values.map(row=>row.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download=`jobdetector-subscriptions-${new Date().toISOString().slice(0,10)}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   });
-  window.addEventListener('owner-report-ready',()=>{if(!loaded)load();});
+  window.addEventListener('owner-report-ready',()=>{if(!loaded){load();loadTrials();}});
 })();
