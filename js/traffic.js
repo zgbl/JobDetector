@@ -21,7 +21,7 @@
   record('page_view');
   document.addEventListener('click', event => {
     const search = event.target.closest('a[data-action="open"]');
-    const subscribe = event.target.closest('[data-subscribe]');
+    const subscribe = event.target.closest('[data-checkout]');
     if (search) record('search_open', search);
     else if (subscribe) record('subscribe_click', subscribe);
     try { localStorage.setItem('jd-session-v1', JSON.stringify({id: session, last: Date.now()})); } catch { /* Optional storage. */ }

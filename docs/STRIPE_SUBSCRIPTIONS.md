@@ -73,7 +73,7 @@ Do not add price overrides without migrating existing subscribers: access recogn
 ## Traffic and subscriber report
 
 Open `/admin-traffic.html`. Data at `/api/traffic/admin` requires a valid token for the verified,
-active account whose email equals `ADMIN_EMAIL`. Another account with `is_admin=true` is denied.
+active account identified by `ADMIN_EMAIL` or the server-stored owner flag. Another account with `is_admin=true` is denied.
 The public HTML shell contains no report data. The owner sees links in the homepage navigation,
 Search Console navigation, and existing Product Analytics page after signing in.
 
@@ -113,3 +113,11 @@ annual prices divided by 12, before discounts/tax/refunds; it is not cash revenu
 Stripe Python 16 uses API version 2026-09-30.endive: do not send `payment_method_types`
 to Checkout Session creation. Payment methods follow the account's Dashboard settings.
 The request idempotency namespace was bumped to v2 to avoid replaying older failed requests.
+
+## Lifetime owner access
+
+Tuxy has server-stored `vip_lifetime=true` and `is_owner=true` on the verified existing user record.
+Owner identity also supports the configured `ADMIN_EMAIL`. Public registration cannot set these fields.
+Lifetime access does not expire, does not require Stripe, and cannot create paid Checkout Sessions.
+Display names never grant permissions. The account entry shows Lifetime VIP; pricing is presented
+in an on-demand dialog rather than a banner above the search controls.

@@ -173,3 +173,31 @@ def test_owner_can_validate_both_prices_without_creating_payment(setup, monkeypa
     assert response.json()['plans']['annual']['unit_amount']==999
     assert response.json()['plans']['monthly']['unit_amount']==100
     setup.stripe.v1.checkout.sessions.create.assert_not_called()
+
+
+def test_lifetime_vip_unlocks_without_stripe_and_cannot_be_charged(setup):
+    setup.user['vip_lifetime'] = True
+    setup.user['stripe_customer_id'] = 'cus_existing'
+    response = setup.client.get('/api/billing/status', headers=setup.headers)
+    assert response.status_code == 200
+    assert response.json()['vip_lifetime'] and response.json()['full_access']
+    assert not response.json()['subscribed'] and response.json()['period_end'] is None
+    catalog = setup.client.get('/api/linkedin/presets', headers=setup.headers).json()
+    assert sum(len(g['items']) for g in catalog['groups']) + len(catalog['signals']) == 131
+    assert setup.client.post('/api/billing/checkout', headers=setup.headers, json={'plan':'monthly'}).status_code == 409
+    setup.stripe.v1.subscriptions.list.assert_not_called()
+    setup.stripe.v1.checkout.sessions.create.assert_not_called()
+
+
+def test_persisted_owner_gets_vip_without_owner_email_environment(setup, monkeypatch):
+    monkeypatch.delenv('ADMIN_EMAIL', raising=False)
+    setup.user['is_owner'] = True
+    result = setup.client.get('/api/billing/status', headers=setup.headers).json()
+    assert result['is_owner'] and result['vip_lifetime'] and result['full_access']
+    setup.stripe.v1.subscriptions.list.assert_not_called()
+
+
+def test_display_name_or_string_flags_do_not_grant_vip(setup):
+    setup.user.update({'full_name':'tuxy','username':'tuxy','vip_lifetime':'true','is_owner':'true'})
+    result = setup.client.get('/api/billing/status', headers=setup.headers).json()
+    assert not result['vip_lifetime'] and not result['is_owner'] and not result['full_access']

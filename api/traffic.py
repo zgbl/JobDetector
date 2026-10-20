@@ -43,6 +43,9 @@ def record_event(data: TrafficEvent, request: Request):
     payload = decode_access_token(authorization[7:]) if authorization.startswith("Bearer ") else None
     configured = os.getenv("ADMIN_EMAIL", "")
     is_owner = bool(payload and configured and str(payload.get("sub", "")).lower() == configured.lower())
+    if payload and not is_owner:
+        identity = _db().users.find_one({"email": payload.get("sub")}, {"email": 1, "is_owner": 1})
+        is_owner = _owner(identity)
     try:
         _db().traffic_events.insert_one({
             "_id": data.event_id, "timestamp": datetime.now(timezone.utc),

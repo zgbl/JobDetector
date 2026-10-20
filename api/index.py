@@ -40,7 +40,7 @@ load_dotenv(dotenv_path=project_root_path / ".env")
 
 app = FastAPI(title="JobDetector Dashboard")
 
-from api.billing import router as billing_router
+from api.billing import router as billing_router, _owner as _billing_owner
 app.include_router(billing_router)
 from api.traffic import router as traffic_router
 app.include_router(traffic_router)
@@ -443,7 +443,7 @@ async def login(request: Request):
             "email": user["email"],
             "full_name": user.get("full_name"),
             "is_admin": bool(user.get("is_admin") or (os.getenv("ADMIN_EMAIL") and email.lower() == os.getenv("ADMIN_EMAIL").lower())),
-            "is_owner": bool(os.getenv("ADMIN_EMAIL") and email.lower() == os.getenv("ADMIN_EMAIL").lower()),
+            "is_owner": _billing_owner(user),
         }
     }
 
@@ -593,7 +593,7 @@ async def get_me(request: Request):
         "email": user["email"],
         "full_name": user.get("full_name"),
         "is_admin": is_admin,
-        "is_owner": bool(admin_email and email.lower() == admin_email.lower()),
+        "is_owner": _billing_owner(user),
         "created_at": user["created_at"].isoformat() if hasattr(user.get("created_at"), "isoformat") else str(user.get("created_at", ""))
     }
 

@@ -106,7 +106,12 @@
 .console-footer a:hover { text-decoration: underline; }
 .console-toast { position: fixed; bottom: 22px; right: 22px; max-width: 340px; padding: 11px 14px; background: #d6f4f8; color: #103246; border-radius: 8px; font-size: .78rem; font-weight: 700; box-shadow: 0 8px 30px rgba(0,0,0,.25); opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s, transform .2s; z-index: 1100; }
 .console-toast.visible { opacity: 1; transform: translateY(0); }
-.billing-panel { display: grid; grid-template-columns: 1fr auto; gap: 18px 28px; align-items: center; margin: 0 0 24px; padding: 22px 24px; border: 1px solid #41738a; border-radius: 13px; background: #173346; }
+.billing-panel { width:min(600px,calc(100% - 30px)); max-height:85vh; overflow-y:auto; margin:auto; padding:28px; border:1px solid #385468; border-radius:12px; background:#142435; color:#e9f4fb; }
+.billing-panel:not([open]) { display:none; }
+.billing-panel::backdrop { background:rgba(0,12,24,.7); }
+.billing-copy { padding-right:20px; margin-bottom:18px; }
+.console-account-button { border:0; background:none; color:#91a7b9; font-size:.78rem; padding:6px 8px; cursor:pointer; }
+.console-account-button:hover { color:#e9f4fb; }
 .billing-panel[hidden], .billing-panel [hidden], .billing-auth-dialog [hidden] { display: none; }
 .billing-copy h2 { font-size: 1.35rem; margin: 4px 0; }
 .billing-copy > p:not(.eyebrow), .billing-account { color: #b3cbd8; font-size: .78rem; }

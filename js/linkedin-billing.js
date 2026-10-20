@@ -23,9 +23,11 @@ async function api(path, method = 'GET', body) {
 }
 
 function update() {
-  $('billingPanel').hidden = !status?.enabled;
+  $('billingAccountButton').hidden = !status || (!status.enabled && !status.authenticated);
+  $('billingAccountButton').textContent = status?.vip_lifetime ? 'Lifetime VIP' : 'Account';
   if (!status) return;
   $('trafficNavLink').hidden = !status.is_owner;
+  $('billingTerms').hidden = status.vip_lifetime;
   $('billingTerms').textContent = status.test_mode ? 'Stripe test mode. No real payment will be collected.' : 'USD. Renews automatically at your selected interval. Cancel anytime in Manage subscription.';
   $('billingPlans').hidden = status.full_access;
   $('subscribeButton').hidden = status.full_access;
@@ -35,17 +37,17 @@ function update() {
   $('billingSignOut').hidden = !status.authenticated;
   $('manageSubscription').hidden = !status.authenticated || status.status === 'none';
   $('billingAccount').textContent = status.authenticated ? 'Signed in to your JobDetector account' : '10 free searches · No card needed for the preview';
-  $('billingTitle').textContent = status.full_access ? 'Your full search library is unlocked.' : 'Try a few searches. Unlock the full library.';
-  $('billingDescription').textContent = status.subscribed ?
+  $('billingTitle').textContent = status.vip_lifetime ? 'Lifetime VIP · 永久有效' : status.full_access ? 'Your full search library is unlocked.' : 'Try a few searches. Unlock the full library.';
+  $('billingDescription').textContent = status.vip_lifetime ? 'All 131 searches are permanently unlocked. No subscription or renewal is required.' : status.subscribed ?
     `${status.plan === 'annual' ? 'Annual' : 'Monthly'} subscription${status.cancel_at_period_end ? ' · Renewal cancelled; access continues until the current period ends.' : ' · Manage billing or cancel at any time.'}` :
     status.full_access ? 'Full access is available on this account.' : 'Every role, hiring signal, and search shortcut. Choose monthly or annual billing.';
-  if (status.enabled && !status.checkout_available) message('Subscriptions are not available yet. You can still try the free searches.');
+  if (status.enabled && !status.checkout_available && !status.full_access) message('Subscriptions are not available yet. You can still try the free searches.');
 }
 
 async function refreshStatus() {
   try { status = await api('/api/billing/status'); update(); return status; }
   catch (error) {
-    $('billingPanel').hidden = false;
+    $('billingAccountButton').hidden = false;
     message(error.message);
     $('subscribeButton').disabled = true;
     $('billingSignIn').hidden = false;
@@ -72,8 +74,15 @@ function showAuth(subscribe = false) {
   $('billingAuthEmail').focus();
 }
 
+function openAccount() {
+  if (!$('billingPanel').open) $('billingPanel').showModal();
+}
+$('billingAccountButton').addEventListener('click',openAccount);
+$('closeBillingPanel').addEventListener('click',()=> $('billingPanel').close());
 document.addEventListener('click', event => {
-  if (!event.target.closest('[data-subscribe]')) return;
+  if (event.target.closest('[data-subscribe]')) { openAccount(); return; }
+  if (!event.target.closest('[data-checkout]')) return;
+  if (status?.full_access) return;
   if (!status?.checkout_available) { message('Subscriptions are not available yet. Please try again later.'); return; }
   if (!status.authenticated) { showAuth(true); return; }
   openStripe('/api/billing/checkout', {plan: selectedPlan()});
@@ -108,14 +117,16 @@ $('billingAuthForm').addEventListener('submit', async event => {
     $('billingAuthDialog').close();
     await refreshStatus();
     document.dispatchEvent(new Event('billingchange'));
-    if (subscribeAfterLogin && !status?.subscribed) await openStripe('/api/billing/checkout', {plan: selectedPlan()});
+    if (subscribeAfterLogin && status && !status.full_access) await openStripe('/api/billing/checkout', {plan: selectedPlan()});
   } catch (error) { $('billingAuthMessage').textContent = error.message; }
   finally { $('billingAuthSubmit').disabled = false; }
 });
 
 async function initialize() {
   await refreshStatus();
+  if (status?.vip_lifetime) return;
   const query = new URLSearchParams(window.location.search);
+  if (['success','cancelled'].includes(query.get('billing'))) openAccount();
   if (query.get('billing') === 'cancelled') message('Checkout cancelled. You have not started a new subscription.');
   if (query.get('billing') !== 'success') return;
   message('Confirming your subscription with Stripe…');

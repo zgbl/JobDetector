@@ -85,13 +85,16 @@ def _user(request, required=True):
 
 
 def _admin(user):
-    configured = os.getenv("ADMIN_EMAIL", "")
-    return bool(user and (user.get("is_admin") or (configured and user["email"].lower() == configured.lower())))
+    return bool(user and (user.get("is_admin") or _owner(user)))
 
 
 def _owner(user):
     configured = os.getenv("ADMIN_EMAIL", "")
-    return bool(user and configured and user["email"].lower() == configured.lower())
+    return bool(user and (user.get("is_owner") is True or (configured and user["email"].lower() == configured.lower())))
+
+
+def _lifetime_vip(user):
+    return bool(user and (user.get("vip_lifetime") is True or _owner(user)))
 
 
 def _stripe_call(operation, *args, **kwargs):
@@ -174,7 +177,7 @@ def _sync_customer(client, customer_id):
 
 
 def access_for(user):
-    if not _enabled() or _admin(user):
+    if not _enabled() or _admin(user) or _lifetime_vip(user):
         return True
     if not user or not _ready() or not user.get("stripe_customer_id"):
         return False
@@ -187,10 +190,10 @@ def billing_status(request: Request, response: Response):
     user = _user(request, required=False)
     result = {"enabled": _enabled(), "checkout_available": _ready(), "authenticated": bool(user),
               "is_owner": _owner(user), "test_mode": bool(os.getenv("STRIPE_SECRET_KEY", "").startswith(("sk_test_", "rk_test_"))),
-              "full_access": not _enabled() or _admin(user), "subscribed": False,
+              "full_access": not _enabled() or _admin(user) or _lifetime_vip(user), "vip_lifetime": _lifetime_vip(user), "subscribed": False,
               "plans": {name: {"unit_amount": plan["amount"], "currency": "usd", "interval": plan["interval"]} for name, plan in PLANS.items()},
               "status": "none", "cancel_at_period_end": False, "period_end": None}
-    if user and _ready() and user.get("stripe_customer_id"):
+    if user and not _lifetime_vip(user) and _ready() and user.get("stripe_customer_id"):
         result.update(_sync_customer(_client(), user["stripe_customer_id"]))
         result["full_access"] = result["subscribed"] or _admin(user)
     return result
@@ -199,6 +202,8 @@ def billing_status(request: Request, response: Response):
 @router.post("/api/billing/checkout")
 def create_checkout(request: Request, selection: CheckoutPlan):
     user = _user(request)
+    if _lifetime_vip(user):
+        raise HTTPException(409, "Your lifetime VIP account already has permanent full access. No subscription is needed.")
     client = _client()
     plan = selection.plan
     _validate_price(client, plan)
