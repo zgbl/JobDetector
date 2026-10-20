@@ -135,6 +135,15 @@ async def read_verify():
     return "<h1>Page not found</h1>"
 
 
+@app.get("/linkedin-search.html", response_class=HTMLResponse)
+async def read_linkedin_search():
+    """Serve the one-click LinkedIn search console."""
+    search_file = project_root_path / "linkedin-search.html"
+    if search_file.exists():
+        return search_file.read_text()
+    raise HTTPException(status_code=404, detail="Page not found")
+
+
 
 @app.get("/api/health")
 async def health_check():
