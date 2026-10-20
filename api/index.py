@@ -47,6 +47,8 @@ from api.traffic import router as traffic_router
 app.include_router(traffic_router)
 from api.subscriptions_admin import router as subscriptions_admin_router
 app.include_router(subscriptions_admin_router)
+from api.research_lab import router as research_lab_router
+app.include_router(research_lab_router)
 
 # Enable CORS for local development
 app.add_middleware(
@@ -156,6 +158,11 @@ async def read_linkedin_search():
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "JobDetector API is running"}
+
+
+@app.get("/research-lab.html", response_class=HTMLResponse)
+async def read_research_lab():
+    return (project_root_path / "research-lab.html").read_text()
 
 
 @app.get("/admin-traffic.html", response_class=HTMLResponse)

@@ -151,3 +151,5 @@
 .welcome-plus p { margin:0; }
 .welcome-plus button { flex-shrink:0; }
 @media(max-width:600px){.welcome-plus{align-items:flex-start;flex-direction:column;gap:4px}}
+
+.research-lab-entry{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:28px 0 0;padding:15px 0;border-top:1px solid var(--console-line);font-size:.75rem;color:#9ab1c3}.research-lab-entry span{font-size:.62rem;letter-spacing:.1em;color:#d9be83}.research-lab-entry a{text-decoration:underline}.research-lab-entry small{font-size:.68rem;color:#7893a8}

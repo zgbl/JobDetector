@@ -1588,3 +1588,9 @@ mark {
     outline: none;
     border-color: var(--accent-blue);
 }
+/* Shared public navigation; account-specific links stay in a compact tools menu. */
+.site-account-tools{position:relative;flex-shrink:0;font-size:.78rem;color:var(--text-dim)}
+.site-account-tools[hidden],.site-account-tools [hidden]{display:none!important}
+.site-account-tools>summary{cursor:pointer;list-style:none;padding:8px 10px}.site-account-tools>summary::-webkit-details-marker{display:none}.site-account-tools>summary::after{content:' ▾';font-size:.65rem}
+.site-tools-menu{position:absolute;right:0;top:100%;z-index:1100;min-width:205px;padding:8px;background:#142335;border:1px solid #365068;border-radius:8px;box-shadow:0 10px 28px #02081280}
+.site-tools-menu>a{display:block;padding:10px 12px!important;margin:0!important;color:#c1d3e2;font-size:.76rem;white-space:nowrap;text-decoration:none;border:0!important}.site-tools-menu>a:hover{background:#20364d;border-radius:5px}.site-account-tools summary:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}

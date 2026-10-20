@@ -1,0 +1,1 @@
+{"manifest_version":3,"name":"JobDetector Research Lab","version":"0.1.0","description":"Research one selected LinkedIn post. Sends its visible text and links to JobDetector only after you click Research.","permissions":["activeTab","scripting"],"background":{"service_worker":"background.js"},"action":{"default_title":"Enable JobDetector research buttons on this LinkedIn tab"}}

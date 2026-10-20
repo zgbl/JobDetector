@@ -6,8 +6,8 @@
   <meta name="description" content="One-click LinkedIn searches for AI, data engineering, business intelligence, founders hiring, and direct hiring signals.">
   <title>LinkedIn Search Console · JobDetector</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="/css/style.css?v=20261019_linkedin">
-  <link rel="stylesheet" href="/css/linkedin-search.css?v=20261020_trial">
+  <link rel="stylesheet" href="/css/style.css?v=20261020_nav">
+  <link rel="stylesheet" href="/css/linkedin-search.css?v=20261020_lab">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,7 +44,7 @@
 
     <aside id="welcomePlus" class="welcome-plus" hidden><p id="welcomePlusText"></p><button id="welcomePlusAction" class="billing-secondary">Create account</button></aside>
     <section class="control-panel" aria-labelledby="controlsTitle">
-      <div class="panel-topline"><h2 id="controlsTitle">Search controls</h2><span>Applies to every search below</span></div>
+      <div class="panel-topline"><h2 id="controlsTitle">Search controls</h2><span>Applies to every search below · <a href="/research-lab.html">Research Lab ↗</a></span></div>
       <div class="controls-grid">
         <fieldset class="control-field"><legend>Open on LinkedIn</legend><div class="segmented" id="destinationControl">
           <label><input type="radio" name="destination" value="posts" checked><span><i class="far fa-comment-alt" aria-hidden="true"></i> Hiring posts</span></label>
@@ -90,6 +90,7 @@
         <div id="emptyState" class="empty-state" hidden><i class="fas fa-magnifying-glass" aria-hidden="true"></i><h3>No matching searches</h3><p>Try another title or keyword, or clear your filter.</p><button id="clearFilter">Clear filter</button></div>
       </div>
     </section>
+    <p class="research-lab-entry"><span>实验室</span><a href="/research-lab.html">研究 LinkedIn 上看到的招聘帖子 ↗</a><small>识别发帖人角色、雇主、地点和薪资</small></p>
     <footer class="console-footer">Searches open on LinkedIn. LinkedIn controls the results, ranking, and available filters. <a href="/verify.html">Verify a job at its source <i class="fas fa-arrow-right" aria-hidden="true"></i></a></footer>
   </main>
     <dialog id="billingPanel" class="billing-panel" aria-labelledby="billingTitle">
@@ -111,8 +112,9 @@
       <button id="billingAuthSubmit" class="open-link" type="submit">Sign in</button>
     </form><p id="billingAuthMessage" role="status" aria-live="polite"></p><button id="toggleBillingAuth" class="billing-secondary">New here? Create an account</button>
   </dialog>
-  <script type="module" src="/js/linkedin-search.js?v=20261020_trial"></script>
-  <script type="module" src="/js/linkedin-billing.js?v=20261020_trial"></script>
-  <script src="/js/traffic.js?v=20261020_trial" defer></script>
+  <script type="module" src="/js/linkedin-search.js?v=20261020_lab"></script>
+  <script type="module" src="/js/linkedin-billing.js?v=20261020_lab"></script>
+  <script src="/js/traffic.js?v=20261020_lab" defer></script>
+  <script src="/js/site-nav.js?v=20261020_nav"></script>
 </body>
 </html>
