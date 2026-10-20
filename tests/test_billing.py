@@ -72,6 +72,9 @@ def test_checkout_price_and_customer_come_from_server(setup, plan, price):
     assert response.status_code == 200
     params = setup.stripe.v1.checkout.sessions.create.call_args.args[0]
     assert params['mode'] == 'subscription'
+    assert 'payment_method_types' not in params
+    assert params['integration_identifier'] == 'jobdetector_checkout_qsnxvdra'
+    assert setup.stripe.v1.checkout.sessions.create.call_args.kwargs['options']['idempotency_key'].startswith('jd-checkout-v2-')
     assert params['line_items'] == [{'price':price,'quantity':1}]
     assert params['customer'] == 'cus_member'
     assert params['success_url'].endswith('/linkedin-search.html?billing=success')

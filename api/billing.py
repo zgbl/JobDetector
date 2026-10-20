@@ -229,14 +229,14 @@ def create_checkout(request: Request, selection: CheckoutPlan):
         users.update_one({"_id": user["_id"]}, {"$set": {"stripe_checkout_attempt": attempt}})
         session = _stripe_call(client.v1.checkout.sessions.create, {
             "mode": "subscription", "customer": customer_id,
-            "payment_method_types": ["card"],
+            "integration_identifier": "jobdetector_checkout_qsnxvdra",
             "line_items": [{"price": _price_id(plan), "quantity": 1}],
             "client_reference_id": user_id,
             "metadata": {"app": APP_NAME, "user_id": user_id},
             "subscription_data": {"metadata": {"app": APP_NAME, "user_id": user_id}},
             "success_url": _base_url() + "/linkedin-search.html?billing=success",
             "cancel_url": _base_url() + "/linkedin-search.html?billing=cancelled",
-        }, options={"idempotency_key": f"jd-checkout-{user_id}-{plan}-{attempt}"})
+        }, options={"idempotency_key": f"jd-checkout-v2-{user_id}-{plan}-{attempt}"})
         users.update_one({"_id": user["_id"]}, {"$set": {"stripe_checkout_session_id": session["id"], "stripe_checkout_plan": plan}})
         _db().billing_events.update_one({"_id": "checkout-" + session["id"]}, {"$setOnInsert": {
             "type": "checkout.created", "processed_at": datetime.now(timezone.utc),
