@@ -21,6 +21,8 @@ def setup(monkeypatch):
     user = {"_id": "user1", "email": "member@example.test", "is_verified": True, "is_active": True,
             "stripe_customer_id": "cus_member"}
     db = MagicMock()
+    from api.linkedin_catalog import seed_document
+    db.linkedin_search_catalog.find_one.return_value = seed_document()
     db.users.find_one.return_value = user
     db.users.update_one.return_value = SimpleNamespace(modified_count=1)
     db.billing_settings.find_one.return_value = None

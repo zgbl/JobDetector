@@ -49,6 +49,8 @@ from api.subscriptions_admin import router as subscriptions_admin_router
 app.include_router(subscriptions_admin_router)
 from api.research_lab import router as research_lab_router
 app.include_router(research_lab_router)
+from api.linkedin_catalog import router as linkedin_catalog_router
+app.include_router(linkedin_catalog_router)
 
 # Enable CORS for local development
 app.add_middleware(

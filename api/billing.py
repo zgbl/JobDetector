@@ -321,9 +321,9 @@ async def stripe_webhook(request: Request):
     return {"received": True}
 
 
-@lru_cache(maxsize=1)
 def _catalog():
-    return json.loads((Path(__file__).resolve().parent.parent / "data" / "linkedin_search_presets.json").read_text())
+    from api.linkedin_catalog import get_catalog
+    return get_catalog(_db())
 
 
 @router.get("/api/linkedin/presets")
@@ -335,7 +335,7 @@ def search_presets(request: Request, response: Response):
     groups = [{**group, "total": len(group["items"]), "items": group["items"] if full_access else group["items"][:1]}
               for group in catalog["groups"]]
     return {"groups": groups, "signals": catalog["signals"] if full_access else [],
-            "full_access": full_access, "total": sum(len(group["items"]) for group in catalog["groups"]) + len(catalog["signals"])}
+            "revision": catalog.get("revision", ""), "full_access": full_access, "total": sum(len(group["items"]) for group in catalog["groups"]) + len(catalog["signals"])}
 
 
 @router.get("/api/billing/admin-summary")
