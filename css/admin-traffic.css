@@ -1,6 +1,8 @@
 .traffic-nav { display:flex; gap:24px; padding:22px max(24px,calc((100vw - 1240px)/2)); border-bottom:1px solid var(--glass-border); }
 .traffic-nav a { color:var(--text-dim); text-decoration:none; font-size:.85rem; }
 .traffic-nav a:first-child { color:var(--accent-blue); font-weight:700; margin-right:auto; }
+.traffic-nav .traffic-brand { display:flex; align-items:center; }
+.traffic-brand img { display:block; width:auto; height:42px; max-width:100%; }
 .traffic-shell { max-width:1240px; margin:44px auto; padding:0 24px 40px; }
 .traffic-shell header { margin-bottom:26px; }
 .traffic-eyebrow { font-size:.67rem; letter-spacing:.18em; color:var(--accent-blue); font-weight:700; }

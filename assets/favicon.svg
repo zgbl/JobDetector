@@ -1,15 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#38bdf8"/>
-      <stop offset="1" stop-color="#818cf8"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="14" fill="#0f172a"/>
-  <path d="M17 39c4.5-4.5 10.5-7 17-7h4" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M17 29c5.7-5.7 13.2-8.8 21.3-8.8" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linecap="round" opacity=".78"/>
-  <path d="M17 19c4.1-4.1 9.1-7 14.8-8.5" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linecap="round" opacity=".48"/>
-  <circle cx="42" cy="32" r="12" fill="none" stroke="#e2e8f0" stroke-width="5"/>
-  <path d="M50.5 40.5 57 47" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/>
-  <circle cx="42" cy="32" r="4" fill="#38bdf8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-labelledby="title desc">
+  <title id="title">JobDetector symbol</title>
+  <desc id="desc">A J-shaped probe inside an open D, with a mint signal at the point of detection.</desc>
+  <rect x="1" y="1" width="78" height="78" rx="18" fill="#10293a" stroke="#31566a" stroke-width="2"/>
+  <path d="M28 17h11c15 0 25 10 25 22" fill="none" stroke="#edf7fb" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M64 49c-3 10-12 14-25 14H29" fill="none" stroke="#edf7fb" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28 17v29c0 12-5 17-14 17" fill="none" stroke="#38bdf8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m64 38 6 6-6 6-6-6z" fill="#34d399"/>
 </svg>
