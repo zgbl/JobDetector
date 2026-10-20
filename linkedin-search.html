@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="One-click LinkedIn searches for AI engineering roles, founders hiring, and direct hiring signals.">
+  <title>LinkedIn Search Console · JobDetector</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/linkedin-search.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="dark-theme linkedin-page">
+  <nav class="glass-nav" aria-label="Site navigation">
+    <div class="nav-container">
+      <a href="/" class="logo"><i class="fas fa-satellite-dish" aria-hidden="true"></i><span>JobDetector</span></a>
+      <div class="nav-links">
+        <a href="/" class="nav-item">Jobs</a>
+        <a href="/linkedin-search.html" class="nav-item active" aria-current="page">LinkedIn Search</a>
+        <a href="/verify.html" class="nav-item">Verify Job</a>
+        <a href="/favorites.html" class="nav-item">Favorites</a>
+        <a href="/?view=companies" class="nav-item">Companies</a>
+        <a href="/about.html" class="nav-item">About</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="linkedin-shell">
+    <header class="console-header">
+      <div>
+        <p class="eyebrow"><span class="eyebrow-line"></span> JobDetector / Search tools</p>
+        <h1>LinkedIn <span>Search Console</span></h1>
+        <p class="header-intro">Go straight to AI engineering opportunities and the people hiring for them. Pick a search. Open LinkedIn. No setup.</p>
+      </div>
+      <div class="header-aside" aria-label="Search collection size"><strong id="presetTotal">—</strong><span>ready-to-run searches</span></div>
+    </header>
+
+    <section class="control-panel" aria-labelledby="controlsTitle">
+      <div class="panel-topline"><h2 id="controlsTitle">Search controls</h2><span>Applies to every search below</span></div>
+      <div class="controls-grid">
+        <fieldset class="control-field"><legend>Open on LinkedIn</legend><div class="segmented" id="destinationControl">
+          <label><input type="radio" name="destination" value="posts" checked><span><i class="far fa-comment-alt" aria-hidden="true"></i> Hiring posts</span></label>
+          <label><input type="radio" name="destination" value="jobs"><span><i class="fas fa-briefcase" aria-hidden="true"></i> Job listings</span></label>
+        </div></fieldset>
+        <div class="control-field"><label for="locationSelect">Location keywords</label><select id="locationSelect">
+          <option value="any">Anywhere</option><option value="us">United States</option><option value="ny">New York / New Jersey</option><option value="remote">Remote-friendly</option>
+        </select></div>
+        <div class="control-field"><label for="dateSelect">Date preference <span class="manual-tag">set on LinkedIn</span></label><select id="dateSelect">
+          <option value="all">All available dates</option><option value="day">Past 24 hours</option><option value="week">Past week</option><option value="month">Past month</option>
+        </select></div>
+        <div class="control-field"><label for="sortSelect">Sort preference <span class="manual-tag">set on LinkedIn</span></label><select id="sortSelect">
+          <option value="relevant">Most relevant</option><option value="recent">Most recent</option>
+        </select></div>
+      </div>
+      <p class="filter-explainer" id="filterExplainer"><i class="fas fa-circle-info" aria-hidden="true"></i> Date and sort are applied on LinkedIn after opening results. Location adds search keywords; it does not verify eligibility.</p>
+    </section>
+
+    <section class="search-workspace" aria-label="Search presets">
+      <aside class="console-sidebar" aria-label="Search categories">
+        <div class="sidebar-heading">EXPLORE</div>
+        <div id="categoryNav" class="category-nav"></div>
+        <div class="sidebar-rule"></div>
+        <button class="sidebar-special" data-view="favorites"><i class="far fa-star" aria-hidden="true"></i> Favorites <span id="favoriteCount">0</span></button>
+        <button class="sidebar-special" data-view="recent"><i class="far fa-clock" aria-hidden="true"></i> Recent <span id="recentCount">0</span></button>
+      </aside>
+
+      <div class="results-area">
+        <div class="results-toolbar">
+          <div class="view-title"><p class="eyebrow">SEARCH LIBRARY</p><h2 id="viewTitle">All searches</h2><p id="viewDescription">Every ready-to-use LinkedIn search in one place.</p></div>
+          <label class="preset-search"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><span class="sr-only">Filter searches</span><input id="filterInput" type="search" placeholder="Filter search shortcuts…" autocomplete="off"><kbd>/</kbd></label>
+        </div>
+        <div class="quick-row" aria-label="Quick filters"><span>QUICK VIEWS</span>
+          <button data-view="fde">FDE only</button><button data-view="applied">AI engineering</button><button data-view="platform">AI infrastructure</button><button data-view="architect">AI architecture</button><button data-view="founder">Founder posts</button><button data-view="recruiters">Recruiter posts</button><button data-view="eng-leaders">Engineering leaders</button><button data-location="remote">Remote</button><button data-location="us">US</button><button data-date="day">Recent posts</button>
+        </div>
+        <div id="resultSummary" class="result-summary" aria-live="polite"></div>
+        <div id="presetGroups"></div>
+        <section class="signals-section" id="signalsSection" aria-labelledby="signalsTitle">
+          <div class="section-kicker"><span class="signal-dot"></span> FIND THE HUMAN BEHIND THE ROLE</div>
+          <div class="signals-heading"><div><h2 id="signalsTitle">Direct Hiring Signals</h2><p>Search for explicit hiring language. Use “Broaden” to remove that phrase.</p></div><span>10 paired searches</span></div>
+          <div id="signalsGrid" class="signals-grid"></div>
+        </section>
+        <div id="emptyState" class="empty-state" hidden><i class="fas fa-magnifying-glass" aria-hidden="true"></i><h3>No matching searches</h3><p>Try another title or keyword, or clear your filter.</p><button id="clearFilter">Clear filter</button></div>
+      </div>
+    </section>
+    <footer class="console-footer">Searches open on LinkedIn. LinkedIn controls the results, ranking, and available filters. <a href="/verify.html">Verify a job at its source <i class="fas fa-arrow-right" aria-hidden="true"></i></a></footer>
+  </main>
+  <div id="toast" class="console-toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/js/linkedin-search.js"></script>
+</body>
+</html>
