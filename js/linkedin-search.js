@@ -1,4 +1,4 @@
-import { GROUPS, SIGNALS, PRESETS, ALL_PRESETS, buildLinkedInUrl } from './linkedin-presets.js?v=20261019_data_bi';
+import { GROUPS, SIGNALS, PRESETS, ALL_PRESETS, buildLinkedInUrl } from './linkedin-presets.js?v=20261019_data_bi_leads';
 
 const STORAGE_KEY = 'jobdetector-linkedin-console-v1';
 const byId = new Map(ALL_PRESETS.map(preset => [preset.id, preset]));
