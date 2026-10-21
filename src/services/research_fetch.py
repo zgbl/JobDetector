@@ -1,6 +1,7 @@
 """Bounded HTTPS evidence retrieval. Every redirect resolves to public, pinned IPs."""
 import http.client
 import ipaddress
+import json
 import re
 import socket
 import ssl
@@ -10,6 +11,41 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
 MAX_BYTES = 3_000_000
+
+
+def jobposting_compensation(soup):
+    """Keep employer-published JSON-LD pay details in the evidence text."""
+    details = []
+
+    def visit(node, depth=0):
+        if depth > 8 or len(details) >= 2:
+            return
+        if isinstance(node, list):
+            for item in node:
+                visit(item, depth + 1)
+        elif isinstance(node, dict):
+            types = node.get('@type', [])
+            if isinstance(types, str):
+                types = [types]
+            if isinstance(types, list) and 'JobPosting' in types:
+                pay = {key: node[key] for key in (
+                    'baseSalary', 'salaryCurrency', 'incentiveCompensation', 'jobBenefits'
+                ) if key in node}
+                if pay:
+                    details.append('JobPosting JSON-LD compensation (published on this page): '
+                                   + json.dumps(pay, ensure_ascii=False, separators=(',', ':'))[:5000])
+            for value in node.values():
+                if isinstance(value, (dict, list)):
+                    visit(value, depth + 1)
+
+    for script in soup.find_all('script', type='application/ld+json')[:12]:
+        try:
+            visit(json.loads(script.string or script.get_text()))
+        except (TypeError, ValueError):
+            continue
+        if len(details) >= 2:
+            break
+    return '\n'.join(details[:2])
 
 
 def checked_target(url):
@@ -78,8 +114,11 @@ def fetch_evidence(url, deadline=None):
         soup = BeautifulSoup(html, 'html.parser')
         title = soup.title.get_text(' ', strip=True) if soup.title else host
         links = [{'url': urljoin(url, a.get('href', '')), 'label': a.get_text(' ', strip=True)} for a in soup.find_all('a', href=True)]
+        compensation = jobposting_compensation(soup)
         for tag in soup(['script', 'style', 'nav', 'noscript', 'svg', 'header']):
             tag.decompose()
         text = soup.get_text(' ', strip=True)
+        if compensation:
+            text = compensation + '\n' + text
         return {'url': url, 'title': title[:200], 'text': text[:22000], 'links': links[:180]}
     raise ValueError('Too many redirects.')

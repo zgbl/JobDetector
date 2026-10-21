@@ -2,11 +2,31 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from api import research_lab as lab
 from src.services import research_fetch as fetch
+
+
+def test_jobposting_jsonld_compensation_is_available_as_grounded_evidence():
+    html = '''<script type="application/ld+json">{"@graph":[
+      {"@type":"Organization","name":"Acme"},
+      {"@type":"JobPosting","baseSalary":{"@type":"MonetaryAmount","currency":"USD",
+       "value":{"@type":"QuantitativeValue","minValue":150000,"maxValue":190000,"unitText":"YEAR"}},
+       "incentiveCompensation":"Equity eligible","jobBenefits":"Health insurance"}
+    ]}</script>'''
+    text = fetch.jobposting_compensation(BeautifulSoup(html, 'html.parser'))
+    assert '150000' in text and '190000' in text and 'USD' in text
+    assert 'Equity eligible' in text and 'Health insurance' in text
+    assert 'Acme' not in text
+    source = [{'id':'S2','kind':'web','text':text,'title':'job','url':'https://example.test/job'}]
+    raw = {'fields':{'salary':{'value':'USD 150,000–190,000 / year; equity eligible; health insurance',
+             'status':'confirmed','evidence':[{'source_id':'S2','quote':'"minValue":150000,"maxValue":190000'}]}}}
+    result = lab.grounded_report(raw, source)
+    assert result['fields']['salary']['status'] == 'confirmed'
+    assert 'equity eligible' in result['fields']['salary']['value']
 
 
 def test_private_addresses_and_mixed_dns_records_are_rejected(monkeypatch):

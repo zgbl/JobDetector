@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 FIELDS = {'poster_role': '发帖人角色', 'poster_location':'发帖人所在地', 'employer': '实际雇主', 'company_business': '公司业务',
           'company_type': '雇主 / Staffing', 'job_title': '职位', 'location': '地点与远程范围',
-          'salary': '薪资与币种', 'requirements': '技术与资历', 'restrictions': '雇佣与其他限制'}
+          'salary': 'Compensation · 薪酬', 'requirements': '技术与资历', 'restrictions': '雇佣与其他限制'}
 ATS = {'jobs.lever.co', 'jobs.eu.lever.co', 'boards.greenhouse.io', 'job-boards.greenhouse.io', 'jobs.ashbyhq.com', 'apply.workable.com'}
 
 
@@ -95,7 +95,7 @@ A Director saying I'm hiring is likely a hiring-side leader, NOT proof of being 
 poster_role.value MUST first classify as one of: 疑似用人方管理者（未确认直属 HM）, 企业内部招聘人员, 第三方招聘人员, 员工转发, 无法判断. Then give rationale. Do not return just their job title.
 company_type.value MUST first classify as one of: 直接雇主, Staffing/招聘代理, 外包服务公司, 无法判断. Explain which entity would actually hire the candidate; unknown end clients must stay unknown.
 Company website/ATS must match the linked employer; do not confuse the staffing firm with an unnamed client.
-Salary must preserve exact currency, period, location scope and whether base or total is specified. Unknown if absent; never estimate.
+For salary, report the compensation package: disclosed base salary or hourly rate, currency, pay period, location scope, bonus, commission, equity and benefits. Distinguish guaranteed base from variable or total compensation. State only components explicitly supported by the sources; say which components are not disclosed. JobPosting JSON-LD is page-published structured data, not an independent salary estimate. If no pay component is disclosed, use unknown; never estimate or convert currencies.
 Confirmed means an explicit supporting statement in a fetched web source, not just user-provided text.
 Every non-unknown field needs at least one exact short quote and a source_id. Quotes must occur verbatim in source text.
 Output schema: {"summary":"brief overall conclusion", "fields": {FIELD_KEY:{"value":"concise finding", "status":"confirmed|inferred|reported|unknown", "evidence":[{"source_id":"S1","quote":"exact short quote"}]}}, "questions":["important unresolved question"], "outreach_draft":"short professional English message; do not invent any candidate experience or skills; do not send it"}.
