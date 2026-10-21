@@ -96,3 +96,32 @@ def test_api_enforces_membership_quota_and_never_caches_reports(api):
     response=api.client.post('/api/research-lab/analyze',headers=api.headers,json=data)
     assert response.status_code==200 and response.headers['cache-control']=='private, no-store'
     assert api.client.post('/api/research-lab/analyze',headers=api.headers,json={'text':'short'}).status_code==422
+
+
+def test_tailor_uses_saved_resume_facts_and_marks_post_only_scope(api):
+    api.monkeypatch.setenv('DEEPSEEK_API_KEY','test-key')
+    original='Software Engineer at Example Corp from 2021 to 2025. Built Python APIs and improved service reliability. '*2
+    sources=[{'kind':'capture','title':'Selected LinkedIn post','text':'Hiring a Backend Engineer to build Python APIs.'}]
+    model=MagicMock()
+    model.json.return_value={'choices':[{'message':{'content':__import__('json').dumps({'resume_markdown':original,'changes':['Moved Python work first'],'gaps':['Kubernetes not evidenced']})}}]}
+    model.raise_for_status.return_value=None
+    api.monkeypatch.setattr(lab.requests,'post',lambda *a,**kw:model)
+    payload={'resume_text':original,'resume_name':'Backend','job_title':'Backend Engineer','sources':sources}
+    assert api.client.post('/api/research-lab/tailor',json=payload).status_code==401
+    api.monkeypatch.setattr(lab,'access_for',lambda u:False)
+    assert api.client.post('/api/research-lab/tailor',headers=api.headers,json=payload).status_code==403
+    api.monkeypatch.setattr(lab,'access_for',lambda u:True)
+    response=api.client.post('/api/research-lab/tailor',headers=api.headers,json=payload)
+    assert response.status_code==200
+    assert '仅根据 LinkedIn' in response.json()['scope']
+    assert response.headers['cache-control']=='private, no-store'
+    model.json.return_value={'choices':[{'message':{'content':__import__('json').dumps({'resume_markdown':original+' Grew revenue 99%.','changes':[],'gaps':[]})}}]}
+    assert api.client.post('/api/research-lab/tailor',headers=api.headers,json=payload).status_code==502
+
+
+def test_tailored_docx_exports_a_real_word_file(api):
+    text='# Example Candidate\n## Experience\n- Built Python services and improved reliability for a software team. '*3
+    response=api.client.post('/api/research-lab/export-docx',headers=api.headers,json={'resume_markdown':text})
+    assert response.status_code==200
+    assert response.content.startswith(b'PK')
+    assert 'wordprocessingml.document' in response.headers['content-type']
