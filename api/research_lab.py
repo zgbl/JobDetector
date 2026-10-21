@@ -139,7 +139,7 @@ def tailor_resume(data: TailorRequest, request: Request, response: Response):
     return {'resume_markdown':body,
             'changes':[str(x)[:300] for x in changes[:8]] if isinstance(changes,list) else [],
             'gaps':[str(x)[:300] for x in gaps[:8]] if isinstance(gaps,list) else [],
-            'scope':'已参考公开招聘页' if any(s.kind=='web' for s in sources) else '仅根据 LinkedIn 帖子定制，未取得完整 JD',
+            'scope':'已参考帖子和可读取的公开网页；请确认其中包含完整 JD' if any(s.kind=='web' for s in sources) else '仅根据 LinkedIn 帖子定制，未取得完整 JD',
             'review_required':True}
 
 
