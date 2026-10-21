@@ -47,8 +47,8 @@ def subscription(status="active", price="price_month", **kwargs):
 def test_free_preview_does_not_return_locked_queries(setup):
     result = setup.client.get('/api/linkedin/presets').json()
     assert result['full_access'] is False
-    assert result['total'] == 131
-    assert sum(len(group['items']) for group in result['groups']) == 10
+    assert result['total'] == 155
+    assert sum(len(group['items']) for group in result['groups']) == 11
     assert result['signals'] == []
     assert 'Senior Data Engineer' not in json.dumps(result)
 
@@ -57,7 +57,7 @@ def test_rollout_disabled_keeps_existing_full_library(setup, monkeypatch):
     monkeypatch.setenv('BILLING_ENABLED', 'false')
     result = setup.client.get('/api/linkedin/presets').json()
     assert result['full_access']
-    assert sum(len(group['items']) for group in result['groups']) + len(result['signals']) == 131
+    assert sum(len(group['items']) for group in result['groups']) + len(result['signals']) == 155
 
 
 def test_checkout_requires_auth_and_valid_plan(setup):
@@ -185,7 +185,7 @@ def test_lifetime_vip_unlocks_without_stripe_and_cannot_be_charged(setup):
     assert response.json()['vip_lifetime'] and response.json()['full_access']
     assert not response.json()['subscribed'] and response.json()['period_end'] is None
     catalog = setup.client.get('/api/linkedin/presets', headers=setup.headers).json()
-    assert sum(len(g['items']) for g in catalog['groups']) + len(catalog['signals']) == 131
+    assert sum(len(g['items']) for g in catalog['groups']) + len(catalog['signals']) == 155
     assert setup.client.post('/api/billing/checkout', headers=setup.headers, json={'plan':'monthly'}).status_code == 409
     setup.stripe.v1.subscriptions.list.assert_not_called()
     setup.stripe.v1.checkout.sessions.create.assert_not_called()
@@ -212,7 +212,7 @@ def test_verified_trial_unlocks_and_checkout_waits_until_expiry(setup):
     status=setup.client.get('/api/billing/status',headers=setup.headers).json()
     assert status['trial_active'] and status['full_access'] and not status['subscribed']
     catalog=setup.client.get('/api/linkedin/presets',headers=setup.headers).json()
-    assert sum(len(g['items']) for g in catalog['groups'])+len(catalog['signals'])==131
+    assert sum(len(g['items']) for g in catalog['groups'])+len(catalog['signals'])==155
     assert setup.client.post('/api/billing/checkout',headers=setup.headers,json={'plan':'annual'}).status_code==409
     setup.stripe.v1.subscriptions.list.assert_not_called()
     setup.stripe.v1.checkout.sessions.create.assert_not_called()

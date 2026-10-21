@@ -6,6 +6,7 @@ import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from api import billing, linkedin_catalog as catalog
+from scripts.add_software_search_group import add_group
 
 
 class Directory:
@@ -19,11 +20,40 @@ class Directory:
 def test_catalog_bootstrap_is_idempotent_and_database_edits_are_canonical():
     directory = Directory(); db = SimpleNamespace(linkedin_search_catalog=directory)
     first = catalog.get_catalog(db)
-    assert sum(len(g['items']) for g in first['groups']) + len(first['signals']) == 131
+    assert sum(len(g['items']) for g in first['groups']) + len(first['signals']) == 155
     assert directory.writes == 1
     directory.doc['groups'][0]['name'] = 'Centrally edited name'
     assert catalog.get_catalog(db)['groups'][0]['name'] == 'Centrally edited name'
     assert directory.writes == 1
+
+
+def test_software_board_migration_preserves_existing_central_edits():
+    initial = catalog.seed_document()
+    initial['groups'].pop(0)
+    initial['groups'][0]['name'] = 'Centrally edited FDE'
+    initial['revision'] = 'old-revision'
+
+    class MutableDirectory:
+        doc = initial
+
+        def find_one(self, query):
+            return deepcopy(self.doc)
+
+        def update_one(self, query, change):
+            if query['revision'] != self.doc['revision']:
+                return SimpleNamespace(modified_count=0)
+            self.doc.update(deepcopy(change['$set']))
+            return SimpleNamespace(modified_count=1)
+
+    directory = MutableDirectory()
+    db = SimpleNamespace(linkedin_search_catalog=directory)
+    preview = add_group(db)
+    assert not preview['changed'] and len(directory.doc['groups']) == 10
+    result = add_group(db, apply=True)
+    assert result['changed'] and result['total'] == 155
+    assert directory.doc['groups'][0]['id'] == 'software'
+    assert directory.doc['groups'][1]['name'] == 'Centrally edited FDE'
+    assert not add_group(db, apply=True)['changed']
 
 
 @pytest.fixture
@@ -49,7 +79,7 @@ def test_subscription_choices_are_per_account_and_empty_is_preserved(service):
     one={'Authorization':'Bearer one'};two={'Authorization':'Bearer two'}
     assert client.get('/api/linkedin/subscriptions').status_code==401
     initial=client.get('/api/linkedin/subscriptions',headers=one).json()
-    assert len(initial['groups'])==11 and not initial['customized']
+    assert len(initial['groups'])==12 and not initial['customized']
     saved=client.put('/api/linkedin/subscriptions',headers=one,json={'groups':['data','bi','data']})
     assert saved.status_code==200 and saved.json()['groups']==['data','bi']
     assert users['one']['linkedin_desktop_groups']==['data','bi']
@@ -63,7 +93,7 @@ def test_subscription_choices_are_per_account_and_empty_is_preserved(service):
 def test_existing_console_api_reads_central_catalog_without_changing_shape(service):
     client,users,directory=service
     result=client.get('/api/linkedin/presets',headers={'Authorization':'Bearer one'}).json()
-    assert result['total']==131 and result['full_access']
+    assert result['total']==155 and result['full_access']
     assert result['revision']==directory.doc['revision']
     directory.doc['groups'][0]['items'][0][2]='"Central DB role" hiring'
     fresh=client.get('/api/linkedin/presets',headers={'Authorization':'Bearer one'}).json()

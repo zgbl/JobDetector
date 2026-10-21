@@ -7,9 +7,11 @@ const PRESETS = GROUPS.flatMap(group => group.items.map(([id, label, query]) => 
 const ALL_PRESETS = [...PRESETS, ...SIGNALS];
 
 test('all requested groups and direct hiring signals are ready to use', () => {
-  assert.deepEqual(GROUPS.map(group => group.items.length), [6, 12, 10, 8, 12, 10, 10, 10, 23, 20]);
-  assert.equal(PRESETS.length, 121);
+  assert.deepEqual(GROUPS.map(group => group.items.length), [24, 6, 12, 10, 8, 12, 10, 10, 10, 23, 20]);
+  assert.equal(PRESETS.length, 145);
   assert.equal(SIGNALS.length, 10);
+  const software = GROUPS.find(group => group.id === 'software');
+  assert.ok(software && software.items.some(([id]) => id === 'engineer') && software.items.some(([id]) => id === 'swe'));
   assert.equal(new Set(ALL_PRESETS.map(preset => preset.id)).size, ALL_PRESETS.length);
   for (const preset of ALL_PRESETS) {
     assert.ok(preset.label && preset.query && preset.category, preset.id);

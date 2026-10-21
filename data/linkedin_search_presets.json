@@ -1,6 +1,38 @@
 {
   "groups": [
     {
+      "id": "software",
+      "name": "Software Engineering & SWE",
+      "short": "Software / SWE",
+      "description": "General software engineering titles, specialties, seniority levels, and direct hiring posts",
+      "items": [
+        ["engineer", "Software Engineer", "\"Software Engineer\" hiring"],
+        ["swe", "SWE", "\"SWE\" hiring"],
+        ["sde", "Software Development Engineer / SDE", "\"Software Development Engineer\" hiring"],
+        ["developer", "Software Developer", "\"Software Developer\" hiring"],
+        ["junior", "Junior Software Engineer", "\"Junior Software Engineer\" hiring"],
+        ["new-grad", "New Grad Software Engineer", "\"New Grad Software Engineer\" hiring"],
+        ["ii", "Software Engineer II", "\"Software Engineer II\" hiring"],
+        ["senior", "Senior Software Engineer", "\"Senior Software Engineer\" hiring"],
+        ["senior-swe", "Senior SWE", "\"Senior SWE\" hiring"],
+        ["staff", "Staff Software Engineer", "\"Staff Software Engineer\" hiring"],
+        ["staff-swe", "Staff SWE", "\"Staff SWE\" hiring"],
+        ["principal", "Principal Software Engineer", "\"Principal Software Engineer\" hiring"],
+        ["lead", "Lead Software Engineer", "\"Lead Software Engineer\" hiring"],
+        ["founding", "Founding Software Engineer", "\"Founding Software Engineer\" hiring"],
+        ["backend", "Backend Software Engineer", "\"Backend Software Engineer\" hiring"],
+        ["frontend", "Frontend Software Engineer", "\"Frontend Software Engineer\" hiring"],
+        ["fullstack", "Full Stack Software Engineer", "\"Full Stack Software Engineer\" hiring"],
+        ["platform", "Platform Software Engineer", "\"Platform Software Engineer\" hiring"],
+        ["infrastructure", "Infrastructure Software Engineer", "\"Infrastructure Software Engineer\" hiring"],
+        ["manager", "Software Engineering Manager", "\"Software Engineering Manager\" hiring"],
+        ["director", "Director of Software Engineering", "\"Director of Software Engineering\" hiring"],
+        ["remote", "Remote Software Engineer", "\"Software Engineer\" remote hiring"],
+        ["direct-hiring", "Software Engineer · I'm hiring", "\"Software Engineer\" \"I'm hiring\""],
+        ["swe-hiring", "SWE · we're hiring", "\"SWE\" \"we're hiring\"" ]
+      ]
+    },
+    {
       "id": "fde",
       "name": "Forward Deployed Engineer",
       "short": "FDE",
